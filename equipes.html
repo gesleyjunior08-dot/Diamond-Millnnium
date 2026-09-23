@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Gestão de Equipes - Diamond Millennium</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --charcoal:#063593;
+    --yellow:#0053D8;
+    --green:#2F9E44;
+    --orange:#E8590C;
+    --teal:#4ECDC4;
+    --concrete:#F1F0F3;
+    --brand-graylight:#B1AEB5;
+    --brand-graymid:#585759;
+    --brand-black:#1C1C1C;
+    --safe-t:env(safe-area-inset-top, 0px);
+    --safe-b:env(safe-area-inset-bottom, 0px);
+    --safe-l:env(safe-area-inset-left, 0px);
+    --safe-r:env(safe-area-inset-right, 0px);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+  body{font-family:"Segoe UI",Arial,Helvetica,sans-serif;background:var(--concrete);color:var(--brand-black);font-size:15px;line-height:1.4;padding-bottom:calc(24px + var(--safe-b));}
+  button, select{touch-action:manipulation;}
+
+  /* ---------- login ---------- */
+  .login-screen{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--charcoal);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px;}
+  .login-screen.hidden{display:none;}
+  .login-box{background:#fff;padding:26px 22px;border-radius:14px;width:100%;max-width:340px;}
+  .login-box h1{font-size:19px;margin-bottom:18px;text-align:center;}
+  .login-box input{width:100%;padding:13px 14px;border:1px solid #ddd;border-radius:9px;margin-bottom:12px;font-size:16px;}
+  .login-box button{width:100%;padding:13px;background:var(--yellow);color:#fff;border:none;border-radius:9px;font-weight:600;cursor:pointer;font-size:15px;min-height:46px;}
+  .login-box .error{color:var(--orange);font-size:12px;margin-bottom:10px;text-align:center;font-weight:600;}
+
+  /* ---------- cabeçalho (fixo no topo, respeitando notch) ---------- */
+  .head{background:var(--charcoal);color:#fff;padding:calc(12px + var(--safe-t)) calc(14px + var(--safe-r)) 12px calc(14px + var(--safe-l));border-bottom:4px solid var(--yellow);display:flex;justify-content:space-between;align-items:center;gap:10px;position:sticky;top:0;z-index:20;}
+  .head .brand{display:flex;align-items:center;gap:10px;min-width:0;}
+  .head img{height:30px;width:auto;flex-shrink:0;}
+  .head h1{font-size:15px;font-weight:600;line-height:1.2;}
+  .head .sub{font-size:10.5px;opacity:0.75;margin-top:2px;line-height:1.2;}
+  .head .actions{display:flex;gap:6px;flex-shrink:0;}
+  .head button{background:#ffffff26;color:#fff;border:none;padding:9px 11px;border-radius:9px;cursor:pointer;font-size:12px;font-weight:600;min-height:38px;}
+  .head .btn-refresh{background:var(--yellow);}
+
+  /* ---------- busca ---------- */
+  .filters{padding:12px 14px;background:#fff;border-bottom:1px solid #ddd;}
+  .filters input{width:100%;padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:16px;min-height:46px;}
+  .filters .hint{font-size:11px;opacity:0.6;margin-top:6px;line-height:1.3;}
+
+  .content{padding:14px;max-width:1100px;margin:0 auto;}
+
+  /* ---------- tiles de resumo ---------- */
+  .cards{display:grid;grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));gap:8px;margin-bottom:18px;}
+  .card{background:#fff;border:1px solid #ddd;border-top:3px solid var(--yellow);border-radius:10px;padding:12px 8px;text-align:center;}
+  .card.warn{border-top-color:#B00020;}
+  .card .n{font-size:21px;font-weight:700;}
+  .card .l{font-size:10.5px;opacity:0.65;margin-top:3px;}
+  /* tiles de resumo que também servem de atalho — toque pula direto pra seção,
+     sem precisar rolar a lista toda pra chegar lá */
+  .card.jump{cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .card.jump:active{transform:scale(0.95);}
+
+  @keyframes secFlash{0%{background:#FFF3C4;}100%{background:transparent;}}
+  .team-section.just-jumped summary{animation:secFlash 1.1s ease;}
+
+  .btn-topo{position:fixed;right:calc(14px + var(--safe-r));bottom:calc(18px + var(--safe-b));width:46px;height:46px;border-radius:50%;background:var(--charcoal);color:#fff;border:none;box-shadow:0 3px 10px rgba(0,0,0,0.3);font-size:19px;display:none;align-items:center;justify-content:center;z-index:30;cursor:pointer;}
+  .btn-topo.show{display:flex;}
+
+  .loading, .empty{text-align:center;padding:26px 12px;opacity:0.6;font-size:13px;}
+
+  h2.block-title{font-size:14px;font-weight:700;color:var(--charcoal);margin:20px 2px 8px;text-transform:uppercase;letter-spacing:0.3px;}
+  h2.block-title:first-of-type{margin-top:0;}
+
+  /* ---------- seções de encarregado (equipe própria) ---------- */
+  .team-section{background:#fff;border:1px solid #ddd;border-radius:12px;margin-bottom:12px;overflow:hidden;}
+  .team-section summary{list-style:none;cursor:pointer;padding:13px 14px;display:flex;align-items:center;gap:10px;background:#f7f7f8;border-left:6px solid var(--charcoal);min-height:44px;}
+  .team-section summary::-webkit-details-marker{display:none;}
+  .team-section .dot{width:11px;height:11px;border-radius:50%;background:var(--charcoal);flex-shrink:0;}
+  .team-section .tname{font-weight:700;font-size:14.5px;flex:1;}
+  .team-section .tcount{font-size:12px;padding:3px 11px;background:var(--concrete);border-radius:20px;font-weight:600;}
+
+  /* 2 cards lado a lado já no celular (cabe mais gente na tela, rola menos) —
+     auto-fit com esse mínimo cai pra 1 coluna sozinho em telas bem estreitas. */
+  .team-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(148px, 1fr));gap:8px;padding:10px;}
+
+  /* ---------- card de funcionário (mobile: foto+info em cima, seletor embaixo) ---------- */
+  /* card compacto, pra encarregado rolar menos a tela pra ver todo mundo */
+  .team-card{display:flex;flex-direction:column;gap:6px;border:1px solid #e2e2e6;border-radius:11px;padding:8px;background:#fff;min-width:0;}
+  /* cartão de empresa terceirizada: recuado (indentado) e com visual mais
+     discreto que o card de pessoa, pra ficar claro que representa um time
+     inteiro, não alguém específico */
+  .tc-empresa-card{margin-left:18px;background:var(--concrete);border-color:#d8d7db;border-style:dashed;}
+  .tc-empresa-card .tc-nome{opacity:0.85;}
+  .tc-top{display:flex;align-items:center;gap:8px;}
+  .tc-photo{position:relative;width:40px;height:40px;flex-shrink:0;border-radius:10px;overflow:hidden;cursor:pointer;background:var(--brand-graylight);}
+  .tc-photo img{width:100%;height:100%;object-fit:cover;display:block;}
+  .tc-avatar{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:15px;}
+  .tc-photo-badge{position:absolute;bottom:-3px;right:-3px;width:18px;height:18px;border-radius:50%;background:var(--charcoal);border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:9px;line-height:1;}
+  .tc-photo.uploading{opacity:0.5;}
+  .tc-presenca-dot{position:absolute;top:-3px;right:-3px;width:13px;height:13px;border-radius:50%;border:2px solid #fff;z-index:2;}
+  .tc-presenca-dot.presente{background:#2F9E44;}
+  .tc-presenca-dot.falta{background:#B00020;}
+  .tc-zoom{position:absolute;top:-3px;left:-3px;width:18px;height:18px;border-radius:50%;background:rgba(28,28,30,0.75);border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:9px;line-height:1;color:#fff;cursor:pointer;}
+
+  .tc-info{flex:1;min-width:0;}
+  /* só o card de pessoa abre perfil ao tocar (o de empresa não tem perfil individual) */
+  .team-card:not(.tc-empresa-card) .tc-info{cursor:pointer;}
+  /* nome trunca em 2 linhas (com "...") em vez de esticar o card quando é
+     comprido — importante agora que 2 cards cabem lado a lado no celular e
+     sobra pouca largura pro texto */
+  .tc-nome{font-weight:600;font-size:12.5px;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word;}
+  .tc-funcao{font-size:10.5px;opacity:0.65;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tc-empresa{font-size:9px;opacity:0.5;margin-top:1px;text-transform:uppercase;letter-spacing:0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tc-estrelas{font-size:10px;color:#D9A404;margin-top:2px;letter-spacing:1px;white-space:nowrap;overflow:hidden;}
+
+  .tc-select select{width:100%;font-size:15px;padding:7px 8px;border:1px solid #ddd;border-radius:8px;background:#fafafa;min-height:36px;}
+
+  /* ---------- arrastar card pra outro encarregado ---------- */
+  .tc-handle{flex-shrink:0;margin-left:auto;padding:6px 4px;color:var(--brand-graymid);font-size:16px;line-height:1;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;}
+  .team-card.drag-source-hidden{display:none;}
+  .drag-ghost{position:fixed;z-index:999;pointer-events:none;opacity:0.96;box-shadow:0 12px 30px rgba(0,0,0,0.3);transform:scale(1.03);background:#fff;}
+  .team-section.drag-over{outline:2px dashed var(--charcoal);outline-offset:-2px;}
+  .team-section.drag-over summary{background:#dbe7ff;}
+  .tc-placeholder{border:2px dashed #9fb3d9;border-radius:12px;background:rgba(6,53,147,0.06);box-sizing:border-box;}
+
+  .toast{position:fixed;bottom:calc(20px + var(--safe-b));left:50%;transform:translateX(-50%);background:var(--brand-black);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;opacity:0;z-index:200;transition:opacity 0.3s;max-width:90%;text-align:center;}
+  .toast.show{opacity:1;}
+
+  .err-banner{position:fixed;top:0;left:0;right:0;background:#B00020;color:#fff;padding:10px 14px;font-size:12px;font-family:monospace;z-index:9999;display:none;word-break:break-word;}
+  .err-banner.show{display:block;}
+
+  /* ---------- foto ampliada (toque na lupa do card) ---------- */
+  .photo-lightbox{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:300;padding:calc(20px + var(--safe-t)) calc(20px + var(--safe-r)) calc(20px + var(--safe-b)) calc(20px + var(--safe-l));}
+  .photo-lightbox.show{display:flex;}
+  .photo-lightbox img{max-width:100%;max-height:100%;border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,0.5);}
+  .photo-lightbox .lb-close{position:absolute;top:calc(14px + var(--safe-t));right:calc(14px + var(--safe-r));width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.15);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;}
+  .photo-lightbox .lb-nome{position:absolute;bottom:calc(14px + var(--safe-b));left:0;right:0;text-align:center;color:#fff;font-size:14px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,0.6);}
+
+  /* ---------- perfil da pessoa (toque no nome/info do card) ---------- */
+  .perfil-modal{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:flex-end;justify-content:center;z-index:250;}
+  .perfil-modal.show{display:flex;}
+  .perfil-sheet{background:#fff;width:100%;max-width:440px;border-radius:18px 18px 0 0;padding:18px 18px calc(18px + var(--safe-b));max-height:88vh;overflow-y:auto;position:relative;}
+  .perfil-close{position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:50%;background:var(--concrete);color:var(--brand-black);border:none;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .perfil-topo{display:flex;align-items:center;gap:14px;padding-right:38px;}
+  .perfil-foto{position:relative;width:66px;height:66px;flex-shrink:0;border-radius:14px;overflow:hidden;background:var(--brand-graylight);}
+  .perfil-foto img{width:100%;height:100%;object-fit:cover;display:block;}
+  .perfil-foto .tc-avatar{font-size:22px;}
+  .perfil-nome{font-weight:700;font-size:17px;line-height:1.25;}
+  .perfil-sub{font-size:12.5px;opacity:0.65;margin-top:2px;}
+  .perfil-estrelas{margin-top:16px;}
+  .perfil-estrelas .rotulo{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;opacity:0.55;margin-bottom:4px;}
+  .perfil-estrelas .valor{font-size:20px;color:#D9A404;letter-spacing:2px;}
+  .perfil-estrelas .semnota{font-size:13px;opacity:0.55;font-style:italic;}
+  .perfil-obs{margin-top:18px;}
+  .perfil-obs .rotulo{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;opacity:0.55;margin-bottom:6px;}
+  .perfil-obs textarea{width:100%;min-height:96px;font-family:inherit;font-size:14.5px;padding:10px 12px;border:1px solid #ddd;border-radius:10px;background:#fafafa;resize:vertical;line-height:1.4;}
+  .perfil-obs-acoes{display:flex;justify-content:flex-end;gap:8px;margin-top:8px;}
+  .perfil-obs-acoes button{border:none;border-radius:9px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;min-height:38px;}
+  .perfil-obs-salvar{background:var(--charcoal);color:#fff;}
+  .perfil-obs-salvar:disabled{opacity:0.5;cursor:default;}
+  .perfil-obs-status{font-size:11.5px;opacity:0.55;margin-top:6px;text-align:right;min-height:14px;}
+
+  @media (min-width:700px){
+    .perfil-modal{align-items:center;}
+    .perfil-sheet{border-radius:16px;max-width:420px;}
+  }
+
+  /* ---------- tablet (iPad em diante) ---------- */
+  @media (min-width:700px){
+    body{font-size:16px;}
+    .head{padding:14px 22px;}
+    .head img{height:38px;}
+    .head h1{font-size:19px;}
+    .head .sub{font-size:12px;}
+    .head button{font-size:13px;padding:9px 15px;}
+    .filters{padding:14px 22px;display:flex;align-items:center;gap:12px;}
+    .filters input{flex:1;}
+    .filters .hint{margin-top:0;flex-shrink:0;max-width:260px;}
+    .content{padding:20px;}
+    .cards{grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:10px;}
+    .team-grid{grid-template-columns:repeat(auto-fill, minmax(300px, 1fr));}
+    .team-card{flex-direction:row;align-items:center;}
+    .tc-top{flex:1;min-width:0;}
+    .tc-select{flex-shrink:0;width:auto;}
+    .tc-select select{width:auto;max-width:118px;font-size:13px;padding:8px 6px;min-height:38px;}
+  }
+
+  /* ---------- desktop ---------- */
+  @media (min-width:1000px){
+    .content{padding:24px;}
+  }
+</style>
+</head>
+<body>
+<div class="err-banner" id="errBanner"></div>
+<script>
+window.addEventListener('error', function(e) {
+  var b = document.getElementById('errBanner');
+  if (b) { b.textContent = '⚠️ ERRO: ' + e.message + ' (linha ' + e.lineno + ')'; b.classList.add('show'); }
+});
+window.addEventListener('unhandledrejection', function(e) {
+  var b = document.getElementById('errBanner');
+  if (b) { b.textContent = '⚠️ ERRO (promise): ' + (e.reason && e.reason.message ? e.reason.message : e.reason); b.classList.add('show'); }
+});
+</script>
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <h1>🧑‍🤝‍🧑 Gestão de Equipes</h1>
+    <div class="error" id="loginError"></div>
+    <input type="text" id="loginUser" placeholder="Usuário" autocomplete="username">
+    <input type="password" id="loginPassword" placeholder="Senha" autocomplete="current-password">
+    <button id="loginBtn" onclick="doLogin()">Entrar</button>
+  </div>
+</div>
+
+<div id="app" style="display:none;">
+  <div class="head">
+    <div class="brand">
+      <img src="data:image/png;base64,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" alt="Diamond Millennium">
+      <div>
+        <h1>🧑‍🤝‍🧑 Gestão de Equipes</h1>
+        <div class="sub">Diamond Millennium</div>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn-refresh" onclick="loadData()">🔄</button>
+      <button onclick="doLogout()">Sair</button>
+    </div>
+  </div>
+
+  <div class="filters">
+    <input type="text" id="searchInput" placeholder="Buscar por nome, função ou empreiteira..." oninput="render()">
+    <span class="hint">Toque na foto de um card pra trocar. Use o seletor pra mudar de encarregado.</span>
+  </div>
+
+  <div class="content">
+    <div class="cards" id="summaryCards"></div>
+    <div id="sectionsWrap"><div class="loading">Carregando...</div></div>
+  </div>
+
+  <button class="btn-topo" id="btnTopo" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Voltar ao topo">↑</button>
+</div>
+
+<input type="file" id="photoInput" accept="image/*" style="display:none;" onchange="onPhotoSelected(event)">
+
+<div class="photo-lightbox" id="photoLightbox" onclick="closeLightbox(event)">
+  <div class="lb-close" onclick="closeLightbox(event)">✕</div>
+  <img id="lightboxImg" src="" alt="">
+  <div class="lb-nome" id="lightboxNome"></div>
+</div>
+
+<div class="perfil-modal" id="perfilModal" onclick="fecharPerfil(event)">
+  <div class="perfil-sheet" onclick="event.stopPropagation()">
+    <button class="perfil-close" onclick="fecharPerfil(event)" title="Fechar">✕</button>
+    <div class="perfil-topo">
+      <div class="perfil-foto" id="perfilFoto"></div>
+      <div>
+        <div class="perfil-nome" id="perfilNome"></div>
+        <div class="perfil-sub" id="perfilSub"></div>
+      </div>
+    </div>
+    <div class="perfil-estrelas">
+      <div class="rotulo">Classificação</div>
+      <div id="perfilEstrelas"></div>
+    </div>
+    <div class="perfil-obs">
+      <div class="rotulo">Comentário</div>
+      <textarea id="perfilObsTexto" placeholder="Escreva uma observação sobre essa pessoa..."></textarea>
+      <div class="perfil-obs-acoes">
+        <button class="perfil-obs-salvar" id="perfilObsSalvarBtn" onclick="salvarObservacao()">Salvar comentário</button>
+      </div>
+      <div class="perfil-obs-status" id="perfilObsStatus"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// CONFIG SUPABASE
+// ============================================================
+const OBRA_ID = 'diamond_millennium';
+const SUPABASE_URL = 'https://otlzehasidzannsczcnv.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_EsUxMlHlz4XiUjso5Yit-g_vtl7_Ius';
+const BUCKET = 'fotos-equipe';
+
+// Equipe própria da Diamond: aqui SIM cada funcionário é atribuído pessoa a
+// pessoa (campo funcionarios.encarregado = o id abaixo). Pra adicionar/remover
+// um encarregado, editar este array — não mudar o id de quem já tem gente
+// atribuída, senão essas pessoas "somem" pra Sem encarregado.
+const EQUIPE_PROPRIA = [
+  { id: 'BEIJAMIN', label: 'Beijamin', color: '#0053D8' },
+  { id: 'WESCLEY',  label: 'Wescley',  color: '#2F9E44' },
+  { id: 'EVANDRO',  label: 'Evandro',  color: '#E8590C' },
+];
+
+// Equipes terceirizadas: aqui NÃO se atribui pessoa a pessoa — cada empresa
+// terceirizada vira um cartão único representando o time inteiro, sem listar
+// cada funcionário. Quem é terceirizado é descoberto automaticamente: basta
+// a empresa não começar com "DIAMOND" (qualquer empreiteira: RMC, N&A
+// Elétrica, Asas da Hidráulica, AGS Armação, MEI e variantes, etc. — não
+// precisa cadastrar cada uma no código, novas empreiteiras já entram
+// sozinhas). Essas pessoas somem da lista "Sem encarregado" da equipe
+// própria, já que estão contabilizadas no cartão único da empresa delas.
+function isEquipePropriaEmpresa(f) {
+  return (f.empresa || '').toUpperCase().trim().startsWith('DIAMOND');
+}
+
+// "MEI" (Microempreendedor Individual) não é uma empreiteira com um time e
+// um encarregado — cada um é um profissional independente por conta própria,
+// mesmo que vários compartilhem o mesmo texto de empresa (ex.: "MEI",
+// "MEI - FORRO DE GESSO"). Por isso não entram no cartão único da empresa:
+// aparecem cada um com seu próprio card, igual à equipe própria.
+function isMEIIndependente(f) {
+  return (f.empresa || '').toUpperCase().trim().startsWith('MEI');
+}
+
+// true se este funcionário é de empresa terceirizada (portanto não deve
+// aparecer individualmente na equipe própria / Sem encarregado — só no
+// cartão único da empresa dele)
+function isTerceirizado(f) {
+  return !isEquipePropriaEmpresa(f) && !isMEIIndependente(f);
+}
+
+// Paleta fixa de cores pros cartões de empresa terceirizada — a cor de cada
+// empresa é escolhida por hash do nome, então continua estável mesmo que
+// outras empresas apareçam/desapareçam da lista.
+const PALETA_EMPRESAS_TERCEIRIZADAS = ['#8E44AD', '#16A085', '#B7950B', '#34495E', '#C2185B', '#1F618D', '#C0392B', '#2C3E50', '#7D6608', '#117864', '#943126', '#5B2C6F', '#6D4C41', '#AA6C39'];
+function corPorEmpresa(nome) {
+  let hash = 0;
+  for (let i = 0; i < nome.length; i++) hash = (hash * 31 + nome.charCodeAt(i)) >>> 0;
+  return PALETA_EMPRESAS_TERCEIRIZADAS[hash % PALETA_EMPRESAS_TERCEIRIZADAS.length];
+}
+
+// Agrupa quem é terceirizado por empresa (ignorando quem já foi excluído da
+// gestão, ex.: escritório) e monta 1 "pseudo-card" por empresa: nome fixo
+// "Encarregado <empresa>" (sem nome de pessoa, só o rótulo genérico) e a
+// contagem de quantas pessoas essa empresa tem hoje.
+// Também descobre se todo mundo da empresa já está sob o MESMO encarregado
+// (BEIJAMIN/WESCLEY/EVANDRO) — se sim, o cartão da empresa mora dentro da
+// seção desse encarregado; se está misto (ou ninguém foi arrastado ainda),
+// o cartão fica em "Sem encarregado" até alguém arrastar ele pra um dos 3.
+function computeGruposTerceirizados() {
+  const map = new Map();
+  funcionarios.forEach(f => {
+    if (!isTerceirizado(f) || isExcluidoGestao(f)) return;
+    const label = (f.empresa || 'SEM EMPRESA').trim();
+    const key = label.toUpperCase();
+    if (!map.has(key)) map.set(key, { label, count: 0, encarregados: new Set() });
+    const grupo = map.get(key);
+    grupo.count++;
+    grupo.encarregados.add(f.encarregado || null);
+  });
+  return Array.from(map.values())
+    .map(g => ({
+      label: g.label,
+      count: g.count,
+      pessoa: 'Encarregado ' + g.label,
+      color: corPorEmpresa(g.label),
+      encarregado: g.encarregados.size === 1 ? Array.from(g.encarregados)[0] : null,
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
+}
+
+// Pessoal de escritório/administrativo (engenheiro, RH, almoxarife, vigia etc.)
+// não faz parte de nenhuma equipe de campo — não entra nessa tela de gestão
+// de equipe (nem em "Sem encarregado", nem em nenhum time).
+function isExcluidoGestao(f) {
+  return (f.alocacao || '').toUpperCase().trim() === 'ESCRITÓRIO';
+}
+
+// filtro único usado em todo lugar que monta a lista de "equipe própria"
+function ehEquipePropria(f) {
+  return !isTerceirizado(f) && !isExcluidoGestao(f);
+}
+
+let sb = null;
+try {
+  if (window.supabase) {
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true }
+    });
+  }
+} catch (e) {
+  console.error('Falha ao iniciar Supabase:', e);
+}
+
+// ============================================================
+// STORAGE SEGURO (só usado pra lembrar o login neste navegador)
+// ============================================================
+const memStore = {};
+function safeGet(key) {
+  const k = `${OBRA_ID}:${key}`;
+  try { return localStorage.getItem(k); } catch (e) { return memStore[k] ?? null; }
+}
+function safeSet(key, value) {
+  const k = `${OBRA_ID}:${key}`;
+  try { localStorage.setItem(k, value); } catch (e) { memStore[k] = value; }
+}
+function safeRemove(key) {
+  const k = `${OBRA_ID}:${key}`;
+  try { localStorage.removeItem(k); } catch (e) { delete memStore[k]; }
+}
+
+// ============================================================
+// LOGIN FIXO (mesmo login do app de presença/dashboard)
+// ============================================================
+const LOGIN_USER = 'junior';
+const LOGIN_PASS = '123654';
+
+function doLogin() {
+  const user = document.getElementById('loginUser').value.trim();
+  const pass = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+
+  if (user === LOGIN_USER && pass === LOGIN_PASS) {
+    safeSet('logged_in', 'true');
+    showApp();
+  } else {
+    errEl.textContent = '❌ Usuário ou senha inválidos';
+  }
+}
+
+function doLogout() {
+  safeRemove('logged_in');
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('app').style.display = 'none';
+}
+
+function checkExistingSession() {
+  if (safeGet('logged_in') === 'true') showApp();
+}
+
+async function showApp() {
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('app').style.display = 'block';
+  await loadData();
+}
+
+// ============================================================
+// DADOS
+// ============================================================
+let funcionarios = [];
+
+// funcionario_id (string) -> 'presente' | 'falta', só de HOJE. Usado pra
+// pintar a bolinha de presença no card. Fica vazio se a consulta falhar —
+// nesse caso os cards simplesmente não mostram bolinha nenhuma.
+let presencaHojeMap = new Map();
+
+// data de hoje no formato do banco (AAAA-MM-DD), usando componentes locais
+// do navegador — nunca toISOString() puro (já causou bug de fuso horário
+// em outros arquivos deste sistema).
+function hojeStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+async function loadData() {
+  const wrap = document.getElementById('sectionsWrap');
+  if (!sb) { wrap.innerHTML = '<div class="empty">Sem conexão com o Supabase.</div>'; return; }
+  wrap.innerHTML = '<div class="loading">Carregando...</div>';
+  try {
+    const { data, error } = await sb
+      .from('funcionarios')
+      .select('id, empresa, nome, funcao, alocacao, tipo, ativo, encarregado, foto_path, ordem, updated_at, classificacao, observacao')
+      .eq('tipo', 'permanente')
+      .eq('ativo', true)
+      .order('nome', { ascending: true });
+    if (error) throw error;
+    funcionarios = data || [];
+    render();
+  } catch (e) {
+    wrap.innerHTML = '<div class="empty">Erro ao carregar funcionários. Verifique se as colunas "encarregado", "foto_path" e "ordem" já existem na tabela (rode o equipes_setup_diamond.sql).</div>';
+    console.error(e);
+    return;
+  }
+
+  // presença de hoje — busca DEPOIS de já mostrar os cards, e nunca trava a
+  // tela principal: se demorar ou falhar, os cards continuam visíveis, só
+  // sem bolinha até essa segunda busca terminar (ou pra sempre, se falhar).
+  try {
+    const { data: presData, error: presError } = await sb
+      .from('presenca')
+      .select('funcionario_id, status')
+      .eq('data', hojeStr());
+    if (presError) throw presError;
+    presencaHojeMap = new Map((presData || []).map(p => [String(p.funcionario_id), p.status]));
+    render();
+  } catch (presE) {
+    presencaHojeMap = new Map();
+    console.error('Não deu pra carregar a presença de hoje:', presE);
+  }
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function render() {
+  renderSummary();
+  renderSections();
+}
+
+function renderSummary() {
+  const el = document.getElementById('summaryCards');
+  const proprios = funcionarios.filter(ehEquipePropria);
+  const semEncarregado = proprios.filter(f => !f.encarregado).length;
+  // "Equipe própria" é só informativo (soma tudo, não é 1 seção só) — os
+  // outros tiles pulam direto pra seção correspondente (classe "jump"),
+  // pra não precisar rolar a lista toda pra chegar lá.
+  let html = `<div class="card"><div class="n">${proprios.length}</div><div class="l">Equipe própria</div></div>`;
+  EQUIPE_PROPRIA.forEach(enc => {
+    const n = proprios.filter(f => f.encarregado === enc.id).length;
+    html += `<div class="card jump" style="border-top-color:${enc.color};" onclick="irParaSecao('${enc.id}')"><div class="n">${n}</div><div class="l">${enc.label}</div></div>`;
+  });
+  html += `<div class="card warn jump" onclick="irParaSecao('SEM')"><div class="n">${semEncarregado}</div><div class="l">Sem encarregado</div></div>`;
+  el.innerHTML = html;
+}
+
+// Pula direto pra seção (abre se estiver fechada) sem precisar rolar a lista
+// toda — chamado ao tocar num dos tiles de resumo lá em cima.
+function irParaSecao(key) {
+  sectionExpandedState[key] = true;
+  render();
+  requestAnimationFrame(() => {
+    const el = document.getElementById('sec_' + key);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    el.classList.add('just-jumped');
+    setTimeout(() => el.classList.remove('just-jumped'), 1100);
+  });
+}
+
+// Mostra o botão "voltar ao topo" só depois de rolar um pouco a página —
+// evita poluir a tela quando já dá pra ver a busca e os tiles de resumo.
+window.addEventListener('scroll', () => {
+  const btn = document.getElementById('btnTopo');
+  if (!btn) return;
+  btn.classList.toggle('show', window.scrollY > 320);
+});
+
+function matchesSearch(f, q) {
+  if (!q) return true;
+  return f.nome.toLowerCase().includes(q) ||
+    (f.funcao || '').toLowerCase().includes(q) ||
+    (f.empresa || '').toLowerCase().includes(q) ||
+    (f.alocacao || '').toLowerCase().includes(q);
+}
+
+// Ordena pela posição manual (campo "ordem") quando existir; quem ainda não
+// foi reposicionado à mão (ordem null) fica no fim, em ordem alfabética.
+// Assim que alguém arrasta um card dentro de um grupo, o grupo inteiro passa
+// a ter "ordem" definida e essa posição fica salva pra sempre.
+function compareMembros(a, b) {
+  const ao = (a.ordem === null || a.ordem === undefined) ? null : Number(a.ordem);
+  const bo = (b.ordem === null || b.ordem === undefined) ? null : Number(b.ordem);
+  if (ao !== null && bo !== null && ao !== bo) return ao - bo;
+  if (ao !== null && bo === null) return -1;
+  if (ao === null && bo !== null) return 1;
+  return a.nome.localeCompare(b.nome, 'pt-BR');
+}
+
+// Seções da equipe própria (Beijamin/Wescley/Evandro + Sem encarregado).
+// Quem já está coberto por um cartão de time terceirizado (isTerceirizado)
+// não aparece aqui — ele é representado só pelo cartão do time, não pessoa a
+// pessoa.
+// Lembra se cada seção está aberta/fechada entre uma renderização e outra
+// (chave: id do grupo, ou 'SEM' pra "Sem encarregado"). Sem isso, toda vez
+// que a tela atualiza — ao trocar de foto, reatribuir alguém ou clicar em
+// Atualizar — o innerHTML é reconstruído do zero e as seções que o usuário
+// tinha fechado voltavam a abrir sozinhas.
+let sectionExpandedState = {};
+
+function renderSections() {
+  const wrap = document.getElementById('sectionsWrap');
+  const q = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+  const proprios = funcionarios.filter(ehEquipePropria);
+
+  // Só existem 4 seções agora: Sem encarregado + os 3 encarregados de
+  // verdade (Beijamin/Wescley/Evandro). As empresas terceirizadas não têm
+  // mais seção própria — o cartão de cada empresa mora dentro de uma dessas
+  // 4, e o usuário decide qual arrastando o card (ver applyReorderEmpresa).
+  const gruposTerceirizados = computeGruposTerceirizados()
+    .filter(g => !q || g.label.toLowerCase().includes(q) || g.pessoa.toLowerCase().includes(q));
+
+  const groups = [
+    { id: null, label: 'Sem encarregado', color: '#B00020', unassigned: true },
+    ...EQUIPE_PROPRIA.map(e => ({ ...e, unassigned: false })),
+  ];
+
+  let html = '';
+
+  if (!proprios.length && !gruposTerceirizados.length) {
+    html += '<div class="empty">Nenhum funcionário encontrado.</div>';
+  }
+
+  groups.forEach(g => {
+    const membros = proprios
+      .filter(f => (g.id === null ? !f.encarregado : f.encarregado === g.id))
+      .filter(f => matchesSearch(f, q))
+      .sort(compareMembros);
+
+    const empresasDoGrupo = gruposTerceirizados
+      .filter(t => (g.id === null ? !t.encarregado : t.encarregado === g.id));
+
+    if (q && !membros.length && !empresasDoGrupo.length) return; // durante busca, esconde seção vazia
+
+    const key = g.id || 'SEM';
+    // durante busca força aberto (pra ver o resultado); fora da busca respeita
+    // o que o usuário escolheu antes. Padrão na primeira vez: tudo começa
+    // fechado (só os 3 encarregados + Sem encarregado existem, e toque abre).
+    const isOpen = q ? true : (key in sectionExpandedState ? sectionExpandedState[key] : false);
+    const totalCards = membros.length + empresasDoGrupo.length;
+
+    html += `<details class="team-section ${g.unassigned ? 'unassigned' : ''}" id="sec_${key}" data-group="${key}" ${isOpen ? 'open' : ''}>
+      <summary style="border-left-color:${g.color};">
+        <span class="dot" style="background:${g.color};"></span>
+        <span class="tname">${g.label}</span>
+        <span class="tcount">${totalCards}</span>
+      </summary>
+      <div class="team-grid">
+        ${totalCards
+          ? (empresasDoGrupo.map(t => terceirizadaCardHtml(t)).join('') + membros.map(f => cardHtml(f)).join(''))
+          : '<div class="empty">Ninguém aqui.</div>'}
+      </div>
+    </details>`;
+  });
+
+  wrap.innerHTML = html;
+}
+
+// O evento "toggle" de <details> não borbulha (bubbles:false), mas ainda
+// passa pela fase de captura — por isso o listener é registrado com
+// capture:true num elemento fixo (não recriado a cada render), pra
+// continuar funcionando mesmo depois do innerHTML ser trocado.
+document.getElementById('sectionsWrap').addEventListener('toggle', (e) => {
+  const det = e.target;
+  if (det && det.tagName === 'DETAILS' && det.dataset.group) {
+    sectionExpandedState[det.dataset.group] = det.open;
+  }
+}, true);
+
+// ============================================================
+// ARRASTAR CARD PRA MUDAR DE ENCARREGADO
+// Segura na alcinha (⠿) do card e arrasta pra cima do cabeçalho de outra
+// seção (aberta ou fechada) pra reatribuir. Usa Pointer Events, que funciona
+// igual com dedo (celular/iPad) e mouse (desktop). Ao soltar, chama a mesma
+// reassign() que o seletor já usa — mesma validação, mesmo toast.
+// ============================================================
+let dragState = null;
+
+document.getElementById('sectionsWrap').addEventListener('pointerdown', (e) => {
+  const handle = e.target.closest('.tc-handle');
+  if (!handle) return;
+  if (e.pointerType === 'mouse' && e.button !== 0) return; // só botão esquerdo do mouse
+  const card = handle.closest('.team-card');
+  if (!card) return;
+  startDrag(e, handle, card);
+});
+
+function startDrag(e, handle, cardEl) {
+  e.preventDefault();
+  const rect = cardEl.getBoundingClientRect();
+
+  const ghost = cardEl.cloneNode(true);
+  ghost.classList.add('drag-ghost');
+  ghost.style.width = rect.width + 'px';
+  ghost.style.left = rect.left + 'px';
+  ghost.style.top = rect.top + 'px';
+  document.body.appendChild(ghost);
+
+  // espaço vazio (tracejado) que mostra onde o card vai cair — do tamanho do
+  // card original, pra não "pular" o layout quando ele entra em cena
+  const placeholder = document.createElement('div');
+  placeholder.className = 'tc-placeholder';
+  placeholder.style.height = rect.height + 'px';
+
+  cardEl.classList.add('drag-source-hidden');
+  // aparece já no lugar do card original, pra sempre existir um espaço visível
+  cardEl.parentNode.insertBefore(placeholder, cardEl);
+
+  // dois tipos de card podem ser arrastados: um funcionário (data-fid) ou
+  // um cartão de empresa terceirizada inteira (data-empresa)
+  const isEmpresa = cardEl.dataset.empresa !== undefined;
+
+  dragState = {
+    kind: isEmpresa ? 'empresa' : 'funcionario',
+    fid: cardEl.dataset.fid,
+    empresa: cardEl.dataset.empresa,
+    cardEl,
+    ghost,
+    placeholder,
+    offsetX: e.clientX - rect.left,
+    offsetY: e.clientY - rect.top,
+    targetKey: null,
+  };
+
+  try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+  handle.addEventListener('pointermove', onDragMove);
+  handle.addEventListener('pointerup', onDragEnd);
+  handle.addEventListener('pointercancel', onDragEnd);
+}
+
+function onDragMove(e) {
+  if (!dragState) return;
+  e.preventDefault();
+  const { ghost, offsetX, offsetY, placeholder, cardEl } = dragState;
+  ghost.style.left = (e.clientX - offsetX) + 'px';
+  ghost.style.top = (e.clientY - offsetY) + 'px';
+
+  // rola a página sozinho se arrastar perto da borda de cima/baixo da tela
+  const margin = 70;
+  if (e.clientY < margin) window.scrollBy(0, -14);
+  else if (e.clientY > window.innerHeight - margin) window.scrollBy(0, 14);
+
+  const under = document.elementFromPoint(e.clientX, e.clientY);
+  const section = under ? under.closest('.team-section') : null;
+  document.querySelectorAll('.team-section.drag-over').forEach(s => {
+    if (s !== section) s.classList.remove('drag-over');
+  });
+
+  if (section) {
+    section.classList.add('drag-over');
+    dragState.targetKey = section.dataset.group;
+    const grid = section.querySelector('.team-grid');
+    positionPlaceholder(grid, placeholder, cardEl, e.clientX, e.clientY);
+  } else {
+    dragState.targetKey = null;
+  }
+}
+
+// Decide, dentro da lista de cards embaixo do ponteiro, entre quais dois
+// cards o espaço tracejado deve ficar (compara com o meio de cada card).
+function positionPlaceholder(grid, placeholder, cardEl, pointerX, pointerY) {
+  if (!grid) return;
+  // no mobile o grid é 1 coluna só, mas no tablet/desktop vira grade com
+  // vários cards lado a lado na mesma linha — por isso não dá pra decidir
+  // a posição olhando só a altura (Y): também tem que olhar a coluna (X),
+  // senão nunca dá pra soltar "no meio" de uma linha com 2+ cards.
+  const cards = Array.from(grid.querySelectorAll('.team-card')).filter(c => c !== cardEl && c !== placeholder);
+  let refCard = null;
+  for (const c of cards) {
+    const r = c.getBoundingClientRect();
+    const mesmaLinha = pointerY >= r.top && pointerY <= r.bottom;
+    if (mesmaLinha) {
+      const centroX = r.left + r.width / 2;
+      if (pointerX < centroX) { refCard = c; break; }
+      // senão continua pros próximos cards da mesma linha (ou passa pra próxima)
+    } else if (pointerY < r.top) {
+      refCard = c;
+      break;
+    }
+  }
+  if (refCard) {
+    if (placeholder.nextSibling !== refCard) grid.insertBefore(placeholder, refCard);
+  } else if (grid.lastElementChild !== placeholder) {
+    grid.appendChild(placeholder);
+  }
+}
+
+function onDragEnd(e) {
+  if (!dragState) return;
+  const { kind, fid, empresa, ghost, cardEl, placeholder, targetKey } = dragState;
+
+  // a posição do placeholder no grid final é a posição de inserção
+  let insertIndex = null;
+  if (placeholder.parentNode) {
+    insertIndex = Array.from(placeholder.parentNode.children).indexOf(placeholder);
+  }
+
+  document.querySelectorAll('.team-section.drag-over').forEach(s => s.classList.remove('drag-over'));
+  ghost.remove();
+  if (placeholder.parentNode) placeholder.remove();
+  cardEl.classList.remove('drag-source-hidden');
+
+  const handle = e.target;
+  handle.removeEventListener('pointermove', onDragMove);
+  handle.removeEventListener('pointerup', onDragEnd);
+  handle.removeEventListener('pointercancel', onDragEnd);
+  try { handle.releasePointerCapture(e.pointerId); } catch (err) {}
+
+  dragState = null;
+
+  if (targetKey && kind === 'funcionario' && insertIndex !== null) {
+    applyReorder(fid, targetKey, insertIndex);
+  } else if (targetKey && kind === 'empresa') {
+    // cartão de empresa: não tem "ordem" própria (representa várias pessoas
+    // de uma vez), então arrastar só decide o encarregado responsável
+    applyReorderEmpresa(empresa, targetKey);
+  }
+}
+
+// Aplica a nova posição (e, se mudou de seção, o novo encarregado). Recalcula
+// a ordem de todo mundo do grupo de destino e salva de uma vez — os grupos
+// são pequenos (times de um encarregado), então isso é barato e evita contas
+// de "encaixar um número entre dois outros" que complicam com o tempo.
+async function applyReorder(fid, targetKey, insertIndex) {
+  const item = funcionarios.find(f => String(f.id) === String(fid));
+  if (!item) return;
+
+  const novoEncarregado = targetKey === 'SEM' ? null : targetKey;
+
+  const membrosDestino = funcionarios
+    .filter(f => ehEquipePropria(f) && String(f.id) !== String(fid))
+    .filter(f => (novoEncarregado === null ? !f.encarregado : f.encarregado === novoEncarregado))
+    .sort(compareMembros);
+
+  const idx = Math.max(0, Math.min(insertIndex, membrosDestino.length));
+  membrosDestino.splice(idx, 0, item);
+
+  const updates = membrosDestino.map((f, i) => ({ id: f.id, ordem: i * 10 }));
+
+  // guarda o estado anterior de todo mundo que vai mudar, pra poder desfazer
+  // se o banco recusar a gravação
+  const encarregadoAnterior = item.encarregado;
+  const ordensAnteriores = new Map(updates.map(u => {
+    const f = funcionarios.find(x => String(x.id) === String(u.id));
+    return [u.id, f ? f.ordem : null];
+  }));
+
+  // atualização otimista: já reflete na tela antes de confirmar no banco
+  updates.forEach(u => {
+    const f = funcionarios.find(x => String(x.id) === String(u.id));
+    if (f) f.ordem = u.ordem;
+  });
+  item.encarregado = novoEncarregado;
+  render();
+
+  if (!sb) { showToast('⚠️ Sem conexão — a posição não foi salva.'); return; }
+  try {
+    // update individual por linha (não upsert): só mexe nas colunas informadas,
+    // sem esbarrar em constraints NOT NULL de colunas que não fazem parte do payload
+    const results = await Promise.all(updates.map(u => {
+      const patch = { ordem: u.ordem };
+      if (u.id === item.id) patch.encarregado = novoEncarregado;
+      return sb.from('funcionarios').update(patch).eq('id', u.id);
+    }));
+    const falhou = results.find(r => r.error);
+    if (falhou) throw falhou.error;
+    showToast('✅ Posição atualizada!');
+  } catch (e) {
+    // desfaz a atualização otimista de todo mundo se o banco recusou
+    updates.forEach(u => {
+      const f = funcionarios.find(x => String(x.id) === String(u.id));
+      if (f) f.ordem = ordensAnteriores.get(u.id);
+    });
+    item.encarregado = encarregadoAnterior;
+    render();
+    showToast('⚠️ Erro ao salvar a posição: ' + (e.message || e));
+  }
+}
+
+// Arrastar o cartão de uma empresa terceirizada pra dentro de Beijamin/
+// Wescley/Evandro (ou de volta pra "Sem encarregado"). Como o cartão
+// representa a empresa inteira, não uma pessoa, isso atualiza de uma vez o
+// campo "encarregado" de TODOS os funcionários ativos dessa empresa — não
+// tem "ordem" individual pra decidir aqui.
+//
+// Mesma coisa que arrastar o card, só que pelo seletor do card da empresa
+// (igual o seletor que já existe nos cards de pessoa).
+function reassignEmpresa(empresaLabel, encarregado) {
+  applyReorderEmpresa(empresaLabel, encarregado || 'SEM');
+}
+
+async function applyReorderEmpresa(empresaLabel, targetKey) {
+  const novoEncarregado = targetKey === 'SEM' ? null : targetKey;
+  const key = (empresaLabel || '').toUpperCase();
+  const afetados = funcionarios.filter(f =>
+    isTerceirizado(f) && !isExcluidoGestao(f) && (f.empresa || '').trim().toUpperCase() === key
+  );
+  if (!afetados.length) return;
+
+  const empresaReal = afetados[0].empresa; // valor exato salvo no banco, pro filtro do update
+  const anteriores = afetados.map(f => f.encarregado);
+
+  // atualização otimista
+  afetados.forEach(f => { f.encarregado = novoEncarregado; });
+  render();
+
+  if (!sb) { showToast('⚠️ Sem conexão — não foi salvo.'); return; }
+  try {
+    const { error } = await sb
+      .from('funcionarios')
+      .update({ encarregado: novoEncarregado })
+      .eq('empresa', empresaReal)
+      .eq('tipo', 'permanente')
+      .eq('ativo', true);
+    if (error) throw error;
+    const nomeDestino = novoEncarregado ? (EQUIPE_PROPRIA.find(x => x.id === novoEncarregado) || {}).label : 'Sem encarregado';
+    showToast(`✅ ${empresaLabel} agora em "${nomeDestino || novoEncarregado}"`);
+  } catch (e) {
+    // desfaz se o banco recusou
+    afetados.forEach((f, i) => { f.encarregado = anteriores[i]; });
+    render();
+    showToast('⚠️ Erro ao mover a empresa: ' + (e.message || e));
+  }
+}
+
+// Cartão único por empresa terceirizada — mesmo componente visual do
+// team-card (pra ficar igual ao resto dos cards), mas sem os controles que
+// não fazem sentido pra um cartão que representa a empresa inteira: sem
+// foto/upload, sem lupa, sem seletor de encarregado, sem arrastar.
+function terceirizadaCardHtml(g) {
+  const empresaAttr = g.label.replace(/"/g, '&quot;');
+  const empresaJs = g.label.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+  const options = [`<option value="" ${!g.encarregado ? 'selected' : ''}>Nenhum</option>`]
+    .concat(EQUIPE_PROPRIA.map(e => `<option value="${e.id}" ${g.encarregado === e.id ? 'selected' : ''}>${e.label}</option>`))
+    .join('');
+
+  return `
+    <div class="team-card tc-empresa-card" data-empresa="${empresaAttr}">
+      <div class="tc-top">
+        <div class="tc-photo">
+          <div class="tc-avatar" style="background:${g.color};">${initials(g.pessoa)}</div>
+        </div>
+        <div class="tc-info">
+          <div class="tc-nome">${g.pessoa}</div>
+          <div class="tc-funcao">${g.count} ${g.count === 1 ? 'pessoa' : 'pessoas'} na equipe hoje</div>
+        </div>
+        <div class="tc-handle" title="Arraste pra mudar de encarregado">⠿</div>
+      </div>
+      <div class="tc-select">
+        <select onchange="reassignEmpresa('${empresaJs}', this.value)">${options}</select>
+      </div>
+    </div>
+  `;
+}
+
+function initials(nome) {
+  const parts = (nome || '').trim().split(/\s+/);
+  const first = parts[0] ? parts[0][0] : '';
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
+  return (first + last).toUpperCase();
+}
+
+function avatarColor(nome) {
+  const palette = ['#0053D8', '#2F9E44', '#E8590C', '#4ECDC4', '#585759', '#063593'];
+  let hash = 0;
+  for (let i = 0; i < (nome || '').length; i++) hash = (hash * 31 + nome.charCodeAt(i)) >>> 0;
+  return palette[hash % palette.length];
+}
+
+function fotoUrl(f) {
+  if (!f.foto_path || !sb) return null;
+  const { data } = sb.storage.from(BUCKET).getPublicUrl(f.foto_path);
+  const t = f.updated_at ? new Date(f.updated_at).getTime() : '';
+  return data.publicUrl + (t ? ('?t=' + t) : '');
+}
+
+function avatarHtml(f) {
+  return `<div class="tc-avatar" style="background:${avatarColor(f.nome)};">${initials(f.nome)}</div>`;
+}
+
+// mesma classificação por estrelas (★☆☆☆☆ até ★★★★★) que já existe na
+// coluna "CLASSIFICAÇÃO" da planilha, sincronizada pela macro do Excel.
+// Sem nota ainda (null) não mostra nada, pra não confundir com nota 0.
+function estrelasHtml(f) {
+  if (f.classificacao === null || f.classificacao === undefined) return '';
+  const cheias = Math.max(0, Math.min(5, Number(f.classificacao)));
+  const vazias = 5 - cheias;
+  return `<div class="tc-estrelas" title="Classificação: ${cheias}/5">${'★'.repeat(cheias)}${'☆'.repeat(vazias)}</div>`;
+}
+
+// bolinha verde/vermelha no canto da foto: verde = presença marcada hoje,
+// vermelha = falta marcada hoje. Sem registro ainda hoje = sem bolinha (pra
+// não sugerir falta antes de alguém realmente bater o ponto).
+function presencaDotHtml(funcionarioId) {
+  const status = presencaHojeMap.get(String(funcionarioId));
+  if (status === 'presente') return `<div class="tc-presenca-dot presente" title="Presente hoje"></div>`;
+  if (status === 'falta') return `<div class="tc-presenca-dot falta" title="Falta hoje"></div>`;
+  return '';
+}
+
+// chamada pelo onerror da <img> — separado em função pra não ter que embutir
+// HTML com aspas duplas dentro de um atributo (dava conflito de aspas)
+function avatarFallback(imgEl, nome) {
+  imgEl.outerHTML = avatarHtml({ nome });
+}
+
+// abre a foto do card em tela cheia (toque na lupa)
+function openLightbox(url, nome) {
+  document.getElementById('lightboxImg').src = url;
+  document.getElementById('lightboxNome').textContent = nome || '';
+  document.getElementById('photoLightbox').classList.add('show');
+}
+function closeLightbox(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('photoLightbox').classList.remove('show');
+  document.getElementById('lightboxImg').src = '';
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { closeLightbox(); fecharPerfil(); }
+});
+
+// ============================================================
+// PERFIL DA PESSOA (toque no nome/info do card)
+// ============================================================
+let perfilFuncionarioId = null;
+
+function abrirPerfil(funcionarioId) {
+  const f = funcionarios.find(x => String(x.id) === String(funcionarioId));
+  if (!f) return;
+  perfilFuncionarioId = funcionarioId;
+
+  const url = fotoUrl(f);
+  document.getElementById('perfilFoto').innerHTML = url
+    ? `<img src="${url}" alt="${f.nome}" onerror="avatarFallback(this, '${f.nome.replace(/'/g, "\\'")}')">`
+    : avatarHtml(f);
+  document.getElementById('perfilNome').textContent = f.nome;
+  document.getElementById('perfilSub').textContent =
+    `${f.funcao}${f.alocacao ? ' • ' + f.alocacao : ''} — ${f.empresa}`;
+
+  const estrelasEl = document.getElementById('perfilEstrelas');
+  if (f.classificacao === null || f.classificacao === undefined) {
+    estrelasEl.innerHTML = `<span class="semnota">Ainda sem classificação</span>`;
+  } else {
+    const cheias = Math.max(0, Math.min(5, Number(f.classificacao)));
+    estrelasEl.innerHTML = `<span class="valor">${'★'.repeat(cheias)}${'☆'.repeat(5 - cheias)}</span>`;
+  }
+
+  document.getElementById('perfilObsTexto').value = f.observacao || '';
+  document.getElementById('perfilObsStatus').textContent = '';
+  document.getElementById('perfilObsSalvarBtn').disabled = false;
+
+  document.getElementById('perfilModal').classList.add('show');
+}
+
+function fecharPerfil(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('perfilModal').classList.remove('show');
+  perfilFuncionarioId = null;
+}
+
+async function salvarObservacao() {
+  const funcionarioId = perfilFuncionarioId;
+  if (!funcionarioId) return;
+  if (!sb) { showToast('⚠️ Sem conexão.'); return; }
+
+  const texto = document.getElementById('perfilObsTexto').value;
+  const btn = document.getElementById('perfilObsSalvarBtn');
+  const status = document.getElementById('perfilObsStatus');
+  btn.disabled = true;
+  status.textContent = 'Salvando...';
+
+  try {
+    const { error } = await sb
+      .from('funcionarios')
+      .update({ observacao: texto || null })
+      .eq('id', funcionarioId);
+    if (error) throw error;
+    const item = funcionarios.find(f => String(f.id) === String(funcionarioId));
+    if (item) item.observacao = texto || null;
+    status.textContent = 'Comentário salvo ✓';
+    showToast('✅ Comentário salvo!');
+  } catch (e) {
+    status.textContent = '';
+    showToast('⚠️ Erro ao salvar comentário: ' + (e.message || e));
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function cardHtml(f) {
+  const url = fotoUrl(f);
+  // se a foto falhar ao carregar (link quebrado, sem internet no momento), cai
+  // pro avatar de iniciais em vez de mostrar o ícone de imagem quebrada
+  const photoInner = url
+    ? `<img src="${url}" alt="${f.nome}" onerror="avatarFallback(this, '${f.nome.replace(/'/g, "\\'")}')">`
+    : avatarHtml(f);
+  const nomeAttr = f.nome.replace(/'/g, "\\'");
+  // lupa só aparece quando já existe foto de verdade (não faz sentido ampliar as iniciais)
+  const zoomBtn = url
+    ? `<div class="tc-zoom" onclick="event.stopPropagation(); openLightbox('${url}', '${nomeAttr}')" title="Ver foto ampliada">🔍</div>`
+    : '';
+
+  const options = [`<option value="" ${!f.encarregado ? 'selected' : ''}>Nenhum</option>`]
+    .concat(EQUIPE_PROPRIA.map(e => `<option value="${e.id}" ${f.encarregado === e.id ? 'selected' : ''}>${e.label}</option>`))
+    .join('');
+
+  return `
+    <div class="team-card" data-fid="${f.id}">
+      <div class="tc-top">
+        <div class="tc-photo" id="photo_${f.id}" onclick="triggerPhotoUpload('${f.id}')" title="Toque pra trocar a foto">
+          ${photoInner}
+          <div class="tc-photo-badge">📷</div>
+          ${presencaDotHtml(f.id)}
+          ${zoomBtn}
+        </div>
+        <div class="tc-info" onclick="abrirPerfil('${f.id}')">
+          <div class="tc-nome">${f.nome}</div>
+          <div class="tc-funcao">${f.funcao}${f.alocacao ? ' • ' + f.alocacao : ''}</div>
+          <div class="tc-empresa">${f.empresa}</div>
+          ${estrelasHtml(f)}
+        </div>
+        <div class="tc-handle" title="Arraste pra mudar de encarregado">⠿</div>
+      </div>
+      <div class="tc-select">
+        <select onchange="reassign('${f.id}', this.value)">${options}</select>
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+// REATRIBUIR ENCARREGADO
+// ============================================================
+async function reassign(funcionarioId, encarregado) {
+  if (!sb) { showToast('⚠️ Sem conexão.'); render(); return; }
+  try {
+    const { error } = await sb
+      .from('funcionarios')
+      .update({ encarregado: encarregado || null })
+      .eq('id', funcionarioId);
+    if (error) throw error;
+    const item = funcionarios.find(f => String(f.id) === String(funcionarioId));
+    if (item) item.encarregado = encarregado || null;
+    render();
+    showToast('✅ Equipe atualizada!');
+  } catch (e) {
+    showToast('⚠️ Erro ao mudar de equipe: ' + (e.message || e));
+    render();
+  }
+}
+
+// ============================================================
+// FOTO
+// ============================================================
+let photoTargetId = null;
+
+function triggerPhotoUpload(funcionarioId) {
+  photoTargetId = funcionarioId;
+  document.getElementById('photoInput').value = '';
+  document.getElementById('photoInput').click();
+}
+
+async function onPhotoSelected(event) {
+  const file = event.target.files && event.target.files[0];
+  const funcionarioId = photoTargetId;
+  if (!file || !funcionarioId) return;
+
+  if (!file.type.startsWith('image/')) {
+    showToast('⚠️ Selecione um arquivo de imagem.');
+    return;
+  }
+  if (!sb) { showToast('⚠️ Sem conexão.'); return; }
+
+  const photoEl = document.getElementById('photo_' + funcionarioId);
+  if (photoEl) photoEl.classList.add('uploading');
+  showToast('📤 Enviando foto...');
+
+  try {
+    const blob = await fileToResizedJpeg(file, 400, 0.82);
+    const path = `${funcionarioId}.jpg`;
+
+    const { error: upErr } = await sb.storage.from(BUCKET).upload(path, blob, {
+      upsert: true,
+      contentType: 'image/jpeg',
+    });
+    if (upErr) throw upErr;
+
+    const nowIso = new Date().toISOString();
+    const { error: updErr } = await sb
+      .from('funcionarios')
+      .update({ foto_path: path, updated_at: nowIso })
+      .eq('id', funcionarioId);
+    if (updErr) throw updErr;
+
+    const item = funcionarios.find(f => String(f.id) === String(funcionarioId));
+    if (item) { item.foto_path = path; item.updated_at = nowIso; }
+    render();
+    showToast('✅ Foto atualizada!');
+  } catch (e) {
+    showToast('⚠️ Erro ao enviar foto: ' + (e.message || e));
+    console.error(e);
+    if (photoEl) photoEl.classList.remove('uploading');
+  }
+}
+
+// Redimensiona/comprime a foto no navegador antes de enviar, pra não subir
+// fotos de celular gigantes pro Supabase Storage. Usa createImageBitmap com
+// imageOrientation 'from-image' pra já corrigir a rotação de fotos de celular.
+async function fileToResizedJpeg(file, maxSize, quality) {
+  let bitmap;
+  try {
+    bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  } catch (e) {
+    bitmap = await createImageBitmap(file);
+  }
+  const scale = Math.min(1, maxSize / Math.max(bitmap.width, bitmap.height));
+  const w = Math.max(1, Math.round(bitmap.width * scale));
+  const h = Math.max(1, Math.round(bitmap.height * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(b => b ? resolve(b) : reject(new Error('Falha ao gerar imagem')), 'image/jpeg', quality);
+  });
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+checkExistingSession();
+</script>
+</body>
+</html>

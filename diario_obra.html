@@ -1,0 +1,1747 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Diário de Obra - Diamond Millennium</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --charcoal:#063593;
+    --yellow:#0053D8;
+    --green:#2F9E44;
+    --orange:#E8590C;
+    --teal:#4ECDC4;
+    --concrete:#F1F0F3;
+    --brand-graylight:#B1AEB5;
+    --brand-graymid:#585759;
+    --brand-black:#1C1C1C;
+    --safe-t:env(safe-area-inset-top, 0px);
+    --safe-b:env(safe-area-inset-bottom, 0px);
+    --safe-l:env(safe-area-inset-left, 0px);
+    --safe-r:env(safe-area-inset-r, 0px);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+  body{font-family:"Segoe UI",Arial,Helvetica,sans-serif;background:var(--concrete);color:var(--brand-black);font-size:15px;line-height:1.4;padding-bottom:calc(24px + var(--safe-b));}
+  button, select{touch-action:manipulation;}
+
+  .err-banner{position:fixed;top:0;left:0;right:0;background:#B00020;color:#fff;padding:10px 14px;font-size:12px;font-family:monospace;z-index:9999;display:none;word-break:break-word;}
+  .err-banner.show{display:block;}
+
+  /* ---------- login ---------- */
+  .login-screen{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--charcoal);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px;}
+  .login-screen.hidden{display:none;}
+  .login-box{background:#fff;padding:26px 22px;border-radius:14px;width:100%;max-width:340px;}
+  .login-box h1{font-size:19px;margin-bottom:18px;text-align:center;}
+  .login-box input{width:100%;padding:13px 14px;border:1px solid #ddd;border-radius:9px;margin-bottom:12px;font-size:16px;}
+  .login-box button{width:100%;padding:13px;background:var(--yellow);color:#fff;border:none;border-radius:9px;font-weight:600;cursor:pointer;font-size:15px;min-height:46px;}
+  .login-box .error{color:var(--orange);font-size:12px;margin-bottom:10px;text-align:center;font-weight:600;}
+  .login-alt-link{text-align:center;font-size:12px;color:var(--charcoal);text-decoration:underline;font-weight:600;cursor:pointer;margin-top:10px;}
+  .cadastro-usuario-box{display:none;margin-top:12px;padding-top:12px;border-top:1px solid #eee;}
+  .cadastro-usuario-box.show{display:block;}
+
+  /* ---------- modal genérico (usado pra gerenciar usuários) ---------- */
+  .modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:150;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto;}
+  .modal-overlay.show{display:flex;}
+  .modal-box{background:#fff;border-radius:14px;padding:18px;width:100%;max-width:420px;margin-top:calc(24px + var(--safe-t));}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;}
+  .modal-head h2{font-size:15px;color:var(--charcoal);}
+  .novo-usuario-box{display:none;margin-top:8px;}
+  .novo-usuario-box.show{display:block;}
+  .novo-usuario-box input{width:100%;padding:11px 12px;border:1px solid #ddd;border-radius:9px;margin-bottom:8px;font-size:14px;font-family:inherit;}
+
+  /* ---------- cabeçalho ---------- */
+  .head{background:var(--charcoal);color:#fff;padding:calc(12px + var(--safe-t)) calc(14px + var(--safe-r)) 12px calc(14px + var(--safe-l));border-bottom:4px solid var(--yellow);display:flex;justify-content:space-between;align-items:center;gap:10px;position:sticky;top:0;z-index:20;}
+  .head h1{font-size:15px;font-weight:600;line-height:1.2;}
+  .head .sub{font-size:10.5px;opacity:0.75;margin-top:2px;line-height:1.2;}
+  .head .actions{display:flex;gap:6px;flex-shrink:0;}
+  .head button{background:#ffffff26;color:#fff;border:none;padding:9px 11px;border-radius:9px;cursor:pointer;font-size:12px;font-weight:600;min-height:38px;}
+  .head .btn-refresh{background:var(--yellow);}
+
+  /* ---------- abas ---------- */
+  .tabs{display:flex;gap:6px;padding:10px 14px;background:#fff;border-bottom:1px solid #ddd;position:sticky;top:56px;z-index:19;overflow-x:auto;}
+  .tab-btn{flex:1;padding:10px 8px;border:none;background:var(--concrete);border-radius:8px;font-size:12.5px;font-weight:700;color:var(--brand-graymid);cursor:pointer;white-space:nowrap;min-height:40px;}
+  .tab-btn.active{background:var(--charcoal);color:#fff;}
+
+  .content{padding:14px;max-width:760px;margin:0 auto;}
+  .aba-conteudo{display:none;}
+  .aba-conteudo.show{display:block;}
+
+  .card-form{background:#fff;border:1px solid #ddd;border-radius:12px;padding:16px;margin-bottom:16px;}
+  .card-form h2{font-size:14.5px;margin-bottom:4px;color:var(--charcoal);}
+  .card-form .sub{font-size:12px;color:var(--brand-graymid);margin-bottom:14px;}
+
+  .form-group{margin-bottom:14px;}
+  .form-group label{display:block;font-size:12.5px;font-weight:700;color:var(--brand-graymid);margin-bottom:6px;}
+  .form-group input[type=text], .form-group input[type=date], .form-group select, .form-group textarea{
+    width:100%;padding:12px 13px;border:1px solid #ddd;border-radius:9px;font-size:15px;background:#fff;font-family:inherit;
+  }
+  .form-group textarea{min-height:64px;resize:vertical;}
+  .form-row{display:flex;gap:10px;}
+  .form-row .form-group{flex:1;min-width:0;}
+  .inline-row{display:flex;gap:8px;}
+  .inline-row select{flex:1;min-width:0;}
+
+  .unidade-feedback{font-size:12.5px;margin-top:6px;min-height:16px;font-weight:600;}
+  .unidade-feedback.ok{color:var(--green);}
+  .unidade-feedback.erro{color:#B00020;}
+  .unidade-hint{font-size:11px;color:var(--brand-graymid);margin-top:4px;line-height:1.35;}
+
+  .btn-secondary{padding:0 14px;border:1px solid #ddd;border-radius:9px;background:#fff;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;min-height:44px;color:var(--charcoal);}
+  .btn-primary{width:100%;padding:14px;border:none;border-radius:10px;background:var(--yellow);color:#fff;font-size:15px;font-weight:700;cursor:pointer;min-height:48px;}
+  .btn-primary:disabled{background:var(--brand-graylight);cursor:not-allowed;}
+
+  .novo-servico-box{display:none;gap:8px;margin-top:8px;}
+  .novo-servico-box.show{display:flex;}
+
+  .link-btn{background:none;border:none;color:var(--charcoal);font-size:12px;font-weight:700;text-decoration:underline;cursor:pointer;padding:8px 2px 0;display:inline-block;}
+
+  .gerenciar-servico-box{display:none;margin-top:8px;border:1px solid #ddd;border-radius:9px;padding:6px 10px;background:#fafafa;max-height:260px;overflow-y:auto;}
+  .gerenciar-servico-box.show{display:block;}
+  .servico-row{display:flex;align-items:center;gap:4px;padding:7px 2px;border-bottom:1px solid #eee;}
+  .servico-row:last-child{border-bottom:none;}
+  .servico-row .nome{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .servico-vazio{font-size:12.5px;color:var(--brand-graymid);padding:6px 2px;}
+  .btn-icon{border:none;background:none;cursor:pointer;font-size:17px;padding:6px;min-width:34px;min-height:34px;border-radius:7px;line-height:1;flex-shrink:0;}
+  .btn-icon:hover{background:#eee;}
+  .edit-servico-input{flex:1;min-width:0;padding:6px 8px;border:1px solid #ccc;border-radius:7px;font-size:13px;}
+
+  h2.block-title{font-size:13px;font-weight:700;color:var(--charcoal);margin:22px 2px 8px;text-transform:uppercase;letter-spacing:0.3px;}
+  h2.block-title:first-of-type{margin-top:0;}
+
+  .rdo-card{background:#fff;border:1px solid #ddd;border-left:5px solid var(--charcoal);border-radius:10px;padding:12px 14px;margin-bottom:10px;}
+  .rdo-card-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:4px;}
+  .rdo-unidade{font-weight:700;font-size:13.5px;}
+  .badge-tipo{display:inline-block;padding:1px 7px;border-radius:10px;font-size:10.5px;font-weight:700;margin-left:4px;}
+  .badge-tipo.badge-G{background:#FFF3E0;color:var(--orange);}
+  .badge-tipo.badge-P{background:#EEF3FC;color:var(--yellow);}
+  .rdo-periodo{font-size:11.5px;color:var(--brand-graymid);white-space:nowrap;}
+  .rdo-servico{font-size:14.5px;font-weight:700;color:var(--charcoal);margin-bottom:2px;}
+  .rdo-pessoas{font-size:13px;margin-bottom:2px;}
+  .rdo-obs{font-size:12.5px;color:var(--brand-graymid);background:var(--concrete);padding:8px 10px;border-radius:8px;margin-top:6px;white-space:pre-wrap;}
+  .rdo-foto-wrap{position:relative;display:inline-block;margin-top:8px;}
+  .rdo-foto{width:96px;height:96px;object-fit:cover;border-radius:8px;display:block;cursor:pointer;background:var(--concrete);}
+  .rdo-foto-zoom{position:absolute;bottom:-3px;right:-3px;width:24px;height:24px;border-radius:50%;background:rgba(28,28,30,0.75);border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1;color:#fff;cursor:pointer;}
+
+  /* ---------- foto ampliada (toque na foto/lupa do card) ---------- */
+  .photo-lightbox{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:300;padding:calc(20px + var(--safe-t)) calc(20px + var(--safe-r)) calc(20px + var(--safe-b)) calc(20px + var(--safe-l));}
+  .photo-lightbox.show{display:flex;}
+  .photo-lightbox img{max-width:100%;max-height:100%;border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,0.5);}
+  .photo-lightbox .lb-close{position:absolute;top:calc(14px + var(--safe-t));right:calc(14px + var(--safe-r));width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.15);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;}
+  .photo-lightbox .lb-nome{position:absolute;bottom:calc(14px + var(--safe-b));left:0;right:0;text-align:center;color:#fff;font-size:14px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,0.6);padding:0 60px;}
+  .rdo-autor{font-weight:400;font-size:11.5px;color:var(--brand-graymid);}
+  .rdo-card-right{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+  .rdo-card-actions{display:flex;gap:2px;flex-shrink:0;}
+  .rdo-card-actions .btn-icon{font-size:15px;min-width:28px;min-height:28px;padding:4px;}
+
+  .editando-banner{display:none;background:#FFF3E0;color:var(--orange);border:1px solid #FFD8A8;border-radius:9px;padding:9px 11px;font-size:12px;font-weight:600;margin-bottom:14px;line-height:1.4;}
+  .editando-banner.show{display:block;}
+  .foto-atual-hint{font-size:11.5px;color:var(--brand-graymid);margin-bottom:6px;line-height:1.35;}
+  .checkbox-row{display:flex;align-items:center;gap:6px;font-size:12.5px;margin-top:8px;color:var(--brand-graymid);}
+  .checkbox-row input{width:auto;margin:0;}
+
+  .rdo-card.medido{border-left-color:var(--green);}
+  .rdo-medido-row{display:flex;align-items:center;gap:6px;font-size:12.5px;margin-top:8px;padding-top:8px;border-top:1px dashed #e3e3e3;cursor:pointer;color:var(--brand-graymid);font-weight:600;}
+  .rdo-medido-row input{width:auto;margin:0;}
+  .rdo-medido-row.is-medido{color:var(--green);}
+
+  .busca-box{display:flex;gap:8px;margin-bottom:14px;}
+  .busca-box input, .busca-box select{flex:1;min-width:0;padding:12px 13px;border:1px solid #ddd;border-radius:9px;font-size:15px;}
+  .busca-box select.sel-filtro-medido{flex:0 0 138px;}
+
+  .func-combo{position:relative;flex:1;min-width:0;}
+  .func-combo input{width:100%;padding:12px 34px 12px 13px;border:1px solid #ddd;border-radius:9px;font-size:15px;font-family:inherit;}
+  .func-combo-clear{display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:17px;color:var(--brand-graymid);cursor:pointer;padding:7px;line-height:1;}
+  .func-combo-clear.show{display:block;}
+  .func-combo-lista{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid #ddd;border-radius:9px;max-height:240px;overflow-y:auto;z-index:30;box-shadow:0 4px 14px rgba(0,0,0,0.14);}
+  .func-combo-lista.show{display:block;}
+  .func-combo-item{padding:11px 13px;font-size:14px;cursor:pointer;border-bottom:1px solid #f0f0f0;}
+  .func-combo-item:last-child{border-bottom:none;}
+  .func-combo-item:hover, .func-combo-item.ativo{background:var(--concrete);}
+  .func-combo-vazio{padding:11px 13px;font-size:13px;color:var(--brand-graymid);}
+
+  .checklist-funcionarios{border:1px solid #ddd;border-radius:9px;padding:2px 10px;max-height:220px;overflow-y:auto;background:#fafafa;}
+  .checklist-funcionarios label{display:flex;align-items:center;gap:9px;padding:9px 2px;border-bottom:1px solid #eee;font-size:13.5px;}
+  .checklist-funcionarios label:last-child{border-bottom:none;}
+  .checklist-funcionarios input{width:auto;margin:0;flex-shrink:0;}
+  .checklist-vazio{font-size:12.5px;color:var(--brand-graymid);padding:8px 2px;}
+
+  .loading, .empty{text-align:center;padding:26px 12px;opacity:0.6;font-size:13px;}
+
+  .toast{position:fixed;bottom:calc(20px + var(--safe-b));left:50%;transform:translateX(-50%);background:var(--brand-black);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;opacity:0;z-index:200;transition:opacity 0.3s;max-width:90%;text-align:center;}
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="err-banner" id="errBanner"></div>
+<script>
+window.addEventListener('error', function(e) {
+  var b = document.getElementById('errBanner');
+  if (b) { b.textContent = '⚠️ ERRO: ' + e.message + ' (linha ' + e.lineno + ')'; b.classList.add('show'); }
+});
+window.addEventListener('unhandledrejection', function(e) {
+  var b = document.getElementById('errBanner');
+  if (b) { b.textContent = '⚠️ ERRO (promise): ' + (e.reason && e.reason.message ? e.reason.message : e.reason); b.classList.add('show'); }
+});
+</script>
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <h1>📋 Diário de Obra</h1>
+    <div class="error" id="loginError"></div>
+    <input type="text" id="loginUser" placeholder="Usuário" autocomplete="username">
+    <input type="password" id="loginPassword" placeholder="Senha" autocomplete="current-password">
+    <button id="loginBtn" onclick="doLogin()">Entrar</button>
+    <div class="login-alt-link" onclick="toggleCadastroUsuario()">Ainda não tem login? Cadastre-se aqui</div>
+    <div class="cadastro-usuario-box" id="cadastroUsuarioBox">
+      <input type="text" id="cadNome" placeholder="Seu nome completo">
+      <input type="text" id="cadLogin" placeholder="Escolha um usuário (sem espaço)" autocomplete="off">
+      <input type="password" id="cadSenha" placeholder="Escolha uma senha" autocomplete="new-password">
+      <input type="password" id="cadSenhaConfirma" placeholder="Confirme a senha" autocomplete="new-password">
+      <button type="button" onclick="cadastrarUsuario()">Criar login e entrar</button>
+    </div>
+  </div>
+</div>
+
+<div id="app" style="display:none;">
+  <div class="head">
+    <div>
+      <h1>📋 Diário de Obra</h1>
+      <div class="sub" id="headUsuarioSub">Diamond Millennium</div>
+    </div>
+    <div class="actions">
+      <button class="btn-refresh" onclick="recarregarTudo()">🔄</button>
+      <button onclick="toggleUsuariosOverlay()">👥</button>
+      <button onclick="doLogout()">Sair</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="btn-aba-novo" onclick="mostrarAba('novo')">Novo registro</button>
+    <button class="tab-btn" id="btn-aba-funcionario" onclick="mostrarAba('funcionario')">Por funcionário</button>
+    <button class="tab-btn" id="btn-aba-unidade" onclick="mostrarAba('unidade')">Por unidade</button>
+    <button class="tab-btn" id="btn-aba-tarefas" onclick="mostrarAba('tarefas')">Tarefas</button>
+  </div>
+
+  <div class="content">
+
+    <!-- ================= ABA: NOVO REGISTRO ================= -->
+    <div class="aba-conteudo show" id="aba-novo">
+      <div class="card-form">
+        <h2>Registrar serviço</h2>
+        <div class="sub">O que foi feito, onde e por quem — rápido, sem menu complicado.</div>
+        <div class="editando-banner" id="editandoBanner">✏️ Editando um registro existente — role até o final e toque em "Salvar edição", ou em "Cancelar edição" pra desistir.</div>
+
+        <div class="form-group">
+          <label>Unidade (andar + apartamento)</label>
+          <input type="text" id="inpUnidade" placeholder="Ex.: 1401" inputmode="numeric">
+          <div class="unidade-feedback" id="unidadeFeedback"></div>
+          <div class="unidade-hint">Prédio: 5º ao 28º andar, apartamentos 01 a 16 (07 a 14 = Grande/2 banheiros, os demais = Pequeno). Digite andar+apartamento juntos, ex.: 501 (5º andar, apto 01) ou 1401 (14º andar, apto 01).</div>
+        </div>
+
+        <div class="form-group">
+          <label>Serviço</label>
+          <div class="inline-row">
+            <select id="selServico"></select>
+            <button type="button" class="btn-secondary" onclick="toggleNovoServico()">+ Novo</button>
+          </div>
+          <div class="novo-servico-box" id="novoServicoBox">
+            <input type="text" id="inpNovoServico" placeholder="Nome do novo serviço">
+            <button type="button" class="btn-secondary" onclick="salvarNovoServico()">Salvar</button>
+          </div>
+          <button type="button" class="link-btn" onclick="toggleGerenciarServico()">⚙ Editar / excluir serviços cadastrados</button>
+          <div class="gerenciar-servico-box" id="gerenciarServicoBox">
+            <div id="listaServicosGerenciar"></div>
+          </div>
+          <div class="unidade-feedback" id="servicoFeedback"></div>
+        </div>
+
+        <div class="form-group">
+          <label>Funcionário responsável</label>
+          <div class="func-combo">
+            <input type="text" id="inpFunc1Texto" placeholder="Digite pra filtrar o nome..." autocomplete="off"
+                   oninput="filtrarComboFunc1()" onfocus="filtrarComboFunc1()" onblur="onBlurFunc1Texto()">
+            <button type="button" class="func-combo-clear" id="btnLimparFunc1" onclick="limparFunc1Combo()" aria-label="Limpar">✕</button>
+            <div class="func-combo-lista" id="func1ComboLista"></div>
+          </div>
+          <select id="selFunc1" style="display:none"></select>
+        </div>
+
+        <div class="form-group">
+          <label>Segundo funcionário (opcional)</label>
+          <div class="func-combo">
+            <input type="text" id="inpFunc2Texto" placeholder="Digite pra filtrar o nome..." autocomplete="off"
+                   oninput="filtrarComboFunc2()" onfocus="filtrarComboFunc2()" onblur="onBlurFunc2Texto()">
+            <button type="button" class="func-combo-clear" id="btnLimparFunc2" onclick="limparFunc2Combo()" aria-label="Limpar">✕</button>
+            <div class="func-combo-lista" id="func2ComboLista"></div>
+          </div>
+          <select id="selFunc2" style="display:none"></select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Data de início</label>
+            <input type="date" id="inpDataInicio">
+          </div>
+          <div class="form-group">
+            <label>Data de fim (opcional)</label>
+            <input type="date" id="inpDataFim">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Foto (opcional)</label>
+          <div class="foto-atual-hint" id="fotoAtualHint" style="display:none;">Já tem uma foto anexada nesse registro. Anexe uma nova pra substituir, ou marque abaixo pra remover.</div>
+          <input type="file" id="inpFoto" accept="image/*" capture="environment">
+          <label class="checkbox-row" id="removerFotoLabel" style="display:none;">
+            <input type="checkbox" id="chkRemoverFoto"> Remover a foto atual
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label>Observação (opcional)</label>
+          <textarea id="inpObs" placeholder="Alguma observação sobre esse serviço..."></textarea>
+        </div>
+
+        <button class="btn-primary" id="btnSalvarRegistro" onclick="salvarRegistro()">Salvar registro</button>
+        <button class="btn-secondary" id="btnCancelarEdicao" style="display:none;width:100%;margin-top:8px;" onclick="cancelarEdicaoRegistro()">Cancelar edição</button>
+      </div>
+
+      <h2 class="block-title">Últimos registros</h2>
+      <div id="feedRecente"><div class="loading">Carregando...</div></div>
+    </div>
+
+    <!-- ================= ABA: POR FUNCIONÁRIO ================= -->
+    <div class="aba-conteudo" id="aba-funcionario">
+      <div class="busca-box">
+        <div class="func-combo">
+          <input type="text" id="inpBuscaFuncTexto" placeholder="Digite pra filtrar o nome..." autocomplete="off"
+                 oninput="filtrarComboFuncionarios()" onfocus="filtrarComboFuncionarios()" onblur="onBlurBuscaFuncTexto()">
+          <button type="button" class="func-combo-clear" id="btnLimparBuscaFunc" onclick="limparBuscaFuncCombo()" aria-label="Limpar busca">✕</button>
+          <div class="func-combo-lista" id="funcComboLista"></div>
+        </div>
+        <select id="selBuscaFunc" onchange="buscarPorFuncionario()" style="display:none"></select>
+        <select id="selFiltroMedidoFunc" class="sel-filtro-medido" onchange="renderListaPorFuncionario()">
+          <option value="todos">Todos</option>
+          <option value="nao">Não medidos</option>
+          <option value="sim">Medidos</option>
+        </select>
+      </div>
+      <div id="listaPorFuncionario"><div class="empty">Escolha um funcionário pra ver o que ele já fez.</div></div>
+    </div>
+
+    <!-- ================= ABA: POR UNIDADE ================= -->
+    <div class="aba-conteudo" id="aba-unidade">
+      <div class="busca-box">
+        <input type="text" id="inpBuscaUnidade" placeholder="Ex.: 1401" inputmode="numeric" oninput="buscarPorUnidade()">
+        <select id="selFiltroMedidoUnidade" class="sel-filtro-medido" onchange="renderListaPorUnidade()">
+          <option value="todos">Todos</option>
+          <option value="nao">Não medidos</option>
+          <option value="sim">Medidos</option>
+        </select>
+      </div>
+      <div class="unidade-feedback" id="buscaUnidadeFeedback" style="margin-bottom:10px;"></div>
+      <div id="listaPorUnidade"><div class="empty">Digite uma unidade pra ver o que já foi feito nela.</div></div>
+    </div>
+
+    <!-- ================= ABA: TAREFAS DO DIA ================= -->
+    <div class="aba-conteudo" id="aba-tarefas">
+      <div class="card-form">
+        <h2>Tarefa do dia</h2>
+        <div class="sub">Quem ficou em qual tarefa, e quando — sem precisar de unidade/apartamento.</div>
+        <div class="editando-banner" id="editandoBannerTarefa">✏️ Editando uma tarefa existente — role até o final e toque em "Salvar edição", ou em "Cancelar edição" pra desistir.</div>
+
+        <div class="form-group">
+          <label>Data</label>
+          <input type="date" id="inpTarefaData">
+        </div>
+
+        <div class="form-group">
+          <label>Tarefa</label>
+          <input type="text" id="inpTarefaDescricao" list="listaDescricoesTarefa" placeholder="Ex.: Carregar tijolo">
+          <datalist id="listaDescricoesTarefa"></datalist>
+        </div>
+
+        <div class="form-group">
+          <label>Quem ficou nessa tarefa</label>
+          <input type="text" id="inpFiltroChecklistFunc" placeholder="Digite pra filtrar o nome..." autocomplete="off"
+                 style="margin-bottom:8px;" oninput="filtrarChecklistFuncionariosTarefa()">
+          <div class="checklist-funcionarios" id="checklistFuncionariosTarefa"></div>
+        </div>
+
+        <div class="form-group">
+          <label>Observação (opcional)</label>
+          <textarea id="inpTarefaObs" placeholder="Algum detalhe extra sobre a tarefa..."></textarea>
+        </div>
+
+        <button class="btn-primary" id="btnSalvarTarefa" onclick="salvarTarefa()">Salvar tarefa</button>
+        <button class="btn-secondary" id="btnCancelarEdicaoTarefa" style="display:none;width:100%;margin-top:8px;" onclick="cancelarEdicaoTarefa()">Cancelar edição</button>
+      </div>
+
+      <h2 class="block-title">Tarefas</h2>
+      <div class="busca-box">
+        <input type="date" id="inpFiltroDataTarefa" onchange="buscarTarefasPorDia()">
+        <button type="button" class="btn-secondary" onclick="limparFiltroDataTarefa()">Ver recentes</button>
+      </div>
+      <div id="listaTarefas"><div class="loading">Carregando...</div></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="photo-lightbox" id="photoLightboxRdo" onclick="closeLightboxRdo(event)">
+  <div class="lb-close" onclick="closeLightboxRdo(event)">✕</div>
+  <img id="lightboxRdoImg" src="" alt="">
+  <div class="lb-nome" id="lightboxRdoLegenda"></div>
+</div>
+
+<div class="modal-overlay" id="usuariosOverlay">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2>👥 Usuários do Diário de Obra</h2>
+      <button type="button" class="btn-icon" title="Fechar" onclick="toggleUsuariosOverlay()">✖️</button>
+    </div>
+    <div class="sub" style="margin-bottom:10px;">Cada pessoa que registra serviço deve ter seu próprio login — assim cada registro salva quem fez de verdade.</div>
+    <div id="listaUsuariosGerenciar"><div class="loading">Carregando...</div></div>
+    <button type="button" class="link-btn" onclick="toggleNovoUsuarioBox()">+ Cadastrar novo usuário</button>
+    <div class="novo-usuario-box" id="novoUsuarioBox">
+      <input type="text" id="inpNovoUsuarioNome" placeholder="Nome completo">
+      <input type="text" id="inpNovoUsuarioLogin" placeholder="Usuário (sem espaço)" autocomplete="off">
+      <input type="password" id="inpNovoUsuarioSenha" placeholder="Senha" autocomplete="new-password">
+      <button type="button" class="btn-secondary" style="width:100%;margin-top:2px;" onclick="salvarNovoUsuario()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// CONFIG SUPABASE
+// ============================================================
+const OBRA_ID = 'diamond_millennium';
+const SUPABASE_URL = 'https://otlzehasidzannsczcnv.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_EsUxMlHlz4XiUjso5Yit-g_vtl7_Ius';
+const BUCKET_FOTOS = 'fotos-rdo';
+
+// estrutura do prédio (ver diario_obra_setup.sql e a conversa que originou
+// esta tela): andares de 5 a 28, apartamentos 01 a 16 por andar, sendo
+// 07 a 14 "Grande" (dois banheiros) e o resto "Pequeno".
+const ANDAR_MIN = 5, ANDAR_MAX = 28;
+const APTO_MIN = 1, APTO_MAX = 16;
+const APTOS_GRANDES = new Set([7, 8, 9, 10, 11, 12, 13, 14]);
+
+let sb = null;
+try {
+  if (window.supabase) {
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true }
+    });
+  }
+} catch (e) {
+  console.error('Falha ao iniciar Supabase:', e);
+}
+
+// ============================================================
+// STORAGE SEGURO (guarda QUEM está logado neste navegador — chave própria
+// deste arquivo, "usuario_atual". Diferente do resto do sistema (que usa
+// uma chave "logged_in" compartilhada entre telas com o login fixo
+// junior/123654), o Diário de Obra passou a ter login individual por
+// pessoa (2026-09-18) justamente pra saber quem registrou cada serviço —
+// por isso não reaproveita mais aquela chave compartilhada, e entrar numa
+// outra tela da Diamond não libera entrada aqui, nem o contrário.
+// ============================================================
+const memStore = {};
+function safeGet(key) {
+  const k = `${OBRA_ID}:${key}`;
+  try { return localStorage.getItem(k); } catch (e) { return memStore[k] ?? null; }
+}
+function safeSet(key, value) {
+  const k = `${OBRA_ID}:${key}`;
+  try { localStorage.setItem(k, value); } catch (e) { memStore[k] = value; }
+}
+function safeRemove(key) {
+  const k = `${OBRA_ID}:${key}`;
+  try { localStorage.removeItem(k); } catch (e) { delete memStore[k]; }
+}
+
+let usuarioAtual = null; // {id, nome, login} — quem está logado agora neste navegador
+
+async function doLogin() {
+  const user = document.getElementById('loginUser').value.trim();
+  const pass = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+  if (!user || !pass) { errEl.textContent = '❌ Preencha usuário e senha.'; return; }
+  if (!sb) { errEl.textContent = '⚠️ Sem conexão com o banco.'; return; }
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.textContent = 'Entrando...';
+  try {
+    const { data, error } = await sb.from('usuarios_diario')
+      .select('id, nome, login, senha, ativo')
+      .ilike('login', user)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data || !data.ativo || data.senha !== pass) {
+      errEl.textContent = '❌ Usuário ou senha inválidos.';
+      return;
+    }
+    usuarioAtual = { id: data.id, nome: data.nome, login: data.login };
+    safeSet('usuario_atual', JSON.stringify(usuarioAtual));
+    document.getElementById('loginUser').value = '';
+    document.getElementById('loginPassword').value = '';
+    showApp();
+  } catch (e) {
+    errEl.textContent = '⚠️ Erro ao entrar: ' + (e.message || e);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  }
+}
+
+function toggleCadastroUsuario() {
+  document.getElementById('cadastroUsuarioBox').classList.toggle('show');
+}
+
+async function cadastrarUsuario() {
+  const nome = document.getElementById('cadNome').value.trim();
+  const loginDesejado = document.getElementById('cadLogin').value.trim().toLowerCase().replace(/\s+/g, '');
+  const senha = document.getElementById('cadSenha').value;
+  const senhaConfirma = document.getElementById('cadSenhaConfirma').value;
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+  if (!nome) { errEl.textContent = '❌ Digite seu nome.'; return; }
+  if (!loginDesejado) { errEl.textContent = '❌ Escolha um usuário.'; return; }
+  if (!senha || senha.length < 4) { errEl.textContent = '❌ A senha precisa ter pelo menos 4 caracteres.'; return; }
+  if (senha !== senhaConfirma) { errEl.textContent = '❌ As senhas digitadas são diferentes.'; return; }
+  if (!sb) { errEl.textContent = '⚠️ Sem conexão com o banco.'; return; }
+  const { data: existente, error: errCheck } = await sb.from('usuarios_diario')
+    .select('id').ilike('login', loginDesejado).maybeSingle();
+  if (errCheck) { errEl.textContent = '⚠️ Erro ao verificar usuário: ' + errCheck.message; return; }
+  if (existente) { errEl.textContent = '❌ Esse usuário já existe — escolha outro.'; return; }
+  const { data, error } = await sb.from('usuarios_diario')
+    .insert({ nome, login: loginDesejado, senha }).select().single();
+  if (error) { errEl.textContent = '⚠️ Erro ao cadastrar: ' + error.message; return; }
+  usuarioAtual = { id: data.id, nome: data.nome, login: data.login };
+  safeSet('usuario_atual', JSON.stringify(usuarioAtual));
+  document.getElementById('cadNome').value = '';
+  document.getElementById('cadLogin').value = '';
+  document.getElementById('cadSenha').value = '';
+  document.getElementById('cadSenhaConfirma').value = '';
+  document.getElementById('cadastroUsuarioBox').classList.remove('show');
+  showApp();
+  showToast(`✅ Bem-vindo, ${data.nome}!`);
+}
+
+function doLogout() {
+  safeRemove('usuario_atual');
+  usuarioAtual = null;
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('app').style.display = 'none';
+}
+function checkExistingSession() {
+  const raw = safeGet('usuario_atual');
+  if (!raw) return;
+  try {
+    const u = JSON.parse(raw);
+    if (u && u.id) { usuarioAtual = u; showApp(); }
+  } catch (e) { safeRemove('usuario_atual'); }
+}
+async function showApp() {
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('app').style.display = 'block';
+  const subEl = document.getElementById('headUsuarioSub');
+  if (subEl) subEl.textContent = 'Diamond Millennium' + (usuarioAtual ? ' · ' + usuarioAtual.nome : '');
+  await recarregarTudo();
+}
+
+// ============================================================
+// UTIL
+// ============================================================
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+function escapeHtml(s) {
+  return (s || '').toString()
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+// data de hoje no formato do banco (AAAA-MM-DD), usando componentes locais
+// do navegador — nunca toISOString() puro (já causou bug de fuso horário
+// em outros arquivos deste sistema).
+function hojeStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function fmtData(d) {
+  if (!d) return '';
+  const [y, m, day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+
+// ============================================================
+// VALIDAÇÃO DA UNIDADE (andar + apartamento)
+// ============================================================
+// aceita qualquer forma de digitar (com ou sem separador) e extrai só os
+// dígitos: os últimos 2 dígitos são sempre o apartamento (01 a 16), o
+// resto é o andar (5 a 28) — convenção igual à numeração real do prédio
+// (ex.: "1401" = 14º andar, apto 01; "501" = 5º andar, apto 01).
+function parseUnidade(raw) {
+  const digitos = (raw || '').replace(/\D/g, '');
+  if (!digitos) return { ok: false, motivo: 'Digite o andar e o apartamento juntos (ex.: 1401).' };
+  if (digitos.length < 3 || digitos.length > 4) {
+    return { ok: false, motivo: 'Não entendi — digite andar+apartamento juntos (ex.: 501 pro 5º andar apto 01, ou 1401 pro 14º andar apto 01).' };
+  }
+  const apto = parseInt(digitos.slice(-2), 10);
+  const andar = parseInt(digitos.slice(0, -2), 10);
+  const erros = [];
+  if (andar < ANDAR_MIN || andar > ANDAR_MAX) erros.push(`${andar}º andar não existe (o prédio vai do ${ANDAR_MIN}º ao ${ANDAR_MAX}º)`);
+  if (apto < APTO_MIN || apto > APTO_MAX) erros.push(`apartamento ${String(apto).padStart(2, '0')} não existe (vai de 01 a ${APTO_MAX})`);
+  if (erros.length) return { ok: false, motivo: 'Confira: ' + erros.join('; ') + '.' };
+  const tipo = APTOS_GRANDES.has(apto) ? 'G' : 'P';
+  const codigo = `${andar}${String(apto).padStart(2, '0')}`;
+  return {
+    ok: true, andar, apartamento: apto, tipo, codigo,
+    label: `${andar}º andar, apto ${String(apto).padStart(2, '0')} (${tipo === 'G' ? 'Grande' : 'Pequeno'})`,
+  };
+}
+
+// ============================================================
+// DADOS: FUNCIONÁRIOS E TIPOS DE SERVIÇO
+// ============================================================
+let funcionarios = [];
+let funcionariosPorId = {};
+let tiposServico = [];
+let tiposServicoTodos = [];
+let tiposServicoPorId = {};
+let registrosRecentes = [];
+let registrosPorId = {};
+let registroEditandoId = null; // id do registro em edição, ou null se for um registro novo
+let resultadosPorFuncionario = []; // último resultado bruto (sem filtro) da busca por funcionário
+let resultadosPorUnidade = []; // último resultado bruto (sem filtro) da busca por unidade
+
+function indexarRegistros(lista) {
+  (lista || []).forEach(r => { registrosPorId[r.id] = r; });
+}
+
+async function carregarFuncionarios() {
+  if (!sb) return;
+  const { data, error } = await sb.from('funcionarios')
+    .select('id, nome, empresa')
+    .eq('tipo', 'permanente').eq('ativo', true)
+    .order('nome', { ascending: true });
+  if (error) { showToast('⚠️ Erro ao carregar funcionários: ' + error.message); return; }
+  funcionarios = data || [];
+  funcionariosPorId = {};
+  funcionarios.forEach(f => funcionariosPorId[f.id] = f);
+  renderOpcoesFuncionarios();
+}
+
+async function carregarTiposServico() {
+  if (!sb) return;
+  // Busca TODOS (ativos e inativos): registros antigos podem apontar pra um
+  // serviço já excluído (ativo=false), e o card precisa continuar mostrando
+  // o nome certo mesmo assim — só a lista de escolha (tiposServico) e a tela
+  // de gerenciar filtram pra mostrar só quem está ativo.
+  const { data, error } = await sb.from('tipos_servico')
+    .select('id, nome, ativo')
+    .order('nome', { ascending: true });
+  if (error) { showToast('⚠️ Erro ao carregar tipos de serviço: ' + error.message); return; }
+  tiposServicoTodos = data || [];
+  tiposServicoPorId = {};
+  tiposServicoTodos.forEach(t => tiposServicoPorId[t.id] = t);
+  tiposServico = tiposServicoTodos.filter(t => t.ativo);
+  renderOpcoesServico();
+}
+
+function renderOpcoesFuncionarios() {
+  const opts = funcionarios.map(f => `<option value="${f.id}">${escapeHtml(f.nome)}</option>`).join('');
+  const selFunc1 = document.getElementById('selFunc1');
+  const selFunc2 = document.getElementById('selFunc2');
+  const selBusca = document.getElementById('selBuscaFunc');
+  const v1 = selFunc1.value, v2 = selFunc2.value, vb = selBusca.value;
+  selFunc1.innerHTML = '<option value="">— Escolher —</option>' + opts;
+  selFunc2.innerHTML = '<option value="">— Nenhum —</option>' + opts;
+  selBusca.innerHTML = '<option value="">— Escolher um funcionário —</option>' + opts;
+  if (v1) selFunc1.value = v1;
+  if (v2) selFunc2.value = v2;
+  if (vb) selBusca.value = vb;
+  sincronizarTextoCombo('selFunc1', 'inpFunc1Texto', 'btnLimparFunc1');
+  sincronizarTextoCombo('selFunc2', 'inpFunc2Texto', 'btnLimparFunc2');
+  sincronizarTextoCombo('selBuscaFunc', 'inpBuscaFuncTexto', 'btnLimparBuscaFunc');
+  renderChecklistFuncionariosTarefa();
+}
+
+// ------------------------------------------------------------
+// Campos de escolher funcionário por nome (busca da aba "Por funcionário",
+// e "Funcionário responsável"/"Segundo funcionário" do formulário) — um
+// input de texto que filtra a lista de funcionários conforme digita, em
+// vez de um <select> nativo (ruim de usar no celular quando tem muita
+// gente cadastrada, precisa ficar arrastando a lista inteira). Os 3
+// <select> originais (selBuscaFunc, selFunc1, selFunc2) continuam
+// existindo escondidos, como "fonte da verdade" do id escolhido — o
+// resto do código (buscarPorFuncionario, salvarRegistro, etc.) não
+// precisa saber que a interface mudou.
+// ------------------------------------------------------------
+function normalizarBusca(s) {
+  return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+}
+
+function sincronizarTextoCombo(selectId, inputId, clearId) {
+  const sel = document.getElementById(selectId);
+  const f = funcionariosPorId[sel.value];
+  document.getElementById(inputId).value = f ? f.nome : '';
+  document.getElementById(clearId).classList.toggle('show', !!f);
+}
+
+function filtrarComboLista(inputId, listId, onEscolherFnNome) {
+  const termo = normalizarBusca(document.getElementById(inputId).value);
+  const lista = document.getElementById(listId);
+  const candidatos = termo ? funcionarios.filter(f => normalizarBusca(f.nome).includes(termo)) : funcionarios;
+  lista.innerHTML = candidatos.length
+    ? candidatos.map(f => `<div class="func-combo-item" onmousedown='event.preventDefault(); ${onEscolherFnNome}(${JSON.stringify(String(f.id))})'>${escapeHtml(f.nome)}</div>`).join('')
+    : '<div class="func-combo-vazio">Nenhum funcionário encontrado.</div>';
+  lista.classList.add('show');
+}
+
+// -------- busca da aba "Por funcionário" --------
+function filtrarComboFuncionarios() { filtrarComboLista('inpBuscaFuncTexto', 'funcComboLista', 'escolherFuncBusca'); }
+function escolherFuncBusca(id) {
+  document.getElementById('selBuscaFunc').value = id;
+  document.getElementById('funcComboLista').classList.remove('show');
+  sincronizarTextoCombo('selBuscaFunc', 'inpBuscaFuncTexto', 'btnLimparBuscaFunc');
+  buscarPorFuncionario();
+}
+function limparBuscaFuncCombo() {
+  document.getElementById('selBuscaFunc').value = '';
+  document.getElementById('inpBuscaFuncTexto').value = '';
+  document.getElementById('btnLimparBuscaFunc').classList.remove('show');
+  document.getElementById('funcComboLista').classList.remove('show');
+  buscarPorFuncionario();
+}
+function onBlurBuscaFuncTexto() {
+  // Pequeno atraso pra dar tempo do "mousedown" num item da lista (ou no
+  // botão de limpar) rodar antes da lista sumir.
+  setTimeout(() => {
+    document.getElementById('funcComboLista').classList.remove('show');
+    sincronizarTextoCombo('selBuscaFunc', 'inpBuscaFuncTexto', 'btnLimparBuscaFunc');
+  }, 150);
+}
+
+// -------- "Funcionário responsável" (formulário) --------
+function filtrarComboFunc1() { filtrarComboLista('inpFunc1Texto', 'func1ComboLista', 'escolherFunc1'); }
+function escolherFunc1(id) {
+  document.getElementById('selFunc1').value = id;
+  document.getElementById('func1ComboLista').classList.remove('show');
+  sincronizarTextoCombo('selFunc1', 'inpFunc1Texto', 'btnLimparFunc1');
+}
+function limparFunc1Combo() {
+  document.getElementById('selFunc1').value = '';
+  document.getElementById('inpFunc1Texto').value = '';
+  document.getElementById('btnLimparFunc1').classList.remove('show');
+  document.getElementById('func1ComboLista').classList.remove('show');
+}
+function onBlurFunc1Texto() {
+  setTimeout(() => {
+    document.getElementById('func1ComboLista').classList.remove('show');
+    sincronizarTextoCombo('selFunc1', 'inpFunc1Texto', 'btnLimparFunc1');
+  }, 150);
+}
+
+// -------- "Segundo funcionário" opcional (formulário) --------
+function filtrarComboFunc2() { filtrarComboLista('inpFunc2Texto', 'func2ComboLista', 'escolherFunc2'); }
+function escolherFunc2(id) {
+  document.getElementById('selFunc2').value = id;
+  document.getElementById('func2ComboLista').classList.remove('show');
+  sincronizarTextoCombo('selFunc2', 'inpFunc2Texto', 'btnLimparFunc2');
+}
+function limparFunc2Combo() {
+  document.getElementById('selFunc2').value = '';
+  document.getElementById('inpFunc2Texto').value = '';
+  document.getElementById('btnLimparFunc2').classList.remove('show');
+  document.getElementById('func2ComboLista').classList.remove('show');
+}
+function onBlurFunc2Texto() {
+  setTimeout(() => {
+    document.getElementById('func2ComboLista').classList.remove('show');
+    sincronizarTextoCombo('selFunc2', 'inpFunc2Texto', 'btnLimparFunc2');
+  }, 150);
+}
+
+// Lista de marcar (checkbox) usada na aba "Tarefas" — permite marcar quantas
+// pessoas forem precisas pra uma tarefa (diferente do serviço por unidade,
+// que é limitado a até 2 responsáveis).
+function renderChecklistFuncionariosTarefa() {
+  const cont = document.getElementById('checklistFuncionariosTarefa');
+  if (!cont) return;
+  const marcados = new Set(Array.from(cont.querySelectorAll('input[type=checkbox]:checked')).map(el => el.value));
+  if (!funcionarios.length) {
+    cont.innerHTML = '<div class="checklist-vazio">Nenhum funcionário cadastrado.</div>';
+    return;
+  }
+  // cada <label> carrega o nome normalizado num atributo, pra filtrar rápido
+  // sem recalcular nada — as linhas ficam sempre no DOM (só escondidas com
+  // display:none), assim marcar/desmarcar e ler quem está marcado (em
+  // salvarTarefa/editarTarefa) continua funcionando normal, filtrado ou não.
+  cont.innerHTML = funcionarios.map(f => `
+    <label data-busca="${escapeHtml(normalizarBusca(f.nome))}"><input type="checkbox" value="${f.id}" ${marcados.has(f.id) ? 'checked' : ''}> ${escapeHtml(f.nome)}</label>
+  `).join('') + '<div class="checklist-vazio" id="checklistFuncionariosVazioFiltro" style="display:none;">Nenhum funcionário encontrado com esse filtro.</div>';
+  filtrarChecklistFuncionariosTarefa();
+}
+
+function filtrarChecklistFuncionariosTarefa() {
+  const inp = document.getElementById('inpFiltroChecklistFunc');
+  const termo = normalizarBusca(inp ? inp.value : '');
+  const cont = document.getElementById('checklistFuncionariosTarefa');
+  if (!cont) return;
+  let algumVisivel = false;
+  cont.querySelectorAll('label[data-busca]').forEach(label => {
+    const visivel = !termo || label.dataset.busca.includes(termo);
+    label.style.display = visivel ? '' : 'none';
+    if (visivel) algumVisivel = true;
+  });
+  const msgVazio = document.getElementById('checklistFuncionariosVazioFiltro');
+  if (msgVazio) msgVazio.style.display = (termo && !algumVisivel) ? 'block' : 'none';
+}
+
+function limparFiltroChecklistFuncionariosTarefa() {
+  const inp = document.getElementById('inpFiltroChecklistFunc');
+  if (inp) inp.value = '';
+  filtrarChecklistFuncionariosTarefa();
+}
+
+function renderOpcoesServico() {
+  const sel = document.getElementById('selServico');
+  const atual = sel.value;
+  sel.innerHTML = '<option value="">— Escolher —</option>' +
+    tiposServico.map(t => `<option value="${t.id}">${escapeHtml(t.nome)}</option>`).join('');
+  if (atual) sel.value = atual;
+}
+
+function toggleNovoServico() {
+  const box = document.getElementById('novoServicoBox');
+  box.classList.toggle('show');
+  if (box.classList.contains('show')) document.getElementById('inpNovoServico').focus();
+}
+
+async function salvarNovoServico() {
+  const nome = document.getElementById('inpNovoServico').value.trim();
+  if (!nome) { showToast('⚠️ Digite o nome do serviço.'); return; }
+  const jaExiste = tiposServico.some(t => t.nome.toLowerCase() === nome.toLowerCase());
+  if (jaExiste) { showToast('⚠️ Esse serviço já está cadastrado.'); return; }
+  const { data, error } = await sb.from('tipos_servico').insert({ nome }).select().single();
+  if (error) { showToast('⚠️ Erro ao cadastrar serviço: ' + error.message); return; }
+  tiposServicoTodos.push(data);
+  tiposServico.push(data);
+  tiposServico.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+  tiposServicoPorId[data.id] = data;
+  renderOpcoesServico();
+  document.getElementById('selServico').value = data.id;
+  document.getElementById('inpNovoServico').value = '';
+  document.getElementById('novoServicoBox').classList.remove('show');
+  showToast(`✅ Serviço "${nome}" cadastrado.`);
+}
+
+// ============================================================
+// GERENCIAR SERVIÇOS (editar nome / excluir), pra corrigir um
+// serviço cadastrado errado sem precisar mexer no banco.
+// ============================================================
+function toggleGerenciarServico() {
+  const box = document.getElementById('gerenciarServicoBox');
+  box.classList.toggle('show');
+  if (box.classList.contains('show')) renderListaServicosGerenciar();
+}
+
+function renderListaServicosGerenciar() {
+  const cont = document.getElementById('listaServicosGerenciar');
+  if (!tiposServico.length) {
+    cont.innerHTML = '<div class="servico-vazio">Nenhum serviço cadastrado ainda.</div>';
+    return;
+  }
+  cont.innerHTML = tiposServico.map(t => `
+    <div class="servico-row" id="servicoRow_${t.id}">
+      <span class="nome" id="servicoNome_${t.id}">${escapeHtml(t.nome)}</span>
+      <button type="button" class="btn-icon" title="Editar nome" onclick="iniciarEdicaoServico(${t.id})">✏️</button>
+      <button type="button" class="btn-icon" title="Excluir" onclick="excluirServico(${t.id})">🗑️</button>
+    </div>
+  `).join('');
+}
+
+function iniciarEdicaoServico(id) {
+  const row = document.getElementById(`servicoRow_${id}`);
+  const t = tiposServicoPorId[id];
+  if (!row || !t) return;
+  row.innerHTML = `
+    <input type="text" class="edit-servico-input" id="editServicoInput_${id}" value="${escapeHtml(t.nome)}">
+    <button type="button" class="btn-icon" title="Salvar" onclick="salvarEdicaoServico(${id})">✅</button>
+    <button type="button" class="btn-icon" title="Cancelar" onclick="renderListaServicosGerenciar()">✖️</button>
+  `;
+  const inp = document.getElementById(`editServicoInput_${id}`);
+  inp.focus();
+  inp.select();
+  inp.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); salvarEdicaoServico(id); }
+    if (e.key === 'Escape') { e.preventDefault(); renderListaServicosGerenciar(); }
+  });
+}
+
+async function salvarEdicaoServico(id) {
+  const inp = document.getElementById(`editServicoInput_${id}`);
+  const novoNome = inp.value.trim();
+  if (!novoNome) { showToast('⚠️ Digite o nome do serviço.'); return; }
+  const duplicado = tiposServicoTodos.some(t => t.id !== id && t.ativo && t.nome.toLowerCase() === novoNome.toLowerCase());
+  if (duplicado) { showToast('⚠️ Já existe outro serviço com esse nome.'); return; }
+  const { data, error } = await sb.from('tipos_servico').update({ nome: novoNome }).eq('id', id).select().single();
+  if (error) { showToast('⚠️ Erro ao editar serviço: ' + error.message); return; }
+  const t = tiposServicoPorId[id];
+  if (t) t.nome = data.nome;
+  tiposServico.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+  renderOpcoesServico();
+  renderListaServicosGerenciar();
+  renderFeedRecente();
+  showToast(`✅ Serviço renomeado para "${data.nome}".`);
+}
+
+async function excluirServico(id) {
+  const t = tiposServicoPorId[id];
+  if (!t) return;
+  const { count, error: errCount } = await sb.from('rdo_registros')
+    .select('id', { count: 'exact', head: true })
+    .eq('tipo_servico_id', id);
+  if (errCount) { showToast('⚠️ Erro ao verificar uso do serviço: ' + errCount.message); return; }
+  const usado = count || 0;
+  const aviso = usado > 0
+    ? `Excluir "${t.nome}"? Ele já foi usado em ${usado} registro(s) — esses registros continuam normais, mas o serviço não vai mais aparecer pra escolher em novos registros.`
+    : `Excluir "${t.nome}"? Ele ainda não foi usado em nenhum registro.`;
+  if (!confirm(aviso)) return;
+  const { error } = await sb.from('tipos_servico').update({ ativo: false }).eq('id', id);
+  if (error) { showToast('⚠️ Erro ao excluir serviço: ' + error.message); return; }
+  t.ativo = false;
+  tiposServico = tiposServico.filter(s => s.id !== id);
+  renderOpcoesServico();
+  renderListaServicosGerenciar();
+  const selEl = document.getElementById('selServico');
+  if (String(selEl.value) === String(id)) {
+    selEl.value = '';
+    const fb = document.getElementById('servicoFeedback');
+    fb.textContent = '';
+    fb.className = 'unidade-feedback';
+  }
+  showToast(`🗑️ Serviço "${t.nome}" excluído.`);
+}
+
+// ============================================================
+// GERENCIAR USUÁRIOS (login individual por pessoa, 2026-09-18) — pra saber
+// quem de fato registrou cada serviço no Diário de Obra. Cada usuário
+// cadastra o próprio login na tela inicial (ou é cadastrado por alguém já
+// logado, aqui no modal), e pode ser renomeado/ter a senha trocada ou
+// desativado (soft delete, igual ao padrão de tipos_servico) sem apagar o
+// nome dos registros antigos que ele já fez.
+// ============================================================
+let usuariosDiario = [];
+let usuariosDiarioPorId = {};
+
+async function carregarUsuariosDiario() {
+  if (!sb) return;
+  const { data, error } = await sb.from('usuarios_diario')
+    .select('id, nome, login, ativo')
+    .order('nome', { ascending: true });
+  if (error) { showToast('⚠️ Erro ao carregar usuários: ' + error.message); return; }
+  usuariosDiario = data || [];
+  usuariosDiarioPorId = {};
+  usuariosDiario.forEach(u => usuariosDiarioPorId[u.id] = u);
+}
+
+function toggleUsuariosOverlay() {
+  const ov = document.getElementById('usuariosOverlay');
+  ov.classList.toggle('show');
+  if (ov.classList.contains('show')) {
+    carregarUsuariosDiario().then(renderListaUsuariosGerenciar);
+  }
+}
+
+function renderListaUsuariosGerenciar() {
+  const cont = document.getElementById('listaUsuariosGerenciar');
+  const ativos = usuariosDiario.filter(u => u.ativo);
+  if (!ativos.length) {
+    cont.innerHTML = '<div class="servico-vazio">Nenhum usuário cadastrado ainda.</div>';
+    return;
+  }
+  cont.innerHTML = ativos.map(u => `
+    <div class="servico-row" id="usuarioRow_${u.id}">
+      <span class="nome" id="usuarioNome_${u.id}">${escapeHtml(u.nome)} <span style="color:var(--brand-graymid);font-weight:400;">(${escapeHtml(u.login)})</span></span>
+      <button type="button" class="btn-icon" title="Editar" onclick="iniciarEdicaoUsuario(${u.id})">✏️</button>
+      <button type="button" class="btn-icon" title="Excluir" onclick="excluirUsuario(${u.id})">🗑️</button>
+    </div>
+  `).join('');
+}
+
+function iniciarEdicaoUsuario(id) {
+  const row = document.getElementById(`usuarioRow_${id}`);
+  const u = usuariosDiarioPorId[id];
+  if (!row || !u) return;
+  row.innerHTML = `
+    <div style="flex:1;min-width:0;">
+      <input type="text" class="edit-servico-input" id="editUsuarioNome_${id}" value="${escapeHtml(u.nome)}" placeholder="Nome" style="width:100%;margin-bottom:6px;">
+      <input type="password" class="edit-servico-input" id="editUsuarioSenha_${id}" placeholder="Nova senha (deixe em branco pra manter)" style="width:100%;">
+    </div>
+    <button type="button" class="btn-icon" title="Salvar" onclick="salvarEdicaoUsuario(${id})">✅</button>
+    <button type="button" class="btn-icon" title="Cancelar" onclick="renderListaUsuariosGerenciar()">✖️</button>
+  `;
+}
+
+async function salvarEdicaoUsuario(id) {
+  const nomeInput = document.getElementById(`editUsuarioNome_${id}`);
+  const senhaInput = document.getElementById(`editUsuarioSenha_${id}`);
+  const nome = nomeInput.value.trim();
+  const novaSenha = senhaInput.value;
+  if (!nome) { showToast('⚠️ Digite o nome.'); return; }
+  if (novaSenha && novaSenha.length < 4) { showToast('⚠️ A nova senha precisa ter pelo menos 4 caracteres.'); return; }
+  const payload = { nome };
+  if (novaSenha) payload.senha = novaSenha;
+  const { data, error } = await sb.from('usuarios_diario').update(payload).eq('id', id).select().single();
+  if (error) { showToast('⚠️ Erro ao editar usuário: ' + error.message); return; }
+  const u = usuariosDiarioPorId[id];
+  if (u) u.nome = data.nome;
+  if (usuarioAtual && usuarioAtual.id === id) {
+    usuarioAtual.nome = data.nome;
+    safeSet('usuario_atual', JSON.stringify(usuarioAtual));
+    const subEl = document.getElementById('headUsuarioSub');
+    if (subEl) subEl.textContent = 'Diamond Millennium · ' + usuarioAtual.nome;
+  }
+  renderListaUsuariosGerenciar();
+  showToast(`✅ Usuário "${data.nome}" atualizado.`);
+}
+
+async function excluirUsuario(id) {
+  const u = usuariosDiarioPorId[id];
+  if (!u) return;
+  if (usuarioAtual && usuarioAtual.id === id) {
+    showToast('⚠️ Você não pode excluir o login que está usando agora.');
+    return;
+  }
+  const { count, error: errCount } = await sb.from('rdo_registros')
+    .select('id', { count: 'exact', head: true })
+    .eq('criado_por', u.nome);
+  if (errCount) { showToast('⚠️ Erro ao verificar uso do usuário: ' + errCount.message); return; }
+  const usado = count || 0;
+  const aviso = usado > 0
+    ? `Excluir o login de "${u.nome}"? Essa pessoa já registrou ${usado} serviço(s) — esses registros continuam mostrando o nome dela normalmente, só o login deixa de funcionar pra entrar de novo.`
+    : `Excluir o login de "${u.nome}"? Ainda não registrou nenhum serviço.`;
+  if (!confirm(aviso)) return;
+  const { error } = await sb.from('usuarios_diario').update({ ativo: false }).eq('id', id);
+  if (error) { showToast('⚠️ Erro ao excluir usuário: ' + error.message); return; }
+  u.ativo = false;
+  renderListaUsuariosGerenciar();
+  showToast(`🗑️ Login de "${u.nome}" excluído.`);
+}
+
+function toggleNovoUsuarioBox() {
+  document.getElementById('novoUsuarioBox').classList.toggle('show');
+}
+
+async function salvarNovoUsuario() {
+  const nome = document.getElementById('inpNovoUsuarioNome').value.trim();
+  const loginDesejado = document.getElementById('inpNovoUsuarioLogin').value.trim().toLowerCase().replace(/\s+/g, '');
+  const senha = document.getElementById('inpNovoUsuarioSenha').value;
+  if (!nome) { showToast('⚠️ Digite o nome.'); return; }
+  if (!loginDesejado) { showToast('⚠️ Escolha um usuário (login).'); return; }
+  if (!senha || senha.length < 4) { showToast('⚠️ A senha precisa ter pelo menos 4 caracteres.'); return; }
+  const { data: existente, error: errCheck } = await sb.from('usuarios_diario')
+    .select('id').ilike('login', loginDesejado).maybeSingle();
+  if (errCheck) { showToast('⚠️ Erro ao verificar usuário: ' + errCheck.message); return; }
+  if (existente) { showToast('⚠️ Esse usuário já existe.'); return; }
+  const { data, error } = await sb.from('usuarios_diario')
+    .insert({ nome, login: loginDesejado, senha }).select().single();
+  if (error) { showToast('⚠️ Erro ao cadastrar usuário: ' + error.message); return; }
+  usuariosDiario.push(data);
+  usuariosDiarioPorId[data.id] = data;
+  document.getElementById('inpNovoUsuarioNome').value = '';
+  document.getElementById('inpNovoUsuarioLogin').value = '';
+  document.getElementById('inpNovoUsuarioSenha').value = '';
+  document.getElementById('novoUsuarioBox').classList.remove('show');
+  renderListaUsuariosGerenciar();
+  showToast(`✅ Usuário "${nome}" cadastrado.`);
+}
+
+// ============================================================
+// FOTO (mesmo padrão de redimensionar usado no equipes.html)
+// ============================================================
+async function fileToResizedJpeg(file, maxSize, quality) {
+  let bitmap;
+  try {
+    bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  } catch (e) {
+    bitmap = await createImageBitmap(file);
+  }
+  const scale = Math.min(1, maxSize / Math.max(bitmap.width, bitmap.height));
+  const w = Math.max(1, Math.round(bitmap.width * scale));
+  const h = Math.max(1, Math.round(bitmap.height * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(b => b ? resolve(b) : reject(new Error('Falha ao gerar imagem')), 'image/jpeg', quality);
+  });
+}
+async function enviarFotoRdo(file) {
+  const blob = await fileToResizedJpeg(file, 900, 0.82);
+  const nomeArquivo = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+  const { error } = await sb.storage.from(BUCKET_FOTOS).upload(nomeArquivo, blob, { upsert: false, contentType: 'image/jpeg' });
+  if (error) throw error;
+  return nomeArquivo;
+}
+function urlFotoRdo(path) {
+  if (!path || !sb) return null;
+  return sb.storage.from(BUCKET_FOTOS).getPublicUrl(path).data.publicUrl;
+}
+
+// ============================================================
+// VALIDAÇÃO AO VIVO DA UNIDADE (campo de novo registro)
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('inpUnidade').addEventListener('input', () => {
+    const raw = document.getElementById('inpUnidade').value;
+    const el = document.getElementById('unidadeFeedback');
+    if (!raw.trim()) { el.textContent = ''; el.className = 'unidade-feedback'; return; }
+    const p = parseUnidade(raw);
+    if (p.ok) { el.textContent = '✓ ' + p.label; el.className = 'unidade-feedback ok'; }
+    else { el.textContent = '⚠ ' + p.motivo; el.className = 'unidade-feedback erro'; }
+    verificarDuplicidadeServico();
+  });
+  document.getElementById('selServico').addEventListener('change', verificarDuplicidadeServico);
+});
+
+// ============================================================
+// BLOQUEIO DE SERVIÇO REPETIDO NA MESMA UNIDADE
+// ============================================================
+// Regra do usuário: não pode cadastrar o mesmo tipo de serviço duas vezes
+// na mesma unidade (ex.: "Massa interna" no apto 1401 só pode existir uma
+// vez). Checagem ao vivo (aviso na tela, assim que unidade+serviço estão
+// escolhidos) e checagem definitiva dentro de salvarRegistro() — a checagem
+// ao vivo é só uma ajuda visual, quem realmente impede o salvamento é a de
+// dentro de salvarRegistro().
+async function servicoJaExisteNaUnidade(codigoUnidade, servicoId, ignorarId) {
+  if (!sb || !codigoUnidade || !servicoId) return false;
+  let q = sb.from('rdo_registros')
+    .select('id')
+    .eq('unidade', codigoUnidade)
+    .eq('tipo_servico_id', servicoId);
+  if (ignorarId) q = q.neq('id', ignorarId); // editando um registro: não contar ele mesmo como duplicado
+  const { data, error } = await q.limit(1);
+  if (error) { console.error('Erro ao verificar duplicidade de serviço:', error); return false; }
+  return !!(data && data.length);
+}
+async function verificarDuplicidadeServico() {
+  const fb = document.getElementById('servicoFeedback');
+  const parsed = parseUnidade(document.getElementById('inpUnidade').value);
+  const servicoId = document.getElementById('selServico').value;
+  if (!parsed.ok || !servicoId) { fb.textContent = ''; fb.className = 'unidade-feedback'; return; }
+  const jaExiste = await servicoJaExisteNaUnidade(parsed.codigo, servicoId, registroEditandoId);
+  if (jaExiste) {
+    fb.textContent = '⚠ Esse serviço já foi registrado nessa unidade.';
+    fb.className = 'unidade-feedback erro';
+  } else {
+    fb.textContent = '';
+    fb.className = 'unidade-feedback';
+  }
+}
+
+// ============================================================
+// SALVAR NOVO REGISTRO
+// ============================================================
+function limparFormulario() {
+  document.getElementById('inpUnidade').value = '';
+  document.getElementById('unidadeFeedback').textContent = '';
+  document.getElementById('unidadeFeedback').className = 'unidade-feedback';
+  document.getElementById('selServico').value = '';
+  document.getElementById('servicoFeedback').textContent = '';
+  document.getElementById('servicoFeedback').className = 'unidade-feedback';
+  document.getElementById('selFunc1').value = '';
+  document.getElementById('selFunc2').value = '';
+  sincronizarTextoCombo('selFunc1', 'inpFunc1Texto', 'btnLimparFunc1');
+  sincronizarTextoCombo('selFunc2', 'inpFunc2Texto', 'btnLimparFunc2');
+  document.getElementById('inpDataFim').value = '';
+  document.getElementById('inpObs').value = '';
+  document.getElementById('inpFoto').value = '';
+  document.getElementById('chkRemoverFoto').checked = false;
+  document.getElementById('fotoAtualHint').style.display = 'none';
+  document.getElementById('removerFotoLabel').style.display = 'none';
+  document.getElementById('inpDataInicio').value = hojeStr(); // comum bater vários registros no mesmo dia
+}
+
+// ============================================================
+// EDITAR / EXCLUIR UM REGISTRO JÁ SALVO
+// ============================================================
+function editarRegistro(id) {
+  const r = registrosPorId[id];
+  if (!r) { showToast('⚠️ Não achei esse registro (recarregue a lista e tente de novo).'); return; }
+
+  registroEditandoId = id;
+
+  mostrarAba('novo');
+  document.getElementById('editandoBanner').classList.add('show');
+  document.getElementById('btnCancelarEdicao').style.display = 'block';
+  document.getElementById('btnSalvarRegistro').textContent = 'Salvar edição';
+
+  const codigoUnidade = `${r.andar}${String(r.apartamento).padStart(2, '0')}`;
+  document.getElementById('inpUnidade').value = codigoUnidade;
+  const parsed = parseUnidade(codigoUnidade);
+  const fbUnidade = document.getElementById('unidadeFeedback');
+  if (parsed.ok) { fbUnidade.textContent = '✓ ' + parsed.label; fbUnidade.className = 'unidade-feedback ok'; }
+
+  document.getElementById('selServico').value = r.tipo_servico_id;
+  document.getElementById('selFunc1').value = r.funcionario_id_1 || '';
+  document.getElementById('selFunc2').value = r.funcionario_id_2 || '';
+  sincronizarTextoCombo('selFunc1', 'inpFunc1Texto', 'btnLimparFunc1');
+  sincronizarTextoCombo('selFunc2', 'inpFunc2Texto', 'btnLimparFunc2');
+  document.getElementById('inpDataInicio').value = r.data_inicio || '';
+  document.getElementById('inpDataFim').value = r.data_fim || '';
+  document.getElementById('inpObs').value = r.observacao || '';
+  document.getElementById('inpFoto').value = '';
+  document.getElementById('chkRemoverFoto').checked = false;
+  const temFoto = !!r.foto_path;
+  document.getElementById('fotoAtualHint').style.display = temFoto ? 'block' : 'none';
+  document.getElementById('removerFotoLabel').style.display = temFoto ? 'flex' : 'none';
+
+  verificarDuplicidadeServico();
+  document.querySelector('.card-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function sairModoEdicao() {
+  registroEditandoId = null;
+  document.getElementById('editandoBanner').classList.remove('show');
+  document.getElementById('btnCancelarEdicao').style.display = 'none';
+  document.getElementById('btnSalvarRegistro').textContent = 'Salvar registro';
+}
+
+function cancelarEdicaoRegistro() {
+  sairModoEdicao();
+  limparFormulario();
+  showToast('Edição cancelada.');
+}
+
+async function atualizarListasVisiveis() {
+  // Recarrega o feed e, se houver uma busca ativa nas outras abas, atualiza
+  // ela também — assim editar/excluir um registro reflete em todo lugar
+  // onde ele pode estar sendo mostrado, sem precisar trocar de aba.
+  await carregarFeedRecente();
+  const fid = document.getElementById('selBuscaFunc').value;
+  if (fid) await buscarPorFuncionario();
+  const unidadeBusca = document.getElementById('inpBuscaUnidade').value;
+  if (unidadeBusca.trim()) await buscarPorUnidade();
+}
+
+async function excluirRegistro(id) {
+  const r = registrosPorId[id];
+  if (!r) { showToast('⚠️ Não achei esse registro (recarregue a lista e tente de novo).'); return; }
+  const servico = tiposServicoPorId[r.tipo_servico_id];
+  const descricao = `${r.andar}º andar, apto ${String(r.apartamento).padStart(2, '0')} — ${servico ? servico.nome : '(serviço não encontrado)'}, ${fmtData(r.data_inicio)}`;
+  if (!confirm(`Excluir esse registro?\n\n${descricao}\n\nNão tem como desfazer.`)) return;
+  const { error } = await sb.from('rdo_registros').delete().eq('id', id);
+  if (error) { showToast('⚠️ Erro ao excluir registro: ' + error.message); return; }
+  delete registrosPorId[id];
+  if (registroEditandoId === id) { sairModoEdicao(); limparFormulario(); }
+  await atualizarListasVisiveis();
+  showToast('🗑️ Registro excluído.');
+}
+
+async function salvarRegistro() {
+  if (!sb) { showToast('⚠️ Sem conexão com o banco.'); return; }
+
+  const parsed = parseUnidade(document.getElementById('inpUnidade').value);
+  if (!parsed.ok) { showToast('⚠️ ' + parsed.motivo); return; }
+
+  const servicoId = document.getElementById('selServico').value;
+  if (!servicoId) { showToast('⚠️ Escolha o serviço.'); return; }
+
+  if (await servicoJaExisteNaUnidade(parsed.codigo, servicoId, registroEditandoId)) {
+    showToast('⚠️ Esse serviço já foi registrado nessa unidade. Escolha outro serviço ou outra unidade.');
+    return;
+  }
+
+  const f1 = document.getElementById('selFunc1').value;
+  if (!f1) { showToast('⚠️ Escolha o funcionário responsável.'); return; }
+  const f2 = document.getElementById('selFunc2').value || null;
+  if (f2 && f2 === f1) { showToast('⚠️ Escolha duas pessoas diferentes.'); return; }
+
+  const dataInicio = document.getElementById('inpDataInicio').value;
+  if (!dataInicio) { showToast('⚠️ Escolha a data de início.'); return; }
+  const dataFim = document.getElementById('inpDataFim').value || null;
+  if (dataFim && dataFim < dataInicio) { showToast('⚠️ A data final não pode ser antes da inicial.'); return; }
+
+  const observacao = document.getElementById('inpObs').value.trim() || null;
+  const fotoFile = document.getElementById('inpFoto').files[0] || null;
+  const removerFoto = document.getElementById('chkRemoverFoto').checked;
+  const idEmEdicao = registroEditandoId;
+
+  const btn = document.getElementById('btnSalvarRegistro');
+  btn.disabled = true;
+  btn.textContent = idEmEdicao ? 'Salvando edição...' : 'Salvando...';
+  try {
+    // Foto: se escolheu um arquivo novo, sobe e usa esse caminho; se marcou
+    // "remover", tira a foto (só faz sentido editando); senão, editando,
+    // mantém a foto que já existia — só um registro novo começa sem foto.
+    let fotoPath;
+    if (fotoFile) {
+      fotoPath = await enviarFotoRdo(fotoFile);
+    } else if (idEmEdicao && removerFoto) {
+      fotoPath = null;
+    } else if (idEmEdicao) {
+      fotoPath = (registrosPorId[idEmEdicao] || {}).foto_path || null;
+    } else {
+      fotoPath = null;
+    }
+
+    const payload = {
+      unidade: parsed.codigo,
+      andar: parsed.andar,
+      apartamento: parsed.apartamento,
+      tipo_apto: parsed.tipo,
+      tipo_servico_id: servicoId,
+      funcionario_id_1: f1,
+      funcionario_id_2: f2,
+      data_inicio: dataInicio,
+      data_fim: dataFim,
+      observacao,
+      foto_path: fotoPath,
+    };
+
+    let data, error;
+    if (idEmEdicao) {
+      ({ data, error } = await sb.from('rdo_registros').update(payload).eq('id', idEmEdicao).select().single());
+    } else {
+      payload.criado_por = usuarioAtual ? usuarioAtual.nome : null;
+      ({ data, error } = await sb.from('rdo_registros').insert(payload).select().single());
+    }
+    if (error) throw error;
+
+    if (idEmEdicao) {
+      registrosPorId[idEmEdicao] = data;
+      showToast('✅ Registro atualizado!');
+      sairModoEdicao();
+      limparFormulario();
+      await atualizarListasVisiveis();
+    } else {
+      showToast('✅ Registro salvo!');
+      limparFormulario();
+      registrosRecentes.unshift(data);
+      indexarRegistros([data]);
+      renderFeedRecente();
+    }
+  } catch (e) {
+    showToast('⚠️ Erro ao salvar: ' + (e.message || e));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = registroEditandoId ? 'Salvar edição' : 'Salvar registro';
+  }
+}
+
+// ============================================================
+// CARD DE REGISTRO (reaproveitado nas 3 abas)
+// ============================================================
+function renderCardRegistro(r) {
+  const servico = tiposServicoPorId[r.tipo_servico_id];
+  const f1 = funcionariosPorId[r.funcionario_id_1];
+  const f2 = r.funcionario_id_2 ? funcionariosPorId[r.funcionario_id_2] : null;
+  const periodo = r.data_fim ? `${fmtData(r.data_inicio)} – ${fmtData(r.data_fim)}` : `${fmtData(r.data_inicio)} – em andamento`;
+  const pessoas = [f1, f2].filter(Boolean).map(f => f.nome).join(' e ');
+  const fotoUrl = urlFotoRdo(r.foto_path);
+  const legendaFoto = `${r.andar}º andar · apto ${String(r.apartamento).padStart(2, '0')} — ${servico ? servico.nome : ''}`;
+  return `
+    <div class="rdo-card${r.medido ? ' medido' : ''}">
+      <div class="rdo-card-top">
+        <span class="rdo-unidade">${r.andar}º andar · apto ${String(r.apartamento).padStart(2, '0')}<span class="badge-tipo badge-${r.tipo_apto}">${r.tipo_apto}</span>${r.criado_por ? `<span class="rdo-autor"> · ${escapeHtml(r.criado_por)}</span>` : ''}</span>
+        <div class="rdo-card-right">
+          <span class="rdo-periodo">${periodo}</span>
+          <div class="rdo-card-actions">
+            <button type="button" class="btn-icon" title="Editar registro" onclick="editarRegistro(${r.id})">✏️</button>
+            <button type="button" class="btn-icon" title="Excluir registro" onclick="excluirRegistro(${r.id})">🗑️</button>
+          </div>
+        </div>
+      </div>
+      <div class="rdo-servico">${escapeHtml(servico ? servico.nome : '(serviço não encontrado)')}</div>
+      <div class="rdo-pessoas">${escapeHtml(pessoas || '—')}</div>
+      ${r.observacao ? `<div class="rdo-obs">${escapeHtml(r.observacao)}</div>` : ''}
+      ${fotoUrl ? `
+      <div class="rdo-foto-wrap">
+        <img class="rdo-foto" src="${fotoUrl}" alt="" onclick='openLightboxRdo(${JSON.stringify(fotoUrl)}, ${JSON.stringify(legendaFoto)})'>
+        <div class="rdo-foto-zoom" onclick='openLightboxRdo(${JSON.stringify(fotoUrl)}, ${JSON.stringify(legendaFoto)})' title="Ver foto ampliada">🔍</div>
+      </div>` : ''}
+      <label class="rdo-medido-row${r.medido ? ' is-medido' : ''}">
+        <input type="checkbox" ${r.medido ? 'checked' : ''} onchange="toggleMedido(${r.id}, this.checked)">
+        <span>${r.medido ? '✅ Medido' : 'Marcar como medido'}</span>
+      </label>
+    </div>
+  `;
+}
+
+// abre a foto do registro em tela cheia (toque na foto ou na lupa do card)
+function openLightboxRdo(url, legenda) {
+  document.getElementById('lightboxRdoImg').src = url;
+  document.getElementById('lightboxRdoLegenda').textContent = legenda || '';
+  document.getElementById('photoLightboxRdo').classList.add('show');
+}
+function closeLightboxRdo(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('photoLightboxRdo').classList.remove('show');
+  document.getElementById('lightboxRdoImg').src = '';
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeLightboxRdo();
+});
+
+async function carregarFeedRecente() {
+  if (!sb) return;
+  const { data, error } = await sb.from('rdo_registros')
+    .select('*').order('created_at', { ascending: false }).limit(20);
+  if (error) { showToast('⚠️ Erro ao carregar registros: ' + error.message); return; }
+  registrosRecentes = data || [];
+  indexarRegistros(registrosRecentes);
+  renderFeedRecente();
+}
+function renderFeedRecente() {
+  const cont = document.getElementById('feedRecente');
+  if (!registrosRecentes.length) { cont.innerHTML = '<div class="empty">Nenhum registro ainda.</div>'; return; }
+  cont.innerHTML = registrosRecentes.map(renderCardRegistro).join('');
+}
+
+// ============================================================
+// MEDIÇÃO (2026-09-19) — marcação simples, manual, de que um registro de
+// serviço já entrou numa medição (cálculo de quantidade pra pagamento de
+// empreiteiro). Não calcula nada sozinho, só separa visualmente o que já
+// foi contabilizado do que ainda falta — inclusive em registros antigos,
+// que nascem como "não medido" (coluna nova, default false) e podem ser
+// marcados a qualquer momento pela caixinha no card.
+// ============================================================
+function filtrarPorMedido(lista, filtro) {
+  if (filtro === 'nao') return lista.filter(r => !r.medido);
+  if (filtro === 'sim') return lista.filter(r => r.medido);
+  return lista;
+}
+
+async function toggleMedido(id, novoValor) {
+  if (!sb) {
+    showToast('⚠️ Sem conexão com o banco.');
+    renderFeedRecente(); renderListaPorFuncionario(); renderListaPorUnidade();
+    return;
+  }
+  const { data, error } = await sb.from('rdo_registros')
+    .update({ medido: novoValor }).eq('id', id).select().single();
+  if (error) {
+    showToast('⚠️ Erro ao marcar como medido: ' + error.message);
+    // desfaz visualmente a marcação (não chegou a mudar no banco), re-renderizando
+    // com o valor que ainda está guardado localmente
+    renderFeedRecente(); renderListaPorFuncionario(); renderListaPorUnidade();
+    return;
+  }
+  atualizarRegistroEmListas(id, { medido: data.medido });
+  showToast(data.medido ? '✅ Marcado como medido.' : 'Desmarcado como medido.');
+}
+
+function atualizarRegistroEmListas(id, patch) {
+  if (registrosPorId[id]) Object.assign(registrosPorId[id], patch);
+  [registrosRecentes, resultadosPorFuncionario, resultadosPorUnidade].forEach(lista => {
+    const item = lista.find(r => r.id === id);
+    if (item) Object.assign(item, patch);
+  });
+  renderFeedRecente();
+  renderListaPorFuncionario();
+  renderListaPorUnidade();
+}
+
+// ============================================================
+// ABA: POR FUNCIONÁRIO
+// ============================================================
+async function buscarPorFuncionario() {
+  const fid = document.getElementById('selBuscaFunc').value;
+  const cont = document.getElementById('listaPorFuncionario');
+  if (!fid) { resultadosPorFuncionario = []; cont.innerHTML = '<div class="empty">Escolha um funcionário pra ver o que ele já fez.</div>'; return; }
+  if (!sb) { cont.innerHTML = '<div class="empty">Sem conexão com o banco.</div>'; return; }
+  cont.innerHTML = '<div class="loading">Carregando...</div>';
+  const { data, error } = await sb.from('rdo_registros')
+    .select('*')
+    .or(`funcionario_id_1.eq.${fid},funcionario_id_2.eq.${fid}`)
+    .order('data_inicio', { ascending: false });
+  if (error) { resultadosPorFuncionario = []; cont.innerHTML = '<div class="empty">Erro ao buscar: ' + escapeHtml(error.message) + '</div>'; return; }
+  resultadosPorFuncionario = data || [];
+  indexarRegistros(resultadosPorFuncionario);
+  renderListaPorFuncionario();
+}
+function renderListaPorFuncionario() {
+  const cont = document.getElementById('listaPorFuncionario');
+  const fid = document.getElementById('selBuscaFunc').value;
+  if (!fid) return; // nada buscado ainda — a mensagem já está lá
+  if (!resultadosPorFuncionario.length) { cont.innerHTML = '<div class="empty">Nenhum registro encontrado pra essa pessoa ainda.</div>'; return; }
+  const filtro = document.getElementById('selFiltroMedidoFunc').value;
+  const filtrado = filtrarPorMedido(resultadosPorFuncionario, filtro);
+  if (!filtrado.length) { cont.innerHTML = '<div class="empty">Nenhum registro ' + (filtro === 'sim' ? 'medido' : 'não medido') + ' pra essa pessoa.</div>'; return; }
+  cont.innerHTML = filtrado.map(renderCardRegistro).join('');
+}
+
+// ============================================================
+// ABA: POR UNIDADE
+// ============================================================
+async function buscarPorUnidade() {
+  const raw = document.getElementById('inpBuscaUnidade').value;
+  const feedback = document.getElementById('buscaUnidadeFeedback');
+  const cont = document.getElementById('listaPorUnidade');
+  if (!raw.trim()) {
+    feedback.textContent = ''; feedback.className = 'unidade-feedback';
+    resultadosPorUnidade = [];
+    cont.innerHTML = '<div class="empty">Digite uma unidade pra ver o que já foi feito nela.</div>';
+    return;
+  }
+  const parsed = parseUnidade(raw);
+  if (!parsed.ok) {
+    feedback.textContent = '⚠ ' + parsed.motivo; feedback.className = 'unidade-feedback erro';
+    resultadosPorUnidade = [];
+    cont.innerHTML = '';
+    return;
+  }
+  feedback.textContent = '✓ ' + parsed.label; feedback.className = 'unidade-feedback ok';
+  if (!sb) { cont.innerHTML = '<div class="empty">Sem conexão com o banco.</div>'; return; }
+  cont.innerHTML = '<div class="loading">Carregando...</div>';
+  const { data, error } = await sb.from('rdo_registros')
+    .select('*').eq('unidade', parsed.codigo)
+    .order('data_inicio', { ascending: false });
+  if (error) { resultadosPorUnidade = []; cont.innerHTML = '<div class="empty">Erro ao buscar: ' + escapeHtml(error.message) + '</div>'; return; }
+  resultadosPorUnidade = data || [];
+  indexarRegistros(resultadosPorUnidade);
+  renderListaPorUnidade();
+}
+function renderListaPorUnidade() {
+  const cont = document.getElementById('listaPorUnidade');
+  const raw = document.getElementById('inpBuscaUnidade').value;
+  if (!raw.trim()) return;
+  const parsed = parseUnidade(raw);
+  if (!parsed.ok) return;
+  if (!resultadosPorUnidade.length) { cont.innerHTML = '<div class="empty">Nenhum registro pra essa unidade ainda.</div>'; return; }
+  const filtro = document.getElementById('selFiltroMedidoUnidade').value;
+  const filtrado = filtrarPorMedido(resultadosPorUnidade, filtro);
+  if (!filtrado.length) { cont.innerHTML = '<div class="empty">Nenhum registro ' + (filtro === 'sim' ? 'medido' : 'não medido') + ' nessa unidade.</div>'; return; }
+  cont.innerHTML = filtrado.map(renderCardRegistro).join('');
+}
+
+// ============================================================
+// ABA: TAREFAS DO DIA (2026-09-18) — pedido do usuário: um jeito simples de
+// registrar "quem ficou em qual tarefa, em qual dia" pra coisas que não são
+// um serviço numa unidade específica (ex.: "Carregar tijolo", "Carregar
+// cimento"). Diferente do registro por unidade (até 2 responsáveis), aqui
+// pode marcar quantas pessoas forem precisas — por isso funcionarios_ids é
+// uma lista (array), não dois campos separados.
+// ============================================================
+let tarefas = [];
+let tarefasPorId = {};
+let tarefaEditandoId = null; // id da tarefa em edição, ou null se for nova
+
+function indexarTarefas(lista) {
+  (lista || []).forEach(t => { tarefasPorId[t.id] = t; });
+}
+
+function renderCardTarefa(t) {
+  const nomes = (t.funcionarios_ids || []).map(id => (funcionariosPorId[id] || {}).nome).filter(Boolean).join(', ');
+  return `
+    <div class="rdo-card">
+      <div class="rdo-card-top">
+        <span class="rdo-unidade">${fmtData(t.data)}${t.criado_por ? `<span class="rdo-autor"> · ${escapeHtml(t.criado_por)}</span>` : ''}</span>
+        <div class="rdo-card-right">
+          <div class="rdo-card-actions">
+            <button type="button" class="btn-icon" title="Editar tarefa" onclick="editarTarefa(${t.id})">✏️</button>
+            <button type="button" class="btn-icon" title="Excluir tarefa" onclick="excluirTarefa(${t.id})">🗑️</button>
+          </div>
+        </div>
+      </div>
+      <div class="rdo-servico">${escapeHtml(t.descricao)}</div>
+      <div class="rdo-pessoas">${escapeHtml(nomes || '—')}</div>
+      ${t.observacao ? `<div class="rdo-obs">${escapeHtml(t.observacao)}</div>` : ''}
+    </div>
+  `;
+}
+
+function renderListaTarefas(lista) {
+  const cont = document.getElementById('listaTarefas');
+  if (!lista.length) { cont.innerHTML = '<div class="empty">Nenhuma tarefa registrada ainda.</div>'; return; }
+  cont.innerHTML = lista.map(renderCardTarefa).join('');
+}
+
+// autocompletar (datalist) com descrições já usadas, pra ajudar a repetir o
+// mesmo texto ("Carregar tijolo" em vez de virar "carregar tijolos" outra
+// hora) sem precisar de uma tela de catálogo/gerenciar como a de serviços —
+// só olha as tarefas já carregadas na tela, mantém simples de propósito.
+function atualizarDescricoesTarefaDatalist() {
+  const dl = document.getElementById('listaDescricoesTarefa');
+  if (!dl) return;
+  const unicos = Array.from(new Set(tarefas.map(t => t.descricao).filter(Boolean)));
+  dl.innerHTML = unicos.map(d => `<option value="${escapeHtml(d)}"></option>`).join('');
+}
+
+async function carregarTarefasRecentes() {
+  if (!sb) return;
+  const { data, error } = await sb.from('rdo_tarefas')
+    .select('*').order('created_at', { ascending: false }).limit(20);
+  if (error) { showToast('⚠️ Erro ao carregar tarefas: ' + error.message); return; }
+  tarefas = data || [];
+  indexarTarefas(tarefas);
+  const filtroData = document.getElementById('inpFiltroDataTarefa').value;
+  if (!filtroData) renderListaTarefas(tarefas);
+  atualizarDescricoesTarefaDatalist();
+}
+
+async function buscarTarefasPorDia() {
+  const data = document.getElementById('inpFiltroDataTarefa').value;
+  if (!data) { renderListaTarefas(tarefas); return; }
+  if (!sb) return;
+  const cont = document.getElementById('listaTarefas');
+  cont.innerHTML = '<div class="loading">Carregando...</div>';
+  const { data: linhas, error } = await sb.from('rdo_tarefas')
+    .select('*').eq('data', data).order('created_at', { ascending: false });
+  if (error) { cont.innerHTML = '<div class="empty">Erro ao buscar: ' + escapeHtml(error.message) + '</div>'; return; }
+  indexarTarefas(linhas);
+  renderListaTarefas(linhas);
+}
+
+function limparFiltroDataTarefa() {
+  document.getElementById('inpFiltroDataTarefa').value = '';
+  renderListaTarefas(tarefas);
+}
+
+function limparFormularioTarefa() {
+  document.getElementById('inpTarefaData').value = hojeStr();
+  document.getElementById('inpTarefaDescricao').value = '';
+  document.getElementById('inpTarefaObs').value = '';
+  document.querySelectorAll('#checklistFuncionariosTarefa input[type=checkbox]').forEach(el => { el.checked = false; });
+  limparFiltroChecklistFuncionariosTarefa();
+}
+
+function editarTarefa(id) {
+  const t = tarefasPorId[id];
+  if (!t) { showToast('⚠️ Não achei essa tarefa (recarregue a lista e tente de novo).'); return; }
+
+  tarefaEditandoId = id;
+  mostrarAba('tarefas');
+  document.getElementById('editandoBannerTarefa').classList.add('show');
+  document.getElementById('btnCancelarEdicaoTarefa').style.display = 'block';
+  document.getElementById('btnSalvarTarefa').textContent = 'Salvar edição';
+
+  document.getElementById('inpTarefaData').value = t.data;
+  document.getElementById('inpTarefaDescricao').value = t.descricao;
+  document.getElementById('inpTarefaObs').value = t.observacao || '';
+  limparFiltroChecklistFuncionariosTarefa(); // mostra todo mundo de novo, sem filtro residual, pra não esconder quem já está marcado
+  const idsMarcados = new Set((t.funcionarios_ids || []).map(String));
+  document.querySelectorAll('#checklistFuncionariosTarefa input[type=checkbox]').forEach(el => {
+    el.checked = idsMarcados.has(String(el.value));
+  });
+
+  document.querySelector('#aba-tarefas .card-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function sairModoEdicaoTarefa() {
+  tarefaEditandoId = null;
+  document.getElementById('editandoBannerTarefa').classList.remove('show');
+  document.getElementById('btnCancelarEdicaoTarefa').style.display = 'none';
+  document.getElementById('btnSalvarTarefa').textContent = 'Salvar tarefa';
+}
+
+function cancelarEdicaoTarefa() {
+  sairModoEdicaoTarefa();
+  limparFormularioTarefa();
+  showToast('Edição cancelada.');
+}
+
+async function excluirTarefa(id) {
+  const t = tarefasPorId[id];
+  if (!t) { showToast('⚠️ Não achei essa tarefa (recarregue a lista e tente de novo).'); return; }
+  if (!confirm(`Excluir essa tarefa?\n\n${fmtData(t.data)} — ${t.descricao}\n\nNão tem como desfazer.`)) return;
+  const { error } = await sb.from('rdo_tarefas').delete().eq('id', id);
+  if (error) { showToast('⚠️ Erro ao excluir tarefa: ' + error.message); return; }
+  delete tarefasPorId[id];
+  tarefas = tarefas.filter(x => x.id !== id);
+  if (tarefaEditandoId === id) { sairModoEdicaoTarefa(); limparFormularioTarefa(); }
+  const filtroData = document.getElementById('inpFiltroDataTarefa').value;
+  if (filtroData) await buscarTarefasPorDia(); else renderListaTarefas(tarefas);
+  showToast('🗑️ Tarefa excluída.');
+}
+
+async function salvarTarefa() {
+  if (!sb) { showToast('⚠️ Sem conexão com o banco.'); return; }
+
+  const data = document.getElementById('inpTarefaData').value;
+  if (!data) { showToast('⚠️ Escolha a data.'); return; }
+
+  const descricao = document.getElementById('inpTarefaDescricao').value.trim();
+  if (!descricao) { showToast('⚠️ Digite a tarefa.'); return; }
+
+  const idsMarcados = Array.from(document.querySelectorAll('#checklistFuncionariosTarefa input[type=checkbox]:checked')).map(el => el.value);
+  if (!idsMarcados.length) { showToast('⚠️ Marque quem ficou nessa tarefa.'); return; }
+
+  const observacao = document.getElementById('inpTarefaObs').value.trim() || null;
+  const idEmEdicao = tarefaEditandoId;
+
+  const payload = { data, descricao, funcionarios_ids: idsMarcados, observacao };
+
+  const btn = document.getElementById('btnSalvarTarefa');
+  btn.disabled = true;
+  btn.textContent = idEmEdicao ? 'Salvando edição...' : 'Salvando...';
+  try {
+    let resultado, error;
+    if (idEmEdicao) {
+      ({ data: resultado, error } = await sb.from('rdo_tarefas').update(payload).eq('id', idEmEdicao).select().single());
+    } else {
+      payload.criado_por = usuarioAtual ? usuarioAtual.nome : null;
+      ({ data: resultado, error } = await sb.from('rdo_tarefas').insert(payload).select().single());
+    }
+    if (error) throw error;
+
+    if (idEmEdicao) {
+      tarefasPorId[idEmEdicao] = resultado;
+      const idx = tarefas.findIndex(x => x.id === idEmEdicao);
+      if (idx >= 0) tarefas[idx] = resultado;
+      showToast('✅ Tarefa atualizada!');
+      sairModoEdicaoTarefa();
+    } else {
+      showToast('✅ Tarefa salva!');
+      tarefas.unshift(resultado);
+      indexarTarefas([resultado]);
+    }
+    limparFormularioTarefa();
+    atualizarDescricoesTarefaDatalist();
+    const filtroData = document.getElementById('inpFiltroDataTarefa').value;
+    if (filtroData) await buscarTarefasPorDia(); else renderListaTarefas(tarefas);
+  } catch (e) {
+    showToast('⚠️ Erro ao salvar: ' + (e.message || e));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = tarefaEditandoId ? 'Salvar edição' : 'Salvar tarefa';
+  }
+}
+
+// ============================================================
+// ABAS
+// ============================================================
+function mostrarAba(nome) {
+  document.querySelectorAll('.aba-conteudo').forEach(el => el.classList.remove('show'));
+  document.getElementById('aba-' + nome).classList.add('show');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-aba-' + nome).classList.add('active');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+async function recarregarTudo() {
+  document.getElementById('inpDataInicio').value = document.getElementById('inpDataInicio').value || hojeStr();
+  document.getElementById('inpTarefaData').value = document.getElementById('inpTarefaData').value || hojeStr();
+  await Promise.all([carregarFuncionarios(), carregarTiposServico(), carregarFeedRecente(), carregarTarefasRecentes()]);
+}
+
+checkExistingSession();
+</script>
+</body>
+</html>

@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Presença - Obra</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root { --charcoal:#1E2227; --yellow:#F5B700; --green:#2F9E44; --orange:#E8590C; --concrete:#EDEBE3; --teal:#4ECDC4; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:Arial,sans-serif;background:var(--concrete);color:#1E2227;padding-bottom:90px;}
+
+  .login-screen{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--charcoal);display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:100;}
+  .login-screen.hidden{display:none;}
+  .login-box{background:#fff;padding:30px;border-radius:12px;width:90%;max-width:300px;box-shadow:0 4px 20px rgba(0,0,0,0.2);}
+  .login-box h1{font-size:20px;margin-bottom:20px;text-align:center;}
+  .login-box input{width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;margin-bottom:12px;font-size:14px;}
+  .login-box button{width:100%;padding:12px;background:var(--yellow);border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;margin-bottom:8px;}
+  .login-box button:disabled{opacity:0.6;cursor:not-allowed;}
+  .login-box button:active{opacity:0.8;}
+  .login-box .btn-secondary{background:transparent;color:var(--yellow);border:2px solid var(--yellow);}
+  .login-box .error{color:var(--orange);font-size:12px;margin-bottom:10px;text-align:center;font-weight:600;}
+  .login-box .success{color:var(--green);font-size:12px;margin-bottom:10px;text-align:center;font-weight:600;}
+  .login-box .hint{color:#999;font-size:11px;margin-top:6px;text-align:center;}
+  .form-hidden{display:none;}
+  .toggle-btn{background:transparent;color:var(--yellow);border:none;cursor:pointer;font-weight:600;font-size:13px;text-decoration:underline;padding:0;font-family:Arial;}
+
+  .head{background:var(--charcoal);color:#fff;padding:16px;border-bottom:5px solid var(--yellow);position:sticky;top:0;z-index:20;}
+  .head h1{font-size:18px;font-weight:600;margin-bottom:4px;}
+  .head .sub{font-size:12px;opacity:0.8;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--green);}
+  .dot.off{background:var(--orange);}
+
+  .datebox{background:#2A2F36;border:1px solid #3A4048;border-radius:8px;padding:8px;display:flex;gap:8px;align-items:center;margin-top:10px;}
+  .datebox input{background:transparent;border:none;color:#fff;flex:1;font-size:14px;}
+
+  .search{position:relative;margin:10px 0;}
+  .search input{width:100%;padding:8px 8px 8px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;}
+
+  .pending-banner{background:#E8590C;color:#fff;padding:10px 16px;font-size:13px;font-weight:600;text-align:center;cursor:pointer;}
+  .summary{display:flex;gap:10px;padding:14px 16px 6px;}
+  .stat{flex:1;background:#fff;border:1px solid #ddd;border-radius:10px;padding:10px;text-align:center;}
+  .stat .n{font-size:20px;font-weight:600;}
+  .stat .l{font-size:11px;opacity:0.6;margin-top:3px;}
+
+  .list{padding:6px 16px 10px;}
+  .empty{text-align:center;padding:30px;opacity:0.6;font-size:13px;}
+  .company{background:#fff;border:1px solid #ddd;border-radius:10px;margin-bottom:10px;overflow:hidden;}
+  .chead{list-style:none;padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;-webkit-tap-highlight-color:transparent;background:#f9f9f9;font-weight:600;}
+  .chead::-webkit-details-marker{display:none;}
+  .cname{font-weight:600;font-size:14px;flex:1;}
+  .cbadge{font-size:12px;padding:2px 9px;background:var(--concrete);border-radius:20px;}
+
+  .workers{border-top:1px solid #eee;}
+  .wrow{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #eee;}
+  .wrow:last-child{border-bottom:none;}
+  .winfo{flex:1;}
+  .wname{font-size:13px;font-weight:500;}
+  .wfunc{font-size:11px;opacity:0.6;margin-top:2px;}
+  .wpending{font-size:10px;color:var(--orange);margin-top:2px;}
+
+  .toggle{display:flex;border:1px solid #ddd;border-radius:8px;overflow:hidden;}
+  .toggle button{border:none;background:#fff;color:#666;font-size:12px;font-weight:500;padding:6px 10px;cursor:pointer;}
+  .toggle button:first-child{border-right:1px solid #ddd;}
+  .toggle button.active-p{background:#DFF3E3;color:var(--green);}
+  .toggle button.active-f{background:#FCE7DB;color:var(--orange);}
+
+  .btn-del{border:none;background:transparent;color:#B00020;font-size:16px;cursor:pointer;padding:4px 6px;}
+  .btn-edit{border:none;background:transparent;color:#585759;font-size:16px;cursor:pointer;padding:4px 6px;}
+
+  .footer{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #ddd;padding:10px 16px;display:flex;gap:10px;}
+  .btn{flex:1;padding:12px;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-family:Arial;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px;}
+  .btn-main{background:var(--charcoal);color:#fff;position:relative;}
+  .btn-main .badge{position:absolute;top:-6px;right:-6px;background:var(--orange);color:#fff;border-radius:10px;font-size:10px;padding:1px 6px;}
+  .btn-logout{background:#999;color:#fff;flex:0.6;font-size:12px;}
+
+  .btn-add{position:fixed;bottom:100px;right:16px;z-index:25;width:56px;height:56px;border-radius:50%;background:var(--yellow);border:none;cursor:pointer;font-size:24px;color:var(--charcoal);box-shadow:0 4px 12px rgba(0,0,0,0.15);}
+  .btn-visitor{position:fixed;bottom:170px;right:16px;z-index:25;width:56px;height:56px;border-radius:50%;background:var(--teal);border:none;cursor:pointer;font-size:24px;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,0.15);}
+  .btn-saida{position:fixed;bottom:230px;right:16px;z-index:25;width:40px;height:40px;border-radius:50%;background:var(--orange);border:none;cursor:pointer;font-size:17px;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,0.15);}
+
+  .saida-results{max-height:180px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;margin-top:6px;}
+  .saida-item{padding:8px 10px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:13px;}
+  .saida-item:last-child{border-bottom:none;}
+  .saida-item:active{background:#f5f5f5;}
+  .saida-item-sub{display:block;font-size:11px;opacity:0.6;}
+  .saida-empty{padding:8px 10px;font-size:12px;opacity:0.6;}
+  .wsaida{font-size:10px;color:var(--orange);margin-top:2px;font-weight:600;}
+
+  .modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:40;align-items:flex-end;}
+  .modal.show{display:flex;}
+  .modal-content{background:#fff;width:100%;border-radius:16px 16px 0 0;padding:20px;max-height:90vh;overflow-y:auto;}
+  .modal h2{font-size:16px;font-weight:600;margin-bottom:16px;}
+  .form-group{margin-bottom:14px;}
+  .form-group label{display:block;font-size:12px;font-weight:600;margin-bottom:6px;}
+  .opcional-tag{font-weight:400;opacity:0.55;text-transform:none;}
+  .form-group input, .form-group select{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:14px;}
+  .modal-actions{display:flex;gap:10px;margin-top:20px;}
+  .modal-actions button{flex:1;padding:12px;border:none;border-radius:8px;font-weight:600;cursor:pointer;}
+  .btn-confirm{background:var(--yellow);color:var(--charcoal);}
+  .btn-cancel{background:var(--concrete);color:#1E2227;}
+
+  .toast{position:fixed;bottom:78px;left:50%;transform:translateX(-50%);background:var(--charcoal);color:#fff;padding:8px 16px;border-radius:20px;font-size:12px;opacity:0;z-index:30;transition:opacity 0.3s;max-width:90%;text-align:center;}
+  .toast.show{opacity:1;}
+
+  .err-banner{position:fixed;top:0;left:0;right:0;background:#B00020;color:#fff;padding:10px 14px;font-size:12px;font-family:monospace;z-index:9999;display:none;word-break:break-word;}
+  .err-banner.show{display:block;}
+</style>
+</head>
+<body>
+<div class="err-banner" id="errBanner"></div>
+<script>
+window.addEventListener('error', function(e) {
+  var b = document.getElementById('errBanner');
+  if (b) { b.textContent = '⚠️ ERRO: ' + e.message + ' (linha ' + e.lineno + ')'; b.classList.add('show'); }
+});
+window.addEventListener('unhandledrejection', function(e) {
+  var b = document.getElementById('errBanner');
+  if (b) { b.textContent = '⚠️ ERRO (promise): ' + (e.reason && e.reason.message ? e.reason.message : e.reason); b.classList.add('show'); }
+});
+</script>
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <h1>✅ Presença Obra</h1>
+    <div class="error" id="loginError"></div>
+    <input type="text" id="loginUser" placeholder="Usuário" autocomplete="username">
+    <input type="password" id="loginPassword" placeholder="Senha" autocomplete="current-password">
+    <button id="loginBtn" onclick="doLogin()">Entrar</button>
+  </div>
+</div>
+
+<div class="head" style="display:none;" id="mainApp">
+  <h1>📋 Lista de Presença</h1>
+  <div class="sub">
+    <span id="connDot" class="dot"></span>
+    <span id="connText">Diamond Millennium — Sincronizado na nuvem</span>
+  </div>
+  <div class="datebox" style="margin-top:10px;">
+    <input type="date" id="dateInput" onchange="changeDate()">
+  </div>
+  <div class="search">
+    <input type="text" id="searchInput" placeholder="Buscar..." oninput="render()">
+  </div>
+</div>
+
+<div class="pending-banner" id="pendingBanner" style="display:none;" onclick="viewPendencias()">
+  ⚠️ <span id="pendingBannerText">0 pendência(s) não sincronizada(s)</span> — toque pra ver
+</div>
+
+<div class="summary" style="display:none;" id="summaryBar">
+  <div class="stat"><div class="n" id="statPresent">0</div><div class="l">Presentes</div></div>
+  <div class="stat"><div class="n" id="statAbsent">0</div><div class="l">Faltas</div></div>
+  <div class="stat"><div class="n" id="statTotal">0</div><div class="l">Total</div></div>
+</div>
+
+<div class="list" id="list"></div>
+
+<button class="btn-add" id="addBtn" onclick="openModal()" style="display:none;" title="Adicionar funcionário fixo">➕</button>
+<button class="btn-visitor" id="addVisitorBtn" onclick="openVisitorModal()" style="display:none;" title="Adicionar visitante do dia">👤</button>
+<button class="btn-saida" id="saidaBtn" onclick="openSaidaModal()" style="display:none;" title="Marcar saída antecipada">🚪</button>
+
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <h2>Novo funcionário fixo</h2>
+    <div class="form-group"><label>Empreiteira</label>
+      <input type="text" id="formEmpresa" list="empresaList" placeholder="Ex: DIAMOND">
+      <datalist id="empresaList"></datalist>
+    </div>
+    <div class="form-group"><label>Nome</label><input type="text" id="formNome" placeholder="Ex: João Silva"></div>
+    <div class="form-group"><label>Função</label><input type="text" id="formFuncao" placeholder="Ex: Pedreiro"></div>
+    <div class="form-group"><label>Alocação <span class="opcional-tag">(opcional)</span></label><input type="text" id="formAlocacao" placeholder="Ex: Massa Interna"></div>
+    <div class="modal-actions">
+      <button class="btn-confirm" onclick="addWorker()">Adicionar</button>
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modalVisitor">
+  <div class="modal-content">
+    <h2>Visitante do dia</h2>
+    <div class="form-group"><label>Nome completo</label><input type="text" id="visitorName" placeholder="Ex: Maria Silva"></div>
+    <div class="form-group"><label>Função/Cargo</label><input type="text" id="visitorRole" placeholder="Ex: Pintor"></div>
+    <div class="modal-actions">
+      <button class="btn-confirm" onclick="addVisitor()">Adicionar</button>
+      <button class="btn-cancel" onclick="closeVisitorModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modalSaida">
+  <div class="modal-content">
+    <h2>🚪 Saída antecipada</h2>
+    <div class="form-group">
+      <label>Nome</label>
+      <input type="text" id="saidaNomeSearch" placeholder="Digite pra buscar na lista..." autocomplete="off" oninput="filtrarSaidaNomes()">
+      <div class="saida-results" id="saidaNomeResults"></div>
+      <input type="hidden" id="saidaFuncionarioId">
+    </div>
+    <div class="form-group"><label>Hora de entrada (opcional)</label><input type="time" id="saidaHoraEntrada"></div>
+    <div class="form-group"><label>Hora de saída (opcional)</label><input type="time" id="saidaHoraSaida"></div>
+    <div class="modal-actions">
+      <button class="btn-confirm" onclick="confirmarSaidaAntecipada()">Salvar</button>
+      <button class="btn-cancel" onclick="closeSaidaModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modalEdit">
+  <div class="modal-content">
+    <h2>✏️ Editar funcionário</h2>
+    <div class="form-group"><label>Empreiteira</label>
+      <input type="text" id="editEmpresa" list="empresaList">
+    </div>
+    <div class="form-group"><label>Nome</label><input type="text" id="editNome"></div>
+    <div class="form-group"><label>Função</label><input type="text" id="editFuncao"></div>
+    <div class="form-group"><label>Alocação <span class="opcional-tag">(opcional)</span></label><input type="text" id="editAlocacao" placeholder="Ex: Massa Interna"></div>
+    <input type="hidden" id="editFuncionarioId">
+    <div class="modal-actions">
+      <button class="btn-confirm" onclick="saveEdit()">Salvar</button>
+      <button class="btn-cancel" onclick="closeEditModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="footer" style="display:none;" id="footerBar">
+  <button class="btn btn-main" onclick="syncNow(true)">☁️ Sincronizar<span class="badge" id="pendingBadge" style="display:none;">0</span></button>
+  <button class="btn" style="flex:0.5;background:#eee;color:#1E2227;" onclick="viewPendencias()" title="Ver detalhe das pendências">🔍</button>
+  <button class="btn btn-logout" onclick="doLogout()">↪️ Sair</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// CONFIG SUPABASE
+// ============================================================
+const OBRA_ID = 'diamond_millennium'; // identifica essa obra no armazenamento local do navegador (não mexer ao copiar pra outra obra até trocar aqui)
+const SUPABASE_URL = 'https://otlzehasidzannsczcnv.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_EsUxMlHlz4XiUjso5Yit-g_vtl7_Ius';
+let sb = null;
+try {
+  if (window.supabase) {
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true }
+    });
+  }
+} catch (e) {
+  console.error('Falha ao iniciar Supabase:', e);
+}
+
+// ============================================================
+// ESTADO
+// ============================================================
+let currentUser = null;
+let funcionarios = [];      // lista carregada (permanentes ativos + visitantes de hoje)
+let presenca = {};          // { funcionario_id: 'presente'|'falta' }
+let saidas = {};            // { funcionario_id: {hora_entrada, hora_saida} } - só quem saiu mais cedo, no dia atual
+let currentDate = todayStr();
+let syncing = false;
+
+function todayStr() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dia = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dia}`;
+}
+
+// ============================================================
+// FILA OFFLINE (localStorage)
+// ============================================================
+function getQueue() {
+  return JSON.parse(safeGet('pending_ops') || '[]');
+}
+function saveQueue(q) {
+  safeSet('pending_ops', JSON.stringify(q));
+  updatePendingBadge();
+}
+function queuePush(op) {
+  const q = getQueue();
+  q.push(op);
+  saveQueue(q);
+}
+function updatePendingBadge() {
+  const n = getQueue().length;
+  const badge = document.getElementById('pendingBadge');
+  if (badge) {
+    if (n > 0) { badge.style.display = 'inline-block'; badge.textContent = n; }
+    else { badge.style.display = 'none'; }
+  }
+  const banner = document.getElementById('pendingBanner');
+  const bannerText = document.getElementById('pendingBannerText');
+  if (banner) {
+    if (n > 0) {
+      banner.style.display = 'block';
+      if (bannerText) bannerText.textContent = `${n} pendência(s) não sincronizada(s)`;
+    } else {
+      banner.style.display = 'none';
+    }
+  }
+}
+
+// ============================================================
+// CACHE LOCAL (offline-first)
+// ============================================================
+function cacheFuncionarios() {
+  safeSet('funcionarios_cache', JSON.stringify(funcionarios));
+  safeSet('funcionarios_cache_date', currentDate);
+}
+function loadFuncionariosCache() {
+  funcionarios = JSON.parse(safeGet('funcionarios_cache') || '[]');
+}
+function cachePresenca(dateStr) {
+  safeSet(`presenca_${dateStr}`, JSON.stringify(presenca));
+}
+function loadPresencaCache(dateStr) {
+  presenca = JSON.parse(safeGet(`presenca_${dateStr}`) || '{}');
+}
+function cacheSaidas(dateStr) {
+  safeSet(`saidas_${dateStr}`, JSON.stringify(saidas));
+}
+function loadSaidasCache(dateStr) {
+  saidas = JSON.parse(safeGet(`saidas_${dateStr}`) || '{}');
+}
+
+// ============================================================
+// CONEXÃO
+// ============================================================
+function isOnline() { return navigator.onLine && !!sb; }
+
+function updateConnIndicator() {
+  const dot = document.getElementById('connDot');
+  const text = document.getElementById('connText');
+  if (!dot) return;
+  if (isOnline()) {
+    dot.classList.remove('off');
+    text.textContent = 'Diamond Millennium — Online';
+  } else {
+    dot.classList.add('off');
+    text.textContent = 'Diamond Millennium — Offline (salvando localmente)';
+  }
+}
+
+window.addEventListener('online', () => { updateConnIndicator(); syncNow(false); });
+window.addEventListener('offline', updateConnIndicator);
+setInterval(() => { if (isOnline() && !syncing) syncNow(false); }, 15000);
+
+// sincroniza assim que o app volta a ficar visível (ex: porteiro trocou de app e voltou)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && isOnline() && !syncing) syncNow(false);
+});
+window.addEventListener('focus', () => {
+  if (isOnline() && !syncing) syncNow(false);
+});
+
+// avisa se tentar fechar/sair com pendência ainda não sincronizada (funciona em navegador desktop;
+// em app mobile o navegador pode ignorar, mas não custa tentar)
+window.addEventListener('beforeunload', (e) => {
+  if (getQueue().length > 0) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
+// ============================================================
+// STORAGE SEGURO (evita quebrar se localStorage estiver bloqueado, ex: modo anônimo)
+// Toda chave é carimbada com OBRA_ID pra não misturar dados se o mesmo navegador
+// tiver o app de mais de uma obra aberto (ex: celular do porteiro com 2 obras)
+// ============================================================
+const memStore = {};
+function safeGet(key) {
+  const k = `${OBRA_ID}:${key}`;
+  try { return localStorage.getItem(k); } catch (e) { return memStore[k] ?? null; }
+}
+function safeSet(key, value) {
+  const k = `${OBRA_ID}:${key}`;
+  try { localStorage.setItem(k, value); } catch (e) { memStore[k] = value; }
+}
+function safeRemove(key) {
+  const k = `${OBRA_ID}:${key}`;
+  try { localStorage.removeItem(k); } catch (e) { delete memStore[k]; }
+}
+
+// ============================================================
+// LOGIN FIXO (não usa mais Supabase Auth)
+// ============================================================
+const LOGIN_USER = 'junior';
+const LOGIN_PASS = '123654';
+
+function doLogin() {
+  const user = document.getElementById('loginUser').value.trim();
+  const pass = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+
+  if (user === LOGIN_USER && pass === LOGIN_PASS) {
+    safeSet('logged_in', 'true');
+    showApp();
+  } else {
+    errEl.textContent = '❌ Usuário ou senha inválidos';
+  }
+}
+
+function doLogout() {
+  safeRemove('logged_in');
+  currentUser = null;
+  presenca = {};
+  funcionarios = [];
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('summaryBar').style.display = 'none';
+  document.getElementById('addBtn').style.display = 'none';
+  document.getElementById('addVisitorBtn').style.display = 'none';
+  document.getElementById('saidaBtn').style.display = 'none';
+  document.getElementById('footerBar').style.display = 'none';
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPassword').value = '';
+}
+
+function checkExistingSession() {
+  limparCacheAntigo();
+  if (safeGet('logged_in') === 'true') {
+    showApp();
+  }
+}
+
+// remove do celular os caches de presença de dias muito antigos (o histórico
+// completo continua sempre salvo no Supabase - isso é só o cache local, pra
+// não acumular armazenamento infinito, ainda mais com várias obras no mesmo aparelho)
+function limparCacheAntigo(diasParaManter = 30) {
+  try {
+    const limite = new Date();
+    limite.setDate(limite.getDate() - diasParaManter);
+    const prefixos = [`${OBRA_ID}:presenca_`, `${OBRA_ID}:saidas_`];
+    const paraRemover = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key) continue;
+      const prefixo = prefixos.find(p => key.startsWith(p));
+      if (!prefixo) continue;
+      const dataStr = key.slice(prefixo.length);
+      const data = new Date(dataStr + 'T00:00:00');
+      if (!isNaN(data) && data < limite) paraRemover.push(key);
+    }
+    paraRemover.forEach(k => localStorage.removeItem(k));
+  } catch (e) {
+    // localStorage bloqueado - nada a limpar
+  }
+}
+
+// ============================================================
+// APP
+// ============================================================
+async function showApp() {
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('mainApp').style.display = 'block';
+  document.getElementById('summaryBar').style.display = 'flex';
+  document.getElementById('addBtn').style.display = 'block';
+  document.getElementById('addVisitorBtn').style.display = 'block';
+  document.getElementById('saidaBtn').style.display = 'block';
+  document.getElementById('footerBar').style.display = 'flex';
+  document.getElementById('dateInput').value = currentDate;
+  updateConnIndicator();
+  updatePendingBadge();
+
+  await loadFuncionariosFromServerOrCache();
+  await changeDate();
+
+  if (isOnline()) syncNow(false);
+}
+
+async function loadFuncionariosFromServerOrCache() {
+  // guarda quem foi adicionado localmente e ainda não confirmou no banco,
+  // pra não sumir da tela quando a lista for atualizada do servidor
+  const pendentes = funcionarios.filter(f => String(f.id).startsWith('temp_'));
+
+  if (isOnline()) {
+    try {
+      const { data, error } = await sb
+        .from('funcionarios')
+        .select('id, empresa, nome, funcao, alocacao, tipo, data_visita, ativo')
+        .or(`and(tipo.eq.permanente,ativo.eq.true),and(tipo.eq.visitante,data_visita.eq.${currentDate},ativo.eq.true)`)
+        .order('empresa', { ascending: true });
+      if (error) throw error;
+      funcionarios = [...(data || []), ...pendentes];
+      cacheFuncionarios();
+      populateEmpresaList();
+      return;
+    } catch (e) {
+      showToast('⚠️ Não consegui atualizar a lista, usando dados salvos.');
+    }
+  }
+  loadFuncionariosCache();
+  // garante que pendentes também sobrevivem no caminho offline/erro
+  pendentes.forEach(p => {
+    if (!funcionarios.some(f => f.id === p.id)) funcionarios.push(p);
+  });
+  populateEmpresaList();
+}
+
+function populateEmpresaList() {
+  const dl = document.getElementById('empresaList');
+  if (!dl) return;
+  const companies = [...new Set(funcionarios.map(f => f.empresa))].filter(c => c && c !== 'VISITANTE DO DIA').sort();
+  dl.innerHTML = companies.map(c => `<option value="${c}"></option>`).join('');
+}
+
+async function changeDate() {
+  currentDate = document.getElementById('dateInput').value || todayStr();
+
+  await loadFuncionariosFromServerOrCache();
+
+  if (isOnline()) {
+    try {
+      const { data, error } = await sb
+        .from('presenca')
+        .select('funcionario_id, status, hora_entrada, hora_saida, saida_antecipada')
+        .eq('data', currentDate);
+      if (error) throw error;
+      presenca = {};
+      saidas = {};
+      (data || []).forEach(p => {
+        presenca[p.funcionario_id] = p.status;
+        if (p.saida_antecipada) saidas[p.funcionario_id] = { hora_entrada: p.hora_entrada, hora_saida: p.hora_saida };
+      });
+      cachePresenca(currentDate);
+      cacheSaidas(currentDate);
+    } catch (e) {
+      loadPresencaCache(currentDate);
+      loadSaidasCache(currentDate);
+    }
+  } else {
+    loadPresencaCache(currentDate);
+    loadSaidasCache(currentDate);
+  }
+
+  getQueue().forEach(op => {
+    if (op.type === 'set_presenca' && op.payload.data === currentDate) {
+      presenca[op.payload.funcionario_id] = op.payload.status;
+    }
+    if (op.type === 'set_saida' && op.payload.data === currentDate) {
+      saidas[op.payload.funcionario_id] = { hora_entrada: op.payload.hora_entrada, hora_saida: op.payload.hora_saida };
+      presenca[op.payload.funcionario_id] = 'presente';
+    }
+  });
+
+  funcionarios.forEach(f => { if (!(f.id in presenca)) presenca[f.id] = 'falta'; });
+  render();
+}
+
+let expandedState = {}; // lembra quais empreiteiras estão abertas/fechadas entre atualizações da lista
+
+function render() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const pendingPresencaIds = new Set(
+    getQueue()
+      .filter(op => op.type === 'set_presenca' && op.payload.data === currentDate)
+      .map(op => op.payload.funcionario_id)
+  );
+  const byCompany = {};
+  funcionarios.forEach(f => {
+    if (!byCompany[f.empresa]) byCompany[f.empresa] = [];
+    byCompany[f.empresa].push(f);
+  });
+
+  const companies = Object.keys(byCompany).sort((a, b) =>
+    a === 'VISITANTE DO DIA' ? 1 : b === 'VISITANTE DO DIA' ? -1 : a.localeCompare(b)
+  );
+
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+
+  let anyShown = false;
+
+  companies.forEach((c, i) => {
+    const ws = byCompany[c]
+      .filter(w => !q || w.nome.toLowerCase().includes(q) || w.funcao.toLowerCase().includes(q))
+      .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+    if (!ws.length) return;
+    anyShown = true;
+
+    const p = ws.filter(w => presenca[w.id] === 'presente').length;
+    const det = document.createElement('details');
+    det.className = 'company';
+    // durante uma busca, abre tudo que bateu; fora da busca, respeita o que o usuário escolheu antes (padrão: 1ª empresa aberta)
+    det.open = q ? true : (c in expandedState ? expandedState[c] : i === 0);
+    det.addEventListener('toggle', () => { expandedState[c] = det.open; });
+
+    det.innerHTML = `<summary class="chead">
+      <span class="cname">${c}</span>
+      <span class="cbadge">${p}/${ws.length}</span>
+    </summary>
+    <div class="workers">
+      ${ws.map(w => `
+        <div class="wrow">
+          <div class="winfo">
+            <div class="wname">${w.nome}</div>
+            <div class="wfunc">${w.funcao}${w.alocacao ? ' • ' + w.alocacao : ''}</div>
+            ${String(w.id).startsWith('temp_') ? '<div class="wpending">⏳ aguardando sincronizar</div>' : ''}
+            ${!String(w.id).startsWith('temp_') && pendingPresencaIds.has(w.id) ? '<div class="wpending">🔄 sincronizando presença...</div>' : ''}
+            ${saidas[w.id] ? `<div class="wsaida">🚪 Saída antecipada${saidas[w.id].hora_saida ? ' — ' + saidas[w.id].hora_saida : ''}</div>` : ''}
+          </div>
+          <div class="toggle">
+            <button onclick="setStatus('${w.id}', 'presente')" class="${presenca[w.id] === 'presente' ? 'active-p' : ''}">P</button>
+            <button onclick="setStatus('${w.id}', 'falta')" class="${presenca[w.id] === 'falta' ? 'active-f' : ''}">F</button>
+          </div>
+          <button class="btn-edit" onclick="editWorker('${w.id}')" title="Editar">✏️</button>
+          <button class="btn-del" onclick="deleteWorker('${w.id}', '${w.nome.replace(/'/g, "\\'")}')" title="Excluir">🗑️</button>
+        </div>
+      `).join('')}
+    </div>`;
+
+    list.appendChild(det);
+  });
+
+  if (!anyShown) {
+    list.innerHTML = '<div class="empty">Nenhum funcionário encontrado para esta data/busca.</div>';
+  }
+
+  let p = 0, f = 0;
+  funcionarios.forEach(w => {
+    if (presenca[w.id] === 'presente') p++;
+    else f++;
+  });
+
+  document.getElementById('statPresent').textContent = p;
+  document.getElementById('statAbsent').textContent = f;
+  document.getElementById('statTotal').textContent = funcionarios.length;
+}
+
+function editWorker(id) {
+  const worker = funcionarios.find(f => String(f.id) === String(id));
+  if (!worker) return;
+
+  document.getElementById('editFuncionarioId').value = id;
+  document.getElementById('editEmpresa').value = worker.empresa;
+  document.getElementById('editNome').value = worker.nome;
+  document.getElementById('editFuncao').value = worker.funcao;
+  document.getElementById('editAlocacao').value = worker.alocacao || '';
+  document.getElementById('modalEdit').classList.add('show');
+}
+
+function closeEditModal() {
+  document.getElementById('modalEdit').classList.remove('show');
+}
+
+function saveEdit() {
+  const id = document.getElementById('editFuncionarioId').value;
+  const empresa = document.getElementById('editEmpresa').value.trim().toUpperCase();
+  const nome = document.getElementById('editNome').value.trim().toUpperCase();
+  const funcao = document.getElementById('editFuncao').value.trim().toUpperCase();
+  const alocacao = document.getElementById('editAlocacao').value.trim().toUpperCase() || null;
+
+  if (!empresa || !nome || !funcao) {
+    showToast('⚠️ Preencha empresa, nome e função.');
+    return;
+  }
+
+  const worker = funcionarios.find(f => String(f.id) === String(id));
+  if (!worker) { closeEditModal(); return; }
+
+  // checa duplicidade contra outros funcionários fixos (não contra ele mesmo)
+  if (worker.tipo === 'permanente') {
+    const jaExiste = funcionarios.some(f =>
+      String(f.id) !== String(id) && f.tipo === 'permanente' && f.empresa === empresa && f.nome === nome && f.funcao === funcao
+    );
+    if (jaExiste) {
+      showToast(`⚠️ Já existe outra pessoa cadastrada como "${nome}" em ${empresa} - ${funcao}.`);
+      return;
+    }
+  }
+
+  worker.empresa = empresa;
+  worker.nome = nome;
+  worker.funcao = funcao;
+  worker.alocacao = alocacao;
+  cacheFuncionarios();
+
+  if (String(id).startsWith('temp_')) {
+    // ainda nem foi sincronizado - atualiza direto o payload do add pendente
+    const q = getQueue();
+    const addOp = q.find(op => op.tempId === id && (op.type === 'add_funcionario' || op.type === 'add_visitor'));
+    if (addOp) { addOp.payload.empresa = empresa; addOp.payload.nome = nome; addOp.payload.funcao = funcao; addOp.payload.alocacao = alocacao; }
+    saveQueue(q);
+  } else {
+    const q = getQueue().filter(op => !(op.type === 'edit_funcionario' && op.payload.funcionario_id === id));
+    q.push({
+      id: 'op_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+      type: 'edit_funcionario',
+      payload: { funcionario_id: id, empresa, nome, funcao, alocacao }
+    });
+    saveQueue(q);
+  }
+
+  closeEditModal();
+  render();
+  showToast('✅ Funcionário atualizado!');
+  if (isOnline()) syncNow(false);
+}
+
+function deleteWorker(id, nome) {
+  const worker = funcionarios.find(f => String(f.id) === String(id));
+  if (!worker) return;
+
+  const isVisitor = worker.tipo === 'visitante' || worker.empresa === 'VISITANTE DO DIA';
+
+  const msg = isVisitor
+    ? `Remover o visitante "${nome}" de hoje?`
+    : `Excluir "${nome}" da lista definitivamente? (o histórico de presença dele continua salvo)`;
+  if (!confirm(msg)) return;
+
+  funcionarios = funcionarios.filter(f => String(f.id) !== String(id));
+  delete presenca[id];
+  cacheFuncionarios();
+  cachePresenca(currentDate);
+
+  if (String(id).startsWith('temp_')) {
+    // ainda nem tinha sido sincronizado - só tira da fila
+    const q = getQueue().filter(op => op.tempId !== id && !(op.type === 'set_presenca' && op.payload.funcionario_id === id));
+    saveQueue(q);
+  } else {
+    const q = getQueue().filter(op => !(op.type === 'set_presenca' && op.payload.funcionario_id === id));
+    q.push({
+      id: 'op_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+      type: isVisitor ? 'delete_visitor' : 'delete_funcionario',
+      payload: { funcionario_id: id }
+    });
+    saveQueue(q);
+  }
+
+  render();
+  showToast('🗑️ Removido! (toque no 🔍 se não sumir do banco depois de sincronizar)');
+  if (isOnline()) syncNow(false);
+}
+
+function viewPendencias() {
+  const q = getQueue();
+  if (!q.length) { showToast('✅ Nada pendente!'); return; }
+
+  const lines = q.map((op, i) => {
+    let desc = `${i + 1}. `;
+    if (op.type === 'add_funcionario') desc += `Adicionar fixo: ${op.payload.nome} — ${op.payload.empresa} (${op.payload.funcao})`;
+    else if (op.type === 'add_visitor') desc += `Adicionar visitante: ${op.payload.nome} (${op.payload.funcao})`;
+    else if (op.type === 'set_presenca') desc += `Marcar ${op.payload.status} em ${op.payload.data}`;
+    else if (op.type === 'set_saida') desc += `Saída antecipada em ${op.payload.data}`;
+    else if (op.type === 'delete_funcionario') desc += `Excluir funcionário fixo`;
+    else if (op.type === 'edit_funcionario') desc += `Editar: ${op.payload.nome} — ${op.payload.empresa} (${op.payload.funcao})`;
+    else if (op.type === 'delete_visitor') desc += `Excluir visitante`;
+    else desc += op.type;
+
+    if (op.lastError) {
+      let motivo = op.lastError;
+      if (/duplicate key|unique constraint/i.test(motivo)) motivo = 'já existe alguém com esse nome+empresa+função cadastrado';
+      desc += `\n   ❌ Motivo: ${motivo}`;
+    } else {
+      desc += `\n   ⏳ Ainda não tentou sincronizar (sem internet no momento)`;
+    }
+    return desc;
+  });
+
+  alert('PENDÊNCIAS (' + q.length + '):\n\n' + lines.join('\n\n'));
+
+  const resp = prompt('Pra DESCARTAR UMA pendência, digite o número dela.\nPra descartar TODAS as que estão com erro de uma vez (ex: 5 duplicadas), digite: erros\nPra não fazer nada, cancele.');
+  if (resp && resp.trim()) {
+    const val = resp.trim().toLowerCase();
+    let indices = [];
+
+    if (val === 'erros') {
+      indices = q.map((op, i) => (op.lastError ? i : -1)).filter(i => i >= 0);
+      if (!indices.length) { showToast('⚠️ Nenhuma pendência com erro registrado ainda.'); return; }
+    } else {
+      const idx = parseInt(val, 10) - 1;
+      if (isNaN(idx) || idx < 0 || idx >= q.length) {
+        showToast('⚠️ Número inválido.');
+        return;
+      }
+      indices = [idx];
+    }
+
+    const discardSet = new Set(indices);
+    const removedOps = q.filter((_, i) => discardSet.has(i));
+    const newQ = q.filter((_, i) => !discardSet.has(i));
+
+    removedOps.forEach(removed => {
+      if ((removed.type === 'add_funcionario' || removed.type === 'add_visitor') && removed.tempId) {
+        funcionarios = funcionarios.filter(f => f.id !== removed.tempId);
+        delete presenca[removed.tempId];
+      }
+    });
+    cacheFuncionarios();
+    cachePresenca(currentDate);
+    render();
+    saveQueue(newQ);
+    showToast(`🗑️ ${removedOps.length} pendência(s) descartada(s).`);
+  }
+}
+
+function setStatus(id, status) {
+  presenca[id] = status;
+  cachePresenca(currentDate);
+  render();
+
+  const q = getQueue().filter(op => !(op.type === 'set_presenca' && op.payload.funcionario_id === id && op.payload.data === currentDate));
+  q.push({ id: 'op_' + Date.now() + '_' + Math.random().toString(36).slice(2), type: 'set_presenca', payload: { funcionario_id: id, data: currentDate, status } });
+  saveQueue(q);
+
+  if (isOnline()) syncNow(false);
+  else showToast('💾 Salvo localmente. Sincroniza quando voltar o WiFi.');
+}
+
+// ============================================================
+// SINCRONIZAÇÃO
+// ============================================================
+async function syncNow(manual) {
+  if (!isOnline()) {
+    if (manual) showToast('📵 Sem conexão. Vai sincronizar automaticamente quando voltar.');
+    return;
+  }
+  if (syncing) return;
+  syncing = true;
+
+  try {
+    let q = getQueue();
+    if (q.length === 0) {
+      if (manual) showToast('✅ Já está tudo sincronizado!');
+      await refreshFromServer();
+      return;
+    }
+
+    const idMap = {};
+    const succeededIds = new Set();   // ids de operações confirmadas - só essas somem da fila
+    const errorById = {};             // ids de operações que falharam, com o motivo
+
+    // 1) adições de funcionário/visitante primeiro (geram os IDs reais)
+    for (const op of q) {
+      if (op.type === 'add_funcionario' || op.type === 'add_visitor') {
+        try {
+          const { data, error } = await sb
+            .from('funcionarios')
+            .insert(op.payload)
+            .select()
+            .single();
+          if (error) throw error;
+          idMap[op.tempId] = data.id;
+          succeededIds.add(op.id);
+        } catch (e) {
+          errorById[op.id] = (e && e.message) ? e.message : String(e);
+        }
+      }
+    }
+
+    // 2) o resto (presença, saída antecipada, edição, exclusão)
+    for (const op of q) {
+      if (succeededIds.has(op.id)) continue; // já processado no passo 1
+      if (op.type === 'add_funcionario' || op.type === 'add_visitor') continue; // já tratado acima
+
+      if (op.type === 'set_presenca') {
+        let funcId = op.payload.funcionario_id;
+        if (String(funcId).startsWith('temp_')) {
+          if (idMap[funcId]) funcId = idMap[funcId];
+          else continue; // funcionário ainda não sincronizou, tenta de novo na próxima
+        }
+        try {
+          const { error } = await sb
+            .from('presenca')
+            .upsert({
+              funcionario_id: funcId,
+              data: op.payload.data,
+              status: op.payload.status,
+              registrado_por: currentUser ? currentUser.id : null,
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'funcionario_id,data' });
+          if (error) throw error;
+          succeededIds.add(op.id);
+        } catch (e) {
+          errorById[op.id] = (e && e.message) ? e.message : String(e);
+        }
+      } else if (op.type === 'set_saida') {
+        let funcId = op.payload.funcionario_id;
+        if (String(funcId).startsWith('temp_')) {
+          if (idMap[funcId]) funcId = idMap[funcId];
+          else continue;
+        }
+        try {
+          const { error } = await sb
+            .from('presenca')
+            .upsert({
+              funcionario_id: funcId,
+              data: op.payload.data,
+              status: 'presente',
+              hora_entrada: op.payload.hora_entrada,
+              hora_saida: op.payload.hora_saida,
+              saida_antecipada: true,
+              registrado_por: currentUser ? currentUser.id : null,
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'funcionario_id,data' });
+          if (error) throw error;
+          succeededIds.add(op.id);
+        } catch (e) {
+          errorById[op.id] = (e && e.message) ? e.message : String(e);
+        }
+      } else if (op.type === 'edit_funcionario') {
+        try {
+          const { error } = await sb
+            .from('funcionarios')
+            .update({ empresa: op.payload.empresa, nome: op.payload.nome, funcao: op.payload.funcao, alocacao: op.payload.alocacao })
+            .eq('id', op.payload.funcionario_id);
+          if (error) throw error;
+          succeededIds.add(op.id);
+        } catch (e) {
+          errorById[op.id] = (e && e.message) ? e.message : String(e);
+        }
+      } else if (op.type === 'delete_funcionario') {
+        try {
+          const { error } = await sb.from('funcionarios').update({ ativo: false }).eq('id', op.payload.funcionario_id);
+          if (error) throw error;
+          succeededIds.add(op.id);
+        } catch (e) {
+          errorById[op.id] = (e && e.message) ? e.message : String(e);
+        }
+      } else if (op.type === 'delete_visitor') {
+        try {
+          const { error } = await sb.from('funcionarios').delete().eq('id', op.payload.funcionario_id);
+          if (error) throw error;
+          succeededIds.add(op.id);
+        } catch (e) {
+          errorById[op.id] = (e && e.message) ? e.message : String(e);
+        }
+      }
+    }
+
+    // ---- salva o resultado: pega a fila ATUAL (pode ter itens novos adicionados
+    // durante essa sincronização) e só remove pelo ID quem realmente confirmou.
+    // Nunca sobrescreve com uma cópia antiga - evita perder marcações feitas
+    // enquanto uma sincronização anterior ainda estava em andamento.
+    const filaAtual = getQueue();
+    const filaFinal = filaAtual
+      .filter(op => !succeededIds.has(op.id))
+      .map(op => errorById[op.id] ? { ...op, lastError: errorById[op.id] } : op);
+    saveQueue(filaFinal);
+
+    if (Object.keys(idMap).length) {
+      funcionarios = funcionarios.map(f => idMap[f.id] ? { ...f, id: idMap[f.id] } : f);
+      Object.keys(idMap).forEach(tempId => {
+        if (tempId in presenca) {
+          presenca[idMap[tempId]] = presenca[tempId];
+          delete presenca[tempId];
+        }
+      });
+      cacheFuncionarios();
+      cachePresenca(currentDate);
+    }
+
+    await refreshFromServer();
+
+    if (filaFinal.length === 0) {
+      if (manual) showToast('✅ Sincronizado!');
+    } else {
+      showToast(`⚠️ ${filaFinal.length} pendência(s) não sincronizaram. Toque no ícone 🗑️/nome pra conferir se não é nome duplicado.`);
+    }
+  } catch (e) {
+    showToast('⚠️ Erro ao sincronizar. Tentando de novo em breve.');
+  } finally {
+    syncing = false;
+  }
+}
+
+async function refreshFromServer() {
+  try {
+    await loadFuncionariosFromServerOrCache();
+    const { data, error } = await sb
+      .from('presenca')
+      .select('funcionario_id, status, hora_entrada, hora_saida, saida_antecipada')
+      .eq('data', currentDate);
+    if (!error) {
+      const serverPresenca = {};
+      const serverSaidas = {};
+      (data || []).forEach(p => {
+        serverPresenca[p.funcionario_id] = p.status;
+        if (p.saida_antecipada) serverSaidas[p.funcionario_id] = { hora_entrada: p.hora_entrada, hora_saida: p.hora_saida };
+      });
+      const pendingIds = new Set(getQueue().filter(op => op.type === 'set_presenca').map(op => op.payload.funcionario_id));
+      const pendingSaidaIds = new Set(getQueue().filter(op => op.type === 'set_saida').map(op => op.payload.funcionario_id));
+      Object.keys(serverPresenca).forEach(id => { if (!pendingIds.has(id)) presenca[id] = serverPresenca[id]; });
+      Object.keys(serverSaidas).forEach(id => { if (!pendingSaidaIds.has(id)) saidas[id] = serverSaidas[id]; });
+      funcionarios.forEach(f => { if (!(f.id in presenca)) presenca[f.id] = 'falta'; });
+      cachePresenca(currentDate);
+      cacheSaidas(currentDate);
+    }
+  } catch (e) {}
+  render();
+}
+
+// ============================================================
+// MODAIS
+// ============================================================
+function openModal() { document.getElementById('modal').classList.add('show'); }
+function closeModal() { document.getElementById('modal').classList.remove('show'); }
+function openVisitorModal() { document.getElementById('modalVisitor').classList.add('show'); }
+function closeVisitorModal() { document.getElementById('modalVisitor').classList.remove('show'); }
+
+function openSaidaModal() {
+  document.getElementById('saidaNomeSearch').value = '';
+  document.getElementById('saidaFuncionarioId').value = '';
+  document.getElementById('saidaHoraEntrada').value = '';
+  document.getElementById('saidaHoraSaida').value = '';
+  document.getElementById('saidaNomeResults').innerHTML = '';
+  document.getElementById('modalSaida').classList.add('show');
+}
+function closeSaidaModal() { document.getElementById('modalSaida').classList.remove('show'); }
+
+function filtrarSaidaNomes() {
+  const q = document.getElementById('saidaNomeSearch').value.toLowerCase().trim();
+  document.getElementById('saidaFuncionarioId').value = '';
+  const resultsEl = document.getElementById('saidaNomeResults');
+  if (!q) { resultsEl.innerHTML = ''; return; }
+
+  const matches = funcionarios
+    .filter(f => f.nome.toLowerCase().includes(q))
+    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+    .slice(0, 8);
+
+  if (!matches.length) {
+    resultsEl.innerHTML = '<div class="saida-empty">Ninguém encontrado na lista de hoje.</div>';
+    return;
+  }
+
+  resultsEl.innerHTML = matches.map(f => `
+    <div class="saida-item" onclick="selecionarSaidaNome('${f.id}', '${f.nome.replace(/'/g, "\\'")}')">
+      ${f.nome}
+      <span class="saida-item-sub">${f.empresa} — ${f.funcao}</span>
+    </div>
+  `).join('');
+}
+
+function selecionarSaidaNome(id, nome) {
+  document.getElementById('saidaFuncionarioId').value = id;
+  document.getElementById('saidaNomeSearch').value = nome;
+  document.getElementById('saidaNomeResults').innerHTML = '';
+}
+
+function confirmarSaidaAntecipada() {
+  const funcId = document.getElementById('saidaFuncionarioId').value;
+  if (!funcId) {
+    showToast('⚠️ Selecione um nome da lista de busca.');
+    return;
+  }
+  const horaEntrada = document.getElementById('saidaHoraEntrada').value || null;
+  const horaSaida = document.getElementById('saidaHoraSaida').value || null;
+
+  saidas[funcId] = { hora_entrada: horaEntrada, hora_saida: horaSaida };
+  presenca[funcId] = 'presente'; // quem sai mais cedo esteve presente
+  cacheSaidas(currentDate);
+  cachePresenca(currentDate);
+
+  const q = getQueue().filter(op => !(op.type === 'set_saida' && op.payload.funcionario_id === funcId && op.payload.data === currentDate));
+  q.push({
+    id: 'op_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+    type: 'set_saida',
+    payload: { funcionario_id: funcId, data: currentDate, hora_entrada: horaEntrada, hora_saida: horaSaida }
+  });
+  saveQueue(q);
+
+  closeSaidaModal();
+  render();
+  showToast('🚪 Saída antecipada registrada!');
+  if (isOnline()) syncNow(false);
+}
+
+
+function addWorker() {
+  const empresa = document.getElementById('formEmpresa').value.trim().toUpperCase();
+  const nome = document.getElementById('formNome').value.trim().toUpperCase();
+  const funcao = document.getElementById('formFuncao').value.trim().toUpperCase();
+  const alocacao = document.getElementById('formAlocacao').value.trim().toUpperCase() || null;
+
+  if (!empresa || !nome || !funcao) {
+    showToast('⚠️ Preencha empresa, nome e função.');
+    return;
+  }
+
+  const jaExiste = funcionarios.some(f =>
+    f.tipo === 'permanente' && f.empresa === empresa && f.nome === nome && f.funcao === funcao
+  );
+  const jaNaFila = getQueue().some(op =>
+    op.type === 'add_funcionario' && op.payload.empresa === empresa && op.payload.nome === nome && op.payload.funcao === funcao
+  );
+  if (jaExiste || jaNaFila) {
+    showToast(`⚠️ "${nome}" já está cadastrado (ou pendente de sincronizar) em ${empresa} como ${funcao}.`);
+    return;
+  }
+
+  const tempId = 'temp_' + Date.now();
+  const payload = { empresa, nome, funcao, alocacao, tipo: 'permanente', ativo: true, created_by: currentUser ? currentUser.id : null };
+
+  funcionarios.push({ id: tempId, ...payload });
+  presenca[tempId] = 'falta';
+  cacheFuncionarios();
+  cachePresenca(currentDate);
+
+  queuePush({ id: 'op_' + Date.now() + '_' + Math.random().toString(36).slice(2), type: 'add_funcionario', tempId, payload });
+
+  document.getElementById('formNome').value = '';
+  document.getElementById('formFuncao').value = '';
+  document.getElementById('formEmpresa').value = '';
+  document.getElementById('formAlocacao').value = '';
+
+  closeModal();
+  render();
+  showToast('✅ Funcionário adicionado!');
+  if (isOnline()) syncNow(false);
+}
+
+function addVisitor() {
+  const nome = document.getElementById('visitorName').value.trim().toUpperCase();
+  const funcao = document.getElementById('visitorRole').value.trim().toUpperCase();
+
+  if (!nome || !funcao) {
+    showToast('⚠️ Preencha nome e função do visitante.');
+    return;
+  }
+
+  const tempId = 'temp_' + Date.now();
+  const payload = { empresa: 'VISITANTE DO DIA', nome, funcao, tipo: 'visitante', data_visita: currentDate, ativo: true, created_by: currentUser ? currentUser.id : null };
+
+  funcionarios.push({ id: tempId, ...payload });
+  presenca[tempId] = 'presente';
+  cacheFuncionarios();
+  cachePresenca(currentDate);
+
+  queuePush({ id: 'op_' + Date.now() + '_' + Math.random().toString(36).slice(2), type: 'add_visitor', tempId, payload });
+  queuePush({ id: 'op_' + Date.now() + '_' + Math.random().toString(36).slice(2) + '_p', type: 'set_presenca', payload: { funcionario_id: tempId, data: currentDate, status: 'presente' } });
+
+  document.getElementById('visitorName').value = '';
+  document.getElementById('visitorRole').value = '';
+
+  closeVisitorModal();
+  render();
+  showToast('✅ Visitante adicionado! Ele some da lista automaticamente amanhã.');
+  if (isOnline()) syncNow(false);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+checkExistingSession();
+updateConnIndicator();
+</script>
+</body>
+</html>
