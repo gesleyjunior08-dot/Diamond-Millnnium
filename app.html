@@ -353,7 +353,7 @@
     btn.disabled = true; btn.textContent = 'Entrando...';
     try {
       const { data, error } = await sb.from('usuarios_diario')
-        .select('id, nome, login, senha, ativo')
+        .select('id, nome, login, senha, ativo, paginas_permitidas')
         .ilike('login', user)
         .maybeSingle();
       if (error) throw error;
@@ -361,7 +361,7 @@
         errEl.textContent = '❌ Usuário ou senha inválidos.';
         return;
       }
-      entrarComUsuario({ id: data.id, nome: data.nome, login: data.login });
+      entrarComUsuario({ id: data.id, nome: data.nome, login: data.login, paginas_permitidas: data.paginas_permitidas });
       document.getElementById('loginUser').value = '';
       document.getElementById('loginPassword').value = '';
     } catch (e) {
@@ -398,7 +398,7 @@
       document.getElementById('cadSenha').value = '';
       document.getElementById('cadSenhaConfirma').value = '';
       document.getElementById('boxCadastro').classList.remove('mostrar');
-      entrarComUsuario({ id: data.id, nome: data.nome, login: data.login });
+      entrarComUsuario({ id: data.id, nome: data.nome, login: data.login, paginas_permitidas: data.paginas_permitidas });
     } finally {
       btn.disabled = false; btn.textContent = 'Criar conta e entrar';
     }
@@ -443,6 +443,7 @@
     // existe na barra de abas (mesmo nível "decorativo" de proteção do
     // resto do sistema, não é uma barreira de segurança real)
     document.getElementById('abaAdmin').classList.toggle('escondida', !ehAdmin());
+    aplicarPermissoesAbas();
     iniciarAbas();
     carregarConfigPaginas();
     if (!pollConfigId) pollConfigId = setInterval(carregarConfigPaginas, 30000);
@@ -524,14 +525,63 @@
     } catch (e) {
       // tabela pode ainda não existir (admin_painel_setup.sql não rodado) —
       // nesse caso simplesmente não trava nada, sem quebrar o app
-      return;
     }
+    // também busca de novo as permissões por pessoa (quais abas essa pessoa
+    // pode ver) direto do banco — assim uma restrição nova feita pelo admin
+    // no admin.html passa a valer sozinha, sem a pessoa precisar sair e
+    // entrar de novo. Não se aplica ao admin, que sempre vê tudo.
+    if (usuarioAtual && !ehAdmin()) {
+      try {
+        const { data: dataUser, error: errUser } = await sb.from('usuarios_diario')
+          .select('paginas_permitidas').eq('id', usuarioAtual.id).maybeSingle();
+        if (!errUser && dataUser) {
+          usuarioAtual.paginas_permitidas = dataUser.paginas_permitidas;
+          safeSet('usuario_atual', JSON.stringify(usuarioAtual));
+        }
+      } catch (e2) {
+        // coluna pode ainda não existir (admin_permissoes_setup.sql não
+        // rodado) — nesse caso mantém a última permissão conhecida (ou
+        // "acesso a tudo" por padrão), sem quebrar o app
+      }
+    }
+    aplicarPermissoesAbas();
     // reaplica o bloqueio (ou libera) em qualquer aba que já esteja aberta,
     // sem precisar recarregar a página
     PAGINAS_TRAVAVEIS.forEach((chave) => {
       const frame = mapaFrame[chave];
       if (frame && frame.getAttribute('src')) aplicarBloqueioLeitura(frame, chave);
     });
+  }
+
+  // ============================================================
+  // PERMISSÕES POR PESSOA — quais das 6 ferramentas cada pessoa pode
+  // acessar (2026-09-23). Controlado pelo admin no admin.html, seção
+  // "👤 Permissões por pessoa" (grava em usuarios_diario.paginas_permitidas:
+  // null = acesso a tudo, que é o padrão pra ninguém perder acesso à toa;
+  // uma lista tipo ["presenca"] restringe só àquelas). O admin (junior)
+  // nunca é restringido, sempre vê as 6. Isso só esconde a aba na barra —
+  // mesmo nível "decorativo" de proteção do resto do login deste projeto,
+  // não impede alguém de abrir o arquivo da ferramenta direto por fora do
+  // app (isso exigiria mexer dentro de cada uma das 6 ferramentas).
+  // ============================================================
+  function aplicarPermissoesAbas() {
+    const permitidas = ehAdmin() ? null : (usuarioAtual && usuarioAtual.paginas_permitidas);
+    PAGINAS_TRAVAVEIS.forEach((chave) => {
+      const btn = document.querySelector(`.aba[data-aba="${chave}"]`);
+      if (!btn) return;
+      const liberado = !permitidas || permitidas.includes(chave);
+      btn.classList.toggle('escondida', !liberado);
+    });
+    // se a aba selecionada no momento acabou de ficar escondida (restrição
+    // aplicada com a pessoa já usando o app), troca sozinho pra primeira
+    // aba ainda liberada, pra não deixar a tela travada numa ferramenta
+    // que sumiu da barra
+    const abaAtivaBtn = document.querySelector('.aba.selecionada');
+    if (abasIniciadas && abaAtivaBtn && abaAtivaBtn.classList.contains('escondida')) {
+      const primeiraLiberada = Array.from(document.querySelectorAll('.aba'))
+        .find((b) => !b.classList.contains('escondida'));
+      if (primeiraLiberada) abrirAba(primeiraLiberada.dataset.aba);
+    }
   }
 
   function avisarBloqueioLeitura() {
@@ -612,6 +662,15 @@
       const salva = localStorage.getItem('diamond_app_ultima_aba');
       if (salva && mapaFrame[salva]) abaInicial = salva;
     } catch (e) {}
+    // se a aba escolhida (a última usada, ou "presenca" por padrão) estiver
+    // escondida por causa de uma restrição de permissão, abre a primeira
+    // aba que essa pessoa realmente pode ver
+    const btnInicial = document.querySelector(`.aba[data-aba="${abaInicial}"]`);
+    if (!btnInicial || btnInicial.classList.contains('escondida')) {
+      const primeiraVisivel = Array.from(document.querySelectorAll('.aba'))
+        .find((b) => !b.classList.contains('escondida'));
+      if (primeiraVisivel) abaInicial = primeiraVisivel.dataset.aba;
+    }
     abrirAba(abaInicial);
   }
 

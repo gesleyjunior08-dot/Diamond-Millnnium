@@ -78,6 +78,17 @@
   .toggle input:checked + .slider::before { transform: translateX(20px); }
   .toggle input:disabled + .slider { opacity: .5; cursor: not-allowed; }
 
+  .permissao-row { padding: 12px 0; border-top: 1px solid var(--borda); }
+  .permissao-row:first-of-type { border-top: none; }
+  .permissao-nome { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  .permissao-nome .pagina-meta { font-weight: 500; }
+  .permissao-checks { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-bottom: 10px; }
+  .permissao-checks label { display: flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--cinza-texto); cursor: pointer; }
+  .permissao-checks input { width: 15px; height: 15px; accent-color: var(--azul); }
+  .btnSalvarPermissao { background: var(--azul); color: #fff; border: none; border-radius: 8px; padding: 7px 14px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+  .btnSalvarPermissao:disabled { opacity: .6; }
+  .permissao-status { font-size: 11.5px; margin-left: 8px; color: var(--verde); }
+
   .filtros { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
   .filtros select, .filtros input { padding: 8px 10px; border: 1.5px solid var(--borda); border-radius: 9px; font-size: 13px; font-family: inherit; background: #fafafa; }
   .filtros select { flex: 1 1 140px; }
@@ -136,6 +147,12 @@
         <h2>🔒 Bloqueios de acesso</h2>
         <div class="desc">Deixe uma ferramenta em "somente leitura" pra travar as edições de todo mundo (menos a sua) sem tirar o acesso de ninguém — todo mundo continua vendo tudo normal, só não consegue salvar nada.</div>
         <div id="listaPaginas" class="carregando">Carregando...</div>
+      </div>
+
+      <div class="cartao">
+        <h2>👤 Permissões por pessoa</h2>
+        <div class="desc">Por padrão, todo mundo que tem conta enxerga as 6 ferramentas. Desmarque aqui o que uma pessoa NÃO deve acessar — as outras ficam escondidas da barra de abas dela (ela só vê o que ficar marcado). Você (admin) sempre tem acesso a tudo e não aparece nessa lista.</div>
+        <div id="listaPermissoes" class="carregando">Carregando...</div>
       </div>
 
       <div class="cartao">
@@ -241,6 +258,7 @@
     document.getElementById('subUsuario').textContent = 'Logado como ' + usuarioAtual.nome;
     document.getElementById('app').classList.add('mostrar');
     carregarPaginas();
+    carregarPermissoes();
     recarregarLog();
   }
 
@@ -296,6 +314,75 @@
       alert('⚠️ Erro ao salvar: ' + (e.message || e));
       checkboxEl.checked = !travar;
       checkboxEl.disabled = false;
+    }
+  }
+
+  // ============================================================
+  // PERMISSÕES POR PESSOA (usuarios_diario.paginas_permitidas)
+  // null = acesso a todas as 6 ferramentas (padrão, ninguém perde acesso
+  // à toa); uma lista tipo ["presenca"] restringe só àquelas. Isso só
+  // esconde a aba na barra do app.html — mesmo nível "decorativo" do
+  // resto do login deste projeto, não impede abrir a ferramenta direto
+  // por fora do app.
+  // ============================================================
+  const TODAS_PAGINAS = ['presenca', 'equipes', 'diario', 'dashboard', 'semanal', 'boletim'];
+
+  async function carregarPermissoes() {
+    const cont = document.getElementById('listaPermissoes');
+    if (!sb) { cont.innerHTML = '<div class="vazio">Sem conexão.</div>'; return; }
+    try {
+      const { data, error } = await sb.from('usuarios_diario')
+        .select('id, nome, login, ativo, paginas_permitidas')
+        .eq('ativo', true)
+        .order('nome');
+      if (error) throw error;
+      const usuarios = (data || []).filter(u => (u.login || '').toLowerCase() !== ADMIN_LOGIN);
+      if (!usuarios.length) {
+        cont.innerHTML = '<div class="vazio">Nenhuma outra pessoa com conta ainda.</div>';
+        return;
+      }
+      cont.innerHTML = usuarios.map((u) => {
+        const permitidas = u.paginas_permitidas; // null = acesso a tudo
+        const checks = TODAS_PAGINAS.map((chave) => {
+          const marcado = !permitidas || permitidas.includes(chave);
+          return `<label><input type="checkbox" data-pagina="${chave}" ${marcado ? 'checked' : ''}> ${NOMES_PAGINA[chave]}</label>`;
+        }).join('');
+        return `
+          <div class="permissao-row">
+            <div class="permissao-nome">${escapeHtml(u.nome)} <span class="pagina-meta">(${escapeHtml(u.login)})</span></div>
+            <div class="permissao-checks">${checks}</div>
+            <button class="btnSalvarPermissao" onclick="salvarPermissoes('${u.id}', this)">Salvar</button>
+            <span class="permissao-status" id="statusPerm-${u.id}"></span>
+          </div>
+        `;
+      }).join('');
+    } catch (e) {
+      // coluna pode ainda não existir (admin_permissoes_setup.sql não rodado)
+      cont.innerHTML = '<div class="vazio">Erro ao carregar: ' + (e.message || e) + '</div>';
+    }
+  }
+
+  async function salvarPermissoes(usuarioId, btnEl) {
+    if (!sb) { alert('⚠️ Sem conexão.'); return; }
+    const row = btnEl.closest('.permissao-row');
+    const marcados = Array.from(row.querySelectorAll('input[type="checkbox"]:checked')).map((c) => c.dataset.pagina);
+    // se marcou as 6, grava null (acesso total) em vez da lista inteira —
+    // mais simples de ler depois, e é o mesmo efeito prático
+    const valor = marcados.length === TODAS_PAGINAS.length ? null : marcados;
+    const statusEl = document.getElementById('statusPerm-' + usuarioId);
+    btnEl.disabled = true;
+    try {
+      const { error } = await sb.from('usuarios_diario').update({ paginas_permitidas: valor }).eq('id', usuarioId);
+      if (error) throw error;
+      if (statusEl) {
+        statusEl.textContent = '✓ Salvo';
+        clearTimeout(salvarPermissoes._t);
+        salvarPermissoes._t = setTimeout(() => { statusEl.textContent = ''; }, 2500);
+      }
+    } catch (e) {
+      if (statusEl) statusEl.textContent = '⚠️ Erro: ' + (e.message || e);
+    } finally {
+      btnEl.disabled = false;
     }
   }
 
