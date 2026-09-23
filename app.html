@@ -517,7 +517,7 @@
       .head h1 { display: none !important; }
       .head {
         padding: 6px 10px !important; min-height: 0 !important;
-        background: none !important; border-bottom: none !important;
+        background: #fff !important; border-bottom: none !important;
         box-shadow: 0 1px 0 rgba(0,0,0,0.08) !important;
       }
     }
@@ -538,6 +538,25 @@
         if (frame.contentWindow) {
           frame.contentWindow.doLogout = doLogoutShell;
         }
+        // Algumas ferramentas (hoje só o Diário de Obra) têm uma 2ª barra
+        // fixa logo abaixo do cabeçalho (".tabs", com as sub-abas Novo
+        // registro/Por funcionário/etc.), que já vinha com um
+        // "position:sticky; top:56px" fixo, calculado pro cabeçalho antigo
+        // (mais alto) daquela tela sozinha. Como o CSS acima encolheu o
+        // cabeçalho, a distância mudou — sem corrigir aqui, essa 2ª barra
+        // ficava "flutuando" fora do lugar (2026-09-23, reportado pelo
+        // usuário). Em vez de cravar um número novo, mede a altura real do
+        // cabeçalho já encolhido e ajusta o "top" da barra pra colar
+        // certinho embaixo dele, com fundo sólido (não transparente) pra
+        // não deixar o conteúdo que rola por baixo aparecer por cima.
+        const ajustarSegundaBarra = () => {
+          const cabecalhoFerramenta = doc.querySelector('.head');
+          const segundaBarra = doc.querySelector('.tabs');
+          if (!cabecalhoFerramenta || !segundaBarra) return;
+          const altura = cabecalhoFerramenta.getBoundingClientRect().height;
+          if (altura > 0) segundaBarra.style.setProperty('top', altura + 'px', 'important');
+        };
+        requestAnimationFrame(() => requestAnimationFrame(ajustarSegundaBarra));
       } catch (e) {
         // ferramenta ainda não carregou / sem acesso — ignora
       }
