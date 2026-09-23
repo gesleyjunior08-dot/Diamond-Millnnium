@@ -1769,7 +1769,22 @@ function mostrarAba(nome) {
 async function recarregarTudo() {
   document.getElementById('inpDataInicio').value = document.getElementById('inpDataInicio').value || hojeStr();
   document.getElementById('inpTarefaData').value = document.getElementById('inpTarefaData').value || hojeStr();
-  await Promise.all([carregarFuncionarios(), carregarTiposServico(), carregarFeedRecente(), carregarTarefasRecentes()]);
+  // Carrega primeiro os "dicionários" (funcionariosPorId / tiposServicoPorId)
+  // que os cards de registro e de tarefa precisam pra mostrar nome de gente
+  // e de serviço. Antes, as 4 buscas rodavam todas juntas num só
+  // Promise.all — como são 4 requisições de rede separadas, não tinha
+  // garantia de qual terminava primeiro; se a busca de tipos de serviço
+  // demorasse um pouco mais que a do feed de registros (corrida comum,
+  // varia a cada carregamento), o feed já renderizava os cards com
+  // tiposServicoPorId ainda vazio e mostrava "(serviço não encontrado)" —
+  // e como nada re-renderiza o feed sozinho depois, ficava preso assim até
+  // alguma outra ação re-renderizar a lista (ex.: editar e salvar aquele
+  // registro, que por aí já tinha dado tempo de sobra pro carregamento
+  // terminar). Recarregar a página repetia a corrida do zero. Agora as
+  // buscas dos dicionários são aguardadas primeiro, e só depois o feed de
+  // registros/tarefas é buscado — sem essa corrida.
+  await Promise.all([carregarFuncionarios(), carregarTiposServico()]);
+  await Promise.all([carregarFeedRecente(), carregarTarefasRecentes()]);
 }
 
 checkExistingSession();
