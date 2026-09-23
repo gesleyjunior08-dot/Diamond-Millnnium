@@ -262,6 +262,7 @@
       <iframe id="frame-dashboard" data-src="dashboard.html" title="Painel"></iframe>
       <iframe id="frame-semanal" data-src="relatorio_semanal.html" title="Relatório Semanal"></iframe>
       <iframe id="frame-boletim" data-src="boletim_diario.html" title="Boletim Diário"></iframe>
+      <iframe id="frame-rh" data-src="rh.html" title="RH"></iframe>
       <iframe id="frame-admin" data-src="admin.html" title="Administração"></iframe>
     </div>
     <div id="avisoSomenteLeitura"></div>
@@ -284,6 +285,9 @@
       </button>
       <button class="aba" data-aba="boletim">
         <span class="icone">📄</span><span class="rotulo">Boletim</span>
+      </button>
+      <button class="aba" data-aba="rh">
+        <span class="icone">🧑‍💼</span><span class="rotulo">RH</span>
       </button>
       <button class="aba escondida" data-aba="admin" id="abaAdmin">
         <span class="icone">🔐</span><span class="rotulo">Admin</span>
@@ -461,11 +465,13 @@
     dashboard: document.getElementById('frame-dashboard'),
     semanal: document.getElementById('frame-semanal'),
     boletim: document.getElementById('frame-boletim'),
+    rh: document.getElementById('frame-rh'),
     admin: document.getElementById('frame-admin'),
   };
-  // só essas 6 podem ser travadas em "somente leitura" pelo admin.html —
-  // a aba "admin" nunca entra nessa lista (ela é o próprio controle)
-  const PAGINAS_TRAVAVEIS = ['presenca', 'equipes', 'diario', 'dashboard', 'semanal', 'boletim'];
+  // só essas 7 podem ser travadas em "somente leitura" e restringidas por
+  // pessoa pelo admin.html — a aba "admin" nunca entra nessa lista (ela é
+  // o próprio controle)
+  const PAGINAS_TRAVAVEIS = ['presenca', 'equipes', 'diario', 'dashboard', 'semanal', 'boletim', 'rh'];
 
   // CSS injetado em cada ferramenta (mesma origem) assim que ela carrega,
   // só pra tirar a marca "Diamond Millennium" repetida (já aparece uma vez

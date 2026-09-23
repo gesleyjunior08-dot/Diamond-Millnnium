@@ -91,33 +91,15 @@
 
   .doc-resumo{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px;font-size:12px;}
   .doc-resumo b{color:var(--charcoal);}
-  .doc-company{border:1px solid #ddd;border-radius:8px;margin-bottom:10px;overflow:hidden;}
-  .doc-company summary{background:#f5f5f5;padding:10px 12px;font-weight:600;font-size:13px;cursor:pointer;display:flex;justify-content:space-between;}
   .doc-table{width:100%;border-collapse:collapse;}
   .doc-table th, .doc-table td{padding:8px 10px;font-size:12px;border-bottom:1px solid #eee;text-align:left;}
   .doc-table th{background:#fafafa;font-weight:600;text-align:center;}
   .doc-table th:first-child, .doc-table td:first-child{text-align:left;}
   .doc-table td:not(:first-child):not(:nth-child(2)){text-align:center;}
-  .doc-check{width:18px;height:18px;cursor:pointer;}
-  .doc-nome-funcao{display:flex;flex-direction:column;}
-  .doc-func-sub{font-size:10px;opacity:0.6;}
-  .doc-panel{text-transform:uppercase;}
-  .doc-panel input[type="text"]{text-transform:none;}
 
   .admin-hint{font-size:12px;opacity:0.75;margin-bottom:12px;line-height:1.5;}
   .admin-controls{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
   .admin-controls input, .admin-controls select{padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;}
-  .admin-company{border:1px solid #ddd;border-radius:8px;margin-bottom:10px;overflow:hidden;}
-  .admin-company summary{background:#f5f5f5;padding:10px 12px;font-weight:600;font-size:13px;cursor:pointer;display:flex;justify-content:space-between;}
-  .admin-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid #eee;font-size:13px;}
-  .admin-row:last-child{border-bottom:none;}
-  .admin-row.inativo{opacity:0.55;background:#fafafa;}
-  .admin-nome-funcao{display:flex;flex-direction:column;}
-  .admin-func-sub{font-size:11px;opacity:0.6;}
-  .admin-toggle{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;white-space:nowrap;}
-  .admin-toggle input{width:20px;height:20px;cursor:pointer;}
-  .admin-status-ativo{color:var(--green);}
-  .admin-status-inativo{color:#B00020;}
 
   .badge-n{background:#eee;color:#888;}
   .indiv-resultados{border:1px solid #ddd;border-radius:8px;margin-bottom:10px;max-height:220px;overflow-y:auto;background:#fff;}
@@ -166,8 +148,6 @@
     .card .n{color:#000;}
     .card{padding:8px !important;}
     .evo-wrap{height:150px !important;}
-    .doc-panel{display:none !important;}
-    .admin-panel{display:none !important;}
     .individual-panel{display:none !important;}
     .aloc-panel{break-inside:auto !important;}
     .page2{break-before:page;page-break-before:always;}
@@ -260,31 +240,8 @@ window.addEventListener('unhandledrejection', function(e) {
       <div id="saidasWrap"><div class="loading">Carregando...</div></div>
     </div>
 
-    <div class="panel doc-panel" style="margin-bottom:16px;">
-      <h3>8. 📄 Documentação dos funcionários</h3>
-      <div style="margin-bottom:12px;">
-        <input type="text" id="docSearch" placeholder="Buscar por nome..." oninput="renderDocChecklist()" style="width:100%;max-width:320px;">
-      </div>
-      <div id="docResumo" class="doc-resumo"></div>
-      <div id="docChecklistWrap"><div class="loading">Carregando...</div></div>
-    </div>
-
-    <div class="panel admin-panel" style="margin-bottom:16px;">
-      <h3>9. 🧑‍💼 Administração — Ativar / Desativar funcionários</h3>
-      <p class="admin-hint">Quem está <b>Ativo</b> aparece na lista de presença do app. Desativar tem o mesmo efeito de excluir no app (some da lista), mas mantém o histórico — e dá pra reativar aqui a qualquer momento.</p>
-      <div class="admin-controls">
-        <input type="text" id="adminSearch" placeholder="Buscar por nome..." oninput="renderAdminPanel()">
-        <select id="adminStatusFiltro" onchange="renderAdminPanel()">
-          <option value="todos">Todos</option>
-          <option value="ativo">Só ativos</option>
-          <option value="inativo">Só inativos</option>
-        </select>
-      </div>
-      <div id="adminWrap"><div class="loading">Carregando...</div></div>
-    </div>
-
     <div class="panel individual-panel" style="margin-bottom:16px;">
-      <h3>10. 🔎 Consulta individual de presença</h3>
+      <h3>8. 🔎 Consulta individual de presença</h3>
       <p class="admin-hint">Escolha uma pessoa e um período pra ver, dia a dia, quando ela veio e quando faltou. Esse painel não aparece na impressão nem no PDF exportado.</p>
 
       <div class="admin-controls">
@@ -409,8 +366,6 @@ async function showDashboard() {
   await loadRoster();
   await loadData();
   await atualizarDiaRelatorio();
-  await loadDocChecklist();
-  await loadAdminPanel();
   await loadIndivFuncionarios();
 }
 
@@ -465,201 +420,8 @@ async function loadRoster() {
 }
 
 // ============================================================
-// CHECKLIST DE DOCUMENTAÇÃO
-// ============================================================
-let docChecklistData = [];
-const DOC_CAMPOS = [
-  { campo: 'doc_ficha_registro', label: 'Ficha de Registro' },
-  { campo: 'doc_nr12_18', label: 'NR 12 e NR 18' },
-  { campo: 'doc_aso', label: 'ASO' },
-  { campo: 'doc_ordem_servico', label: 'Ordem de Serviço' },
-  { campo: 'doc_contrato', label: 'Contrato' },
-  { campo: 'doc_pgr', label: 'PGR' },
-  { campo: 'doc_pcmso', label: 'PCMSO' }
-];
-
-async function loadDocChecklist() {
-  const wrap = document.getElementById('docChecklistWrap');
-  if (!sb) { wrap.innerHTML = '<div class="empty">Sem conexão com o Supabase.</div>'; return; }
-  wrap.innerHTML = '<div class="loading">Carregando...</div>';
-  try {
-    const { data, error } = await sb
-      .from('funcionarios')
-      .select('id, empresa, nome, funcao, doc_ficha_registro, doc_nr12_18, doc_aso, doc_ordem_servico, doc_contrato, doc_pgr, doc_pcmso')
-      .eq('tipo', 'permanente')
-      .eq('ativo', true);
-    if (error) throw error;
-    docChecklistData = data || [];
-    renderDocChecklist();
-  } catch (e) {
-    wrap.innerHTML = '<div class="empty">Erro ao carregar documentação. Verifique se rodou o patch_documentacao.sql.</div>';
-    console.error(e);
-  }
-}
-
-function renderDocChecklist() {
-  const wrap = document.getElementById('docChecklistWrap');
-  const resumoEl = document.getElementById('docResumo');
-  const q = (document.getElementById('docSearch').value || '').toLowerCase().trim();
-
-  if (!docChecklistData.length) {
-    wrap.innerHTML = '<div class="empty">Nenhum funcionário fixo cadastrado ainda.</div>';
-    resumoEl.innerHTML = '';
-    return;
-  }
-
-  // resumo geral (sobre todo mundo, não só o filtro de busca)
-  const total = docChecklistData.length;
-  resumoEl.innerHTML = DOC_CAMPOS.map(dc => {
-    const completos = docChecklistData.filter(f => f[dc.campo]).length;
-    return `<span><b>${dc.label}:</b> ${completos}/${total}</span>`;
-  }).join('');
-
-  const filtrados = docChecklistData.filter(f => !q || f.nome.toLowerCase().includes(q));
-  if (!filtrados.length) {
-    wrap.innerHTML = '<div class="empty">Nenhum funcionário encontrado.</div>';
-    return;
-  }
-
-  const byCompany = {};
-  filtrados.forEach(f => { (byCompany[f.empresa] = byCompany[f.empresa] || []).push(f); });
-  const empresas = Object.keys(byCompany).sort((a, b) => a.localeCompare(b, 'pt-BR'));
-  empresas.forEach(e => byCompany[e].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')));
-
-  wrap.innerHTML = empresas.map((emp, i) => `
-    <details class="doc-company" ${q || i === 0 ? 'open' : ''}>
-      <summary>${emp} <span>${byCompany[emp].length}</span></summary>
-      <table class="doc-table">
-        <thead>
-          <tr>
-            <th>Funcionário</th>
-            ${DOC_CAMPOS.map(dc => `<th>${dc.label}</th>`).join('')}
-          </tr>
-        </thead>
-        <tbody>
-          ${byCompany[emp].map(f => `
-            <tr>
-              <td>
-                <div class="doc-nome-funcao">${f.nome}<span class="doc-func-sub">${f.funcao}</span></div>
-              </td>
-              ${DOC_CAMPOS.map(dc => `
-                <td><input type="checkbox" class="doc-check" ${f[dc.campo] ? 'checked' : ''} onchange="toggleDoc('${f.id}', '${dc.campo}', this.checked)"></td>
-              `).join('')}
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    </details>
-  `).join('');
-}
-
-async function toggleDoc(funcionarioId, campo, checked) {
-  if (!sb) { alert('⚠️ Sem conexão.'); return; }
-  try {
-    const { error } = await sb.from('funcionarios').update({ [campo]: checked }).eq('id', funcionarioId);
-    if (error) throw error;
-    const item = docChecklistData.find(f => f.id === funcionarioId);
-    if (item) item[campo] = checked;
-    renderDocChecklist();
-    const campoLabel = (DOC_CAMPOS.find(dc => dc.campo === campo) || {}).label || campo;
-    registrarEdicao('editar', `${checked ? 'Marcou' : 'Desmarcou'} "${campoLabel}" de ${item ? item.nome : funcionarioId}`);
-  } catch (e) {
-    console.error(e);
-    alert('⚠️ Não consegui salvar essa marcação. Verifique a conexão e tente de novo.');
-    loadDocChecklist();
-  }
-}
-
-// ============================================================
-// ADMINISTRAÇÃO - ATIVAR / DESATIVAR FUNCIONÁRIOS
-// ============================================================
-let adminData = [];
-
-async function loadAdminPanel() {
-  const wrap = document.getElementById('adminWrap');
-  if (!sb) { wrap.innerHTML = '<div class="empty">Sem conexão com o Supabase.</div>'; return; }
-  wrap.innerHTML = '<div class="loading">Carregando...</div>';
-  try {
-    const { data, error } = await sb
-      .from('funcionarios')
-      .select('id, empresa, nome, funcao, ativo')
-      .eq('tipo', 'permanente');
-    if (error) throw error;
-    adminData = data || [];
-    renderAdminPanel();
-  } catch (e) {
-    wrap.innerHTML = '<div class="empty">Erro ao carregar funcionários.</div>';
-    console.error(e);
-  }
-}
-
-function renderAdminPanel() {
-  const wrap = document.getElementById('adminWrap');
-  const q = (document.getElementById('adminSearch').value || '').toLowerCase().trim();
-  const statusFiltro = document.getElementById('adminStatusFiltro').value;
-
-  if (!adminData.length) {
-    wrap.innerHTML = '<div class="empty">Nenhum funcionário fixo cadastrado ainda.</div>';
-    return;
-  }
-
-  let filtrados = adminData.filter(f => !q || f.nome.toLowerCase().includes(q));
-  if (statusFiltro === 'ativo') filtrados = filtrados.filter(f => f.ativo);
-  if (statusFiltro === 'inativo') filtrados = filtrados.filter(f => !f.ativo);
-
-  if (!filtrados.length) {
-    wrap.innerHTML = '<div class="empty">Nenhum funcionário encontrado.</div>';
-    return;
-  }
-
-  const byCompany = {};
-  filtrados.forEach(f => { (byCompany[f.empresa] = byCompany[f.empresa] || []).push(f); });
-  const empresas = Object.keys(byCompany).sort((a, b) => a.localeCompare(b, 'pt-BR'));
-  empresas.forEach(e => byCompany[e].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')));
-
-  wrap.innerHTML = empresas.map((emp, i) => `
-    <details class="admin-company" ${q || statusFiltro !== 'todos' || i === 0 ? 'open' : ''}>
-      <summary>${emp} <span>${byCompany[emp].length}</span></summary>
-      <div>
-        ${byCompany[emp].map(f => `
-          <div class="admin-row ${f.ativo ? '' : 'inativo'}">
-            <div class="admin-nome-funcao">
-              <span>${f.nome}</span>
-              <span class="admin-func-sub">${f.funcao}</span>
-            </div>
-            <label class="admin-toggle">
-              <span class="${f.ativo ? 'admin-status-ativo' : 'admin-status-inativo'}">${f.ativo ? 'ATIVO' : 'INATIVO'}</span>
-              <input type="checkbox" ${f.ativo ? 'checked' : ''} onchange="toggleAtivo('${f.id}', this.checked)">
-            </label>
-          </div>
-        `).join('')}
-      </div>
-    </details>
-  `).join('');
-}
-
-async function toggleAtivo(funcionarioId, checked) {
-  if (!sb) { alert('⚠️ Sem conexão.'); return; }
-  try {
-    const { error } = await sb.from('funcionarios').update({ ativo: checked }).eq('id', funcionarioId);
-    if (error) throw error;
-    const item = adminData.find(f => f.id === funcionarioId);
-    if (item) item.ativo = checked;
-    renderAdminPanel();
-    // reflete a mudança nos outros painéis que também dependem de quem está ativo
-    loadRoster();
-    loadDocChecklist();
-    registrarEdicao('editar', `${checked ? 'Ativou' : 'Desativou'} ${item ? item.nome : funcionarioId}`);
-  } catch (e) {
-    console.error(e);
-    alert('⚠️ Não consegui salvar essa mudança. Verifique a conexão e tente de novo.');
-    loadAdminPanel();
-  }
-}
-
-// ============================================================
 // CONSULTA INDIVIDUAL DE PRESENÇA — escolhe uma pessoa + um período e
-// mostra dia a dia quem veio e quem faltou. Painel 10, escondido da
+// mostra dia a dia quem veio e quem faltou. Painel 8, escondido da
 // impressão/PDF (.individual-panel no @media print).
 // ============================================================
 let indivFuncionarios = [];
