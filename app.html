@@ -46,11 +46,35 @@
   #telaLogin {
     position: fixed; inset: 0;
     background: linear-gradient(160deg, var(--azul-escuro), var(--azul) 65%);
-    display: flex; align-items: center; justify-content: center;
+    display: flex; flex-direction: column; align-items: center;
     padding: 24px;
     padding-top: calc(24px + env(safe-area-inset-top));
     padding-bottom: calc(24px + env(safe-area-inset-bottom));
     z-index: 50;
+    /* A tela de login/cadastro precisa poder rolar por dentro dela mesma —
+       com o formulário de cadastro aberto (mais campos que o de login), o
+       cartão fica mais alto que a tela em celulares menores. Como o
+       html/body ficou travado (overflow:hidden, correção da barra do
+       Diário de Obra logo acima), sem isso aqui o cadastro ficava
+       "preso", sem jeito de rolar até o resto dos campos/botão
+       (2026-09-23, bug real reportado pelo usuário). */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  /* Truque do "espaçador flexível" pra centralizar o cartão verticalmente
+     SÓ quando ele cabe na tela — se centralizasse com "justify-content:
+     center" direto (jeito mais comum), em telas onde o cartão de cadastro
+     fica mais alto que a tela, os navegadores empurram o topo do cartão
+     pra fora da área visível SEM dar jeito de rolar até lá (um bug
+     conhecido de centralização com flexbox + conteúdo maior que a tela).
+     Esses dois espaçadores em branco (vazios, então começam com 0px)
+     crescem igualmente pra "empurrar" o cartão pro meio quando sobra
+     espaço, mas nunca ficam negativos — então quando o cartão não cabe,
+     eles simplesmente encolhem a 0 e o cartão começa coladinho no topo,
+     100% alcançável rolando pra baixo (2026-09-23, mesma correção do bug
+     relatado do cadastro "travado"). */
+  #telaLogin::before, #telaLogin::after {
+    content: ""; flex: 1 0 auto; width: 100%;
   }
   #telaLogin.escondida { display: none; }
   .cartaoLogin {
