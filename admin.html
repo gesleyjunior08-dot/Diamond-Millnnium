@@ -168,6 +168,7 @@
             <option value="boletim">Boletim</option>
             <option value="semanal">Relatório Semanal</option>
             <option value="rh">RH</option>
+            <option value="cadastro">Cadastro</option>
           </select>
           <input type="text" id="filtroPessoa" placeholder="Buscar por pessoa..." oninput="recarregarLogComDebounce()">
         </div>
@@ -186,7 +187,7 @@
   const NOMES_PAGINA = {
     presenca: 'Presença', equipes: 'Equipes', diario: 'Diário de Obra',
     dashboard: 'Painel', semanal: 'Relatório Semanal', boletim: 'Boletim Diário',
-    rh: 'RH',
+    rh: 'RH', cadastro: 'Cadastro',
   };
   // chave usada no log_edicoes é diferente da chave do app_paginas_config pro
   // diário de obra ("diario_obra" no log, "diario" na config) — mantido assim
@@ -275,7 +276,7 @@
       if (error) throw error;
       const porPagina = {};
       (data || []).forEach(r => { porPagina[r.pagina] = r; });
-      const ordem = ['presenca', 'equipes', 'diario', 'dashboard', 'semanal', 'boletim', 'rh'];
+      const ordem = ['presenca', 'equipes', 'diario', 'dashboard', 'semanal', 'boletim', 'rh', 'cadastro'];
       cont.innerHTML = ordem.map(chave => {
         const cfg = porPagina[chave] || { pagina: chave, somente_leitura: false };
         const travado = !!cfg.somente_leitura;
@@ -327,7 +328,7 @@
   // resto do login deste projeto, não impede abrir a ferramenta direto
   // por fora do app.
   // ============================================================
-  const TODAS_PAGINAS = ['presenca', 'equipes', 'diario', 'dashboard', 'semanal', 'boletim', 'rh'];
+  const TODAS_PAGINAS = ['presenca', 'equipes', 'diario', 'dashboard', 'semanal', 'boletim', 'rh', 'cadastro'];
 
   async function carregarPermissoes() {
     const cont = document.getElementById('listaPermissoes');
