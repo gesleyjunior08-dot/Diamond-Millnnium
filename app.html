@@ -16,10 +16,13 @@
 <meta name="apple-mobile-web-app-title" content="Diamond">
 <link rel="apple-touch-icon" href="icon-192.png">
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
   :root {
     --azul: #0053D8;
     --azul-escuro: #063593;
+    --verde: #2F9E44;
     --fundo: #f7f7f8;
     --borda: #e2e2e6;
     --barra-altura: 64px;
@@ -32,16 +35,102 @@
     background: var(--fundo);
     overscroll-behavior: none;
   }
+
+  /* ===================== TELA DE LOGIN / CADASTRO ===================== */
+  #telaLogin {
+    position: fixed; inset: 0;
+    background: linear-gradient(160deg, var(--azul-escuro), var(--azul) 65%);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    padding-top: calc(24px + env(safe-area-inset-top));
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+    z-index: 50;
+  }
+  #telaLogin.escondida { display: none; }
+  .cartaoLogin {
+    background: #fff;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 360px;
+    padding: 28px 24px 24px;
+    box-shadow: 0 20px 45px rgba(0,0,0,0.25);
+  }
+  .cartaoLogin .logo {
+    display: block;
+    width: 72px; height: 72px;
+    margin: 0 auto 14px;
+    object-fit: contain;
+  }
+  .cartaoLogin h1 {
+    margin: 0 0 4px; text-align: center;
+    font-size: 19px; font-weight: 800; color: var(--azul-escuro);
+  }
+  .cartaoLogin p.legenda {
+    margin: 0 0 20px; text-align: center;
+    font-size: 12.5px; color: #8a8a92;
+  }
+  .campo { margin-bottom: 12px; }
+  .campo label {
+    display: block; font-size: 12px; font-weight: 700;
+    color: #55555c; margin-bottom: 5px;
+  }
+  .campo input {
+    width: 100%; padding: 11px 12px;
+    border: 1.5px solid var(--borda); border-radius: 10px;
+    font-size: 15px; font-family: inherit;
+    background: #fafafa;
+  }
+  .campo input:focus { outline: none; border-color: var(--azul); background: #fff; }
+  .btnPrincipal {
+    width: 100%; padding: 12px;
+    background: var(--azul); color: #fff;
+    border: none; border-radius: 10px;
+    font-size: 15px; font-weight: 700; font-family: inherit;
+    cursor: pointer; margin-top: 4px;
+  }
+  .btnPrincipal:disabled { opacity: .6; }
+  .btnLink {
+    display: block; width: 100%; text-align: center;
+    background: none; border: none;
+    color: var(--azul); font-family: inherit;
+    font-size: 13px; font-weight: 700;
+    padding: 12px 4px 2px; cursor: pointer;
+  }
+  #erroLogin {
+    min-height: 16px; font-size: 12.5px; color: #c0392b;
+    text-align: center; margin-top: 4px;
+  }
+  #boxCadastro { display: none; border-top: 1px solid var(--borda); margin-top: 14px; padding-top: 14px; }
+  #boxCadastro.mostrar { display: block; }
+  #boxCadastro h2 { margin: 0 0 12px; font-size: 14px; color: var(--azul-escuro); }
+
+  /* ===================== CASCA DO APP ===================== */
+  #appShell { display: none; }
+  #appShell.visivel { display: block; }
+
   #topo {
     position: fixed; top: 0; left: 0; right: 0; height: var(--topo-altura);
     padding-top: env(safe-area-inset-top);
-    background: var(--azul);
+    padding-left: 14px; padding-right: 8px;
+    background: linear-gradient(120deg, var(--azul-escuro), var(--azul));
     color: #fff;
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 700; font-size: 16px;
-    letter-spacing: .3px;
+    display: flex; align-items: center; justify-content: space-between;
     z-index: 20;
   }
+  #topo .saudacao {
+    font-weight: 700; font-size: 14.5px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  #topo .saudacao small { display: block; font-weight: 500; font-size: 10.5px; opacity: .8; }
+  #btnSairShell {
+    background: rgba(255,255,255,0.16);
+    border: none; color: #fff;
+    font-family: inherit; font-size: 12.5px; font-weight: 700;
+    padding: 8px 12px; border-radius: 20px;
+    cursor: pointer; white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   #conteudo {
     position: fixed;
     top: calc(var(--topo-altura) + env(safe-area-inset-top));
@@ -89,50 +178,117 @@
   .aba .rotulo { font-size: 10px; line-height: 1.2; font-weight: 600; white-space: nowrap; }
   .aba.selecionada { color: var(--azul); }
   .aba.selecionada .icone { transform: scale(1.08); }
+  .aba.escondida { display: none; }
 
   @media (min-width: 700px) {
     .aba .rotulo { font-size: 11px; }
   }
+
+  /* aviso que aparece brevemente quando uma escrita é bloqueada (modo
+     somente leitura ligado pelo administrador) — ver aplicarBloqueioLeitura */
+  #avisoSomenteLeitura {
+    position: fixed; left: 50%; bottom: calc(var(--barra-altura) + env(safe-area-inset-bottom) + 12px);
+    transform: translateX(-50%) translateY(10px);
+    background: #1c1c1c; color: #fff; font-size: 12.5px; font-weight: 600;
+    padding: 10px 16px; border-radius: 20px; z-index: 40;
+    opacity: 0; pointer-events: none; transition: .2s;
+    max-width: 85vw; text-align: center;
+  }
+  #avisoSomenteLeitura.mostrar { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
 
-  <div id="topo">Diamond Millennium</div>
+  <!-- ===================== TELA DE LOGIN / CADASTRO ===================== -->
+  <div id="telaLogin">
+    <div class="cartaoLogin">
+      <img class="logo" src="icon-512.png" alt="Diamond Millennium">
+      <h1>Diamond Millennium</h1>
+      <p class="legenda">Entre com seu usuário para acessar o app</p>
 
-  <div id="conteudo">
-    <div id="placeholder">Toque numa aba abaixo pra abrir.</div>
-    <!-- Os iframes só ganham "src" na primeira vez que a aba é aberta
-         (carregamento sob demanda, pra não baixar as 6 ferramentas de
-         uma vez e gastar dados à toa) — depois disso ficam vivos em
-         segundo plano, então trocar de aba não perde o que você tava
-         fazendo nem pede login de novo. -->
-    <iframe id="frame-presenca" data-src="app_presenca.html" title="Presença"></iframe>
-    <iframe id="frame-equipes" data-src="equipes.html" title="Equipes"></iframe>
-    <iframe id="frame-diario" data-src="diario_obra.html" title="Diário de Obra"></iframe>
-    <iframe id="frame-dashboard" data-src="dashboard.html" title="Painel"></iframe>
-    <iframe id="frame-semanal" data-src="relatorio_semanal.html" title="Relatório Semanal"></iframe>
-    <iframe id="frame-boletim" data-src="boletim_diario.html" title="Boletim Diário"></iframe>
+      <div class="campo">
+        <label>Usuário</label>
+        <input id="loginUser" type="text" autocomplete="username" placeholder="seu usuário">
+      </div>
+      <div class="campo">
+        <label>Senha</label>
+        <input id="loginPassword" type="password" autocomplete="current-password" placeholder="sua senha">
+      </div>
+      <div id="erroLogin"></div>
+      <button class="btnPrincipal" id="btnEntrar" onclick="doLogin()">Entrar</button>
+      <button class="btnLink" onclick="toggleCadastro()">Não tem conta? Cadastre-se</button>
+
+      <div id="boxCadastro">
+        <h2>Criar minha conta</h2>
+        <div class="campo">
+          <label>Nome completo</label>
+          <input id="cadNome" type="text" placeholder="seu nome">
+        </div>
+        <div class="campo">
+          <label>Usuário</label>
+          <input id="cadLogin" type="text" autocomplete="username" placeholder="escolha um usuário">
+        </div>
+        <div class="campo">
+          <label>Senha</label>
+          <input id="cadSenha" type="password" autocomplete="new-password" placeholder="mínimo 4 caracteres">
+        </div>
+        <div class="campo">
+          <label>Confirme a senha</label>
+          <input id="cadSenhaConfirma" type="password" autocomplete="new-password" placeholder="repita a senha">
+        </div>
+        <button class="btnPrincipal" id="btnCadastrar" onclick="cadastrarUsuario()">Criar conta e entrar</button>
+        <button class="btnLink" onclick="toggleCadastro()">Já tenho conta, voltar ao login</button>
+      </div>
+    </div>
   </div>
 
-  <div id="abas">
-    <button class="aba" data-aba="presenca">
-      <span class="icone">📋</span><span class="rotulo">Presença</span>
-    </button>
-    <button class="aba" data-aba="equipes">
-      <span class="icone">👥</span><span class="rotulo">Equipes</span>
-    </button>
-    <button class="aba" data-aba="diario">
-      <span class="icone">📔</span><span class="rotulo">Diário</span>
-    </button>
-    <button class="aba" data-aba="dashboard">
-      <span class="icone">📊</span><span class="rotulo">Painel</span>
-    </button>
-    <button class="aba" data-aba="semanal">
-      <span class="icone">📅</span><span class="rotulo">Semanal</span>
-    </button>
-    <button class="aba" data-aba="boletim">
-      <span class="icone">📄</span><span class="rotulo">Boletim</span>
-    </button>
+  <!-- ===================== CASCA DO APP (abas) ===================== -->
+  <div id="appShell">
+    <div id="topo">
+      <div class="saudacao" id="saudacaoTopo">Olá!</div>
+      <button id="btnSairShell" onclick="doLogoutShell()">Sair</button>
+    </div>
+
+    <div id="conteudo">
+      <div id="placeholder">Toque numa aba abaixo pra abrir.</div>
+      <!-- Os iframes só ganham "src" na primeira vez que a aba é aberta
+           (carregamento sob demanda, pra não baixar as 6 ferramentas de
+           uma vez e gastar dados à toa) — depois disso ficam vivos em
+           segundo plano, então trocar de aba não perde o que você tava
+           fazendo nem pede login de novo. -->
+      <iframe id="frame-presenca" data-src="app_presenca.html" title="Presença"></iframe>
+      <iframe id="frame-equipes" data-src="equipes.html" title="Equipes"></iframe>
+      <iframe id="frame-diario" data-src="diario_obra.html" title="Diário de Obra"></iframe>
+      <iframe id="frame-dashboard" data-src="dashboard.html" title="Painel"></iframe>
+      <iframe id="frame-semanal" data-src="relatorio_semanal.html" title="Relatório Semanal"></iframe>
+      <iframe id="frame-boletim" data-src="boletim_diario.html" title="Boletim Diário"></iframe>
+      <iframe id="frame-admin" data-src="admin.html" title="Administração"></iframe>
+    </div>
+    <div id="avisoSomenteLeitura"></div>
+
+    <div id="abas">
+      <button class="aba" data-aba="presenca">
+        <span class="icone">📋</span><span class="rotulo">Presença</span>
+      </button>
+      <button class="aba" data-aba="equipes">
+        <span class="icone">👥</span><span class="rotulo">Equipes</span>
+      </button>
+      <button class="aba" data-aba="diario">
+        <span class="icone">📔</span><span class="rotulo">Diário</span>
+      </button>
+      <button class="aba" data-aba="dashboard">
+        <span class="icone">📊</span><span class="rotulo">Painel</span>
+      </button>
+      <button class="aba" data-aba="semanal">
+        <span class="icone">📅</span><span class="rotulo">Semanal</span>
+      </button>
+      <button class="aba" data-aba="boletim">
+        <span class="icone">📄</span><span class="rotulo">Boletim</span>
+      </button>
+      <button class="aba escondida" data-aba="admin" id="abaAdmin">
+        <span class="icone">🔐</span><span class="rotulo">Admin</span>
+      </button>
+    </div>
   </div>
 
 <script>
@@ -146,6 +302,155 @@
     });
   }
 
+  // ============================================================
+  // LOGIN ÚNICO DO APP (conta individual — tabela usuarios_diario,
+  // já usada pelo Diário de Obra). Ao entrar aqui, gravamos as DUAS
+  // chaves de sessão que as 6 ferramentas já sabem ler, então nenhuma
+  // delas pede login de novo — elas simplesmente já abrem liberadas.
+  // ============================================================
+  const OBRA_ID = 'diamond_millennium';
+  const SUPABASE_URL = 'https://otlzehasidzannsczcnv.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_EsUxMlHlz4XiUjso5Yit-g_vtl7_Ius';
+
+  let sb = null;
+  try {
+    if (window.supabase) {
+      sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: { persistSession: true, autoRefreshToken: true }
+      });
+    }
+  } catch (e) { console.error('Falha ao iniciar Supabase:', e); }
+
+  const memStore = {};
+  function safeGet(key) {
+    const k = `${OBRA_ID}:${key}`;
+    try { return localStorage.getItem(k); } catch (e) { return memStore[k] ?? null; }
+  }
+  function safeSet(key, value) {
+    const k = `${OBRA_ID}:${key}`;
+    try { localStorage.setItem(k, value); } catch (e) { memStore[k] = value; }
+  }
+  function safeRemove(key) {
+    const k = `${OBRA_ID}:${key}`;
+    try { localStorage.removeItem(k); } catch (e) { delete memStore[k]; }
+  }
+
+  let usuarioAtual = null;
+
+  function toggleCadastro() {
+    document.getElementById('boxCadastro').classList.toggle('mostrar');
+    document.getElementById('erroLogin').textContent = '';
+  }
+
+  async function doLogin() {
+    const user = document.getElementById('loginUser').value.trim();
+    const pass = document.getElementById('loginPassword').value;
+    const errEl = document.getElementById('erroLogin');
+    errEl.textContent = '';
+    if (!user || !pass) { errEl.textContent = '❌ Preencha usuário e senha.'; return; }
+    if (!sb) { errEl.textContent = '⚠️ Sem conexão com o banco.'; return; }
+    const btn = document.getElementById('btnEntrar');
+    btn.disabled = true; btn.textContent = 'Entrando...';
+    try {
+      const { data, error } = await sb.from('usuarios_diario')
+        .select('id, nome, login, senha, ativo')
+        .ilike('login', user)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data || !data.ativo || data.senha !== pass) {
+        errEl.textContent = '❌ Usuário ou senha inválidos.';
+        return;
+      }
+      entrarComUsuario({ id: data.id, nome: data.nome, login: data.login });
+      document.getElementById('loginUser').value = '';
+      document.getElementById('loginPassword').value = '';
+    } catch (e) {
+      errEl.textContent = '⚠️ Erro ao entrar: ' + (e.message || e);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Entrar';
+    }
+  }
+
+  async function cadastrarUsuario() {
+    const nome = document.getElementById('cadNome').value.trim();
+    const loginDesejado = document.getElementById('cadLogin').value.trim().toLowerCase().replace(/\s+/g, '');
+    const senha = document.getElementById('cadSenha').value;
+    const senhaConfirma = document.getElementById('cadSenhaConfirma').value;
+    const errEl = document.getElementById('erroLogin');
+    errEl.textContent = '';
+    if (!nome) { errEl.textContent = '❌ Digite seu nome.'; return; }
+    if (!loginDesejado) { errEl.textContent = '❌ Escolha um usuário.'; return; }
+    if (!senha || senha.length < 4) { errEl.textContent = '❌ A senha precisa ter pelo menos 4 caracteres.'; return; }
+    if (senha !== senhaConfirma) { errEl.textContent = '❌ As senhas digitadas são diferentes.'; return; }
+    if (!sb) { errEl.textContent = '⚠️ Sem conexão com o banco.'; return; }
+    const btn = document.getElementById('btnCadastrar');
+    btn.disabled = true; btn.textContent = 'Criando...';
+    try {
+      const { data: existente, error: errCheck } = await sb.from('usuarios_diario')
+        .select('id').ilike('login', loginDesejado).maybeSingle();
+      if (errCheck) { errEl.textContent = '⚠️ Erro ao verificar usuário: ' + errCheck.message; return; }
+      if (existente) { errEl.textContent = '❌ Esse usuário já existe — escolha outro.'; return; }
+      const { data, error } = await sb.from('usuarios_diario')
+        .insert({ nome, login: loginDesejado, senha, ativo: true }).select().single();
+      if (error) { errEl.textContent = '⚠️ Erro ao cadastrar: ' + error.message; return; }
+      document.getElementById('cadNome').value = '';
+      document.getElementById('cadLogin').value = '';
+      document.getElementById('cadSenha').value = '';
+      document.getElementById('cadSenhaConfirma').value = '';
+      document.getElementById('boxCadastro').classList.remove('mostrar');
+      entrarComUsuario({ id: data.id, nome: data.nome, login: data.login });
+    } finally {
+      btn.disabled = false; btn.textContent = 'Criar conta e entrar';
+    }
+  }
+
+  function entrarComUsuario(u) {
+    usuarioAtual = u;
+    // Grava as duas chaves de sessão que as ferramentas antigas já leem:
+    // "usuario_atual" (Diário de Obra) e "logged_in" (as outras 5 telas).
+    safeSet('usuario_atual', JSON.stringify(u));
+    safeSet('logged_in', 'true');
+    mostrarApp();
+  }
+
+  function doLogoutShell() {
+    safeRemove('usuario_atual');
+    safeRemove('logged_in');
+    usuarioAtual = null;
+    document.getElementById('appShell').classList.remove('visivel');
+    document.getElementById('telaLogin').classList.remove('escondida');
+  }
+
+  function checkSessaoExistente() {
+    const raw = safeGet('usuario_atual');
+    if (!raw) return;
+    try {
+      const u = JSON.parse(raw);
+      if (u && u.id) { usuarioAtual = u; mostrarApp(); }
+    } catch (e) { safeRemove('usuario_atual'); }
+  }
+
+  function ehAdmin() {
+    return !!(usuarioAtual && (usuarioAtual.login || '').toLowerCase() === 'junior');
+  }
+
+  function mostrarApp() {
+    document.getElementById('telaLogin').classList.add('escondida');
+    document.getElementById('appShell').classList.add('visivel');
+    const el = document.getElementById('saudacaoTopo');
+    if (el && usuarioAtual) el.innerHTML = 'Olá, ' + usuarioAtual.nome.split(' ')[0] + '<small>Diamond Millennium</small>';
+    // a aba "Admin" só aparece pro login "junior" — pras outras pessoas nem
+    // existe na barra de abas (mesmo nível "decorativo" de proteção do
+    // resto do sistema, não é uma barreira de segurança real)
+    document.getElementById('abaAdmin').classList.toggle('escondida', !ehAdmin());
+    iniciarAbas();
+    carregarConfigPaginas();
+    if (!pollConfigId) pollConfigId = setInterval(carregarConfigPaginas, 30000);
+  }
+
+  // ============================================================
+  // ABAS (mesma lógica de antes — só passa a rodar depois do login)
+  // ============================================================
   const botoes = document.querySelectorAll('.aba');
   const placeholder = document.getElementById('placeholder');
   const mapaFrame = {
@@ -155,7 +460,130 @@
     dashboard: document.getElementById('frame-dashboard'),
     semanal: document.getElementById('frame-semanal'),
     boletim: document.getElementById('frame-boletim'),
+    admin: document.getElementById('frame-admin'),
   };
+  // só essas 6 podem ser travadas em "somente leitura" pelo admin.html —
+  // a aba "admin" nunca entra nessa lista (ela é o próprio controle)
+  const PAGINAS_TRAVAVEIS = ['presenca', 'equipes', 'diario', 'dashboard', 'semanal', 'boletim'];
+
+  // CSS injetado em cada ferramenta (mesma origem) assim que ela carrega,
+  // só pra tirar a marca "Diamond Millennium" repetida (já aparece uma vez
+  // lá em cima, no app) e o botão "Sair" de cada tela (o app agora tem um
+  // único botão Sair, lá em cima). Não mexe em mais nada da ferramenta.
+  const CSS_UNIFICACAO = `
+    @media screen { .head .sub { display: none !important; } }
+    .head button[onclick="doLogout()"] { display: none !important; }
+  `;
+
+  function ligarUnificacao(frame, chave) {
+    frame.addEventListener('load', () => {
+      try {
+        const doc = frame.contentDocument;
+        if (!doc) return;
+        const style = doc.createElement('style');
+        style.textContent = CSS_UNIFICACAO;
+        doc.head.appendChild(style);
+        // Se a pessoa clicar em "Sair" de dentro de alguma aba (caso o
+        // botão não tenha sido pego pelo CSS acima), faz o logout valer
+        // pro app inteiro, não só pra aquela aba.
+        if (frame.contentWindow) {
+          frame.contentWindow.doLogout = doLogoutShell;
+        }
+      } catch (e) {
+        // ferramenta ainda não carregou / sem acesso — ignora
+      }
+      aplicarBloqueioLeitura(frame, chave);
+    });
+  }
+  Object.entries(mapaFrame).forEach(([chave, frame]) => ligarUnificacao(frame, chave));
+
+  // ============================================================
+  // PAINEL ADMINISTRATIVO — bloqueio de "somente leitura" por ferramenta
+  // (2026-09-23). O admin (login "junior") liga/desliga isso pelo admin.html,
+  // que grava numa tabela (app_paginas_config). Aqui a gente só lê essa
+  // tabela e, se uma ferramenta estiver travada, troca o "fetch" de dentro
+  // daquele iframe (mesma origem, acesso direto) pra bloquear só os pedidos
+  // de ESCRITA pro Supabase (POST/PATCH/PUT/DELETE) — leitura continua 100%
+  // normal, e a tela inteira continua clicável, então quem tentar salvar
+  // algo recebe o mesmo aviso de erro que a ferramenta já mostra quando o
+  // Supabase recusa alguma coisa (não precisou mexer em nenhuma das 6
+  // ferramentas pra isso funcionar). O admin (junior) nunca é bloqueado nas
+  // próprias ferramentas, só os outros usuários.
+  // ============================================================
+  let configPaginas = {};
+  let pollConfigId = null;
+
+  async function carregarConfigPaginas() {
+    if (!sb) return;
+    try {
+      const { data, error } = await sb.from('app_paginas_config').select('pagina, somente_leitura');
+      if (error) throw error;
+      const novoConfig = {};
+      (data || []).forEach((r) => { novoConfig[r.pagina] = !!r.somente_leitura; });
+      configPaginas = novoConfig;
+    } catch (e) {
+      // tabela pode ainda não existir (admin_painel_setup.sql não rodado) —
+      // nesse caso simplesmente não trava nada, sem quebrar o app
+      return;
+    }
+    // reaplica o bloqueio (ou libera) em qualquer aba que já esteja aberta,
+    // sem precisar recarregar a página
+    PAGINAS_TRAVAVEIS.forEach((chave) => {
+      const frame = mapaFrame[chave];
+      if (frame && frame.getAttribute('src')) aplicarBloqueioLeitura(frame, chave);
+    });
+  }
+
+  function avisarBloqueioLeitura() {
+    const aviso = document.getElementById('avisoSomenteLeitura');
+    if (!aviso) return;
+    aviso.textContent = '🔒 Essa ferramenta está em modo somente leitura no momento.';
+    aviso.classList.add('mostrar');
+    clearTimeout(avisarBloqueioLeitura._t);
+    avisarBloqueioLeitura._t = setTimeout(() => aviso.classList.remove('mostrar'), 3000);
+  }
+
+  function aplicarBloqueioLeitura(frame, chave) {
+    if (!PAGINAS_TRAVAVEIS.includes(chave)) return;
+    let win;
+    try { win = frame.contentWindow; } catch (e) { return; }
+    if (!win || !win.fetch) return;
+
+    const devesTravar = !!configPaginas[chave] && !ehAdmin();
+
+    if (devesTravar) {
+      if (win.__somenteLeituraAplicado) return; // já travado
+      const fetchOriginal = win.fetch.bind(win);
+      win.__fetchOriginalAntesDoBloqueio = fetchOriginal;
+      win.fetch = function (url, opcoes) {
+        const metodo = ((opcoes && opcoes.method) || 'GET').toUpperCase();
+        const ehSupabase = typeof url === 'string' && url.indexOf('supabase.co') !== -1;
+        const ehEscrita = ['POST', 'PATCH', 'PUT', 'DELETE'].indexOf(metodo) !== -1;
+        if (ehSupabase && ehEscrita) {
+          avisarBloqueioLeitura();
+          const corpoErro = JSON.stringify({
+            message: 'Somente leitura: edição bloqueada pelo administrador.',
+            details: null, hint: null, code: '423',
+          });
+          try {
+            return Promise.resolve(new win.Response(corpoErro, {
+              status: 423,
+              headers: { 'Content-Type': 'application/json' },
+            }));
+          } catch (e2) {
+            // fallback bem raro (Response indisponível no realm do iframe)
+            return Promise.reject(new Error('Somente leitura: edição bloqueada pelo administrador.'));
+          }
+        }
+        return fetchOriginal(url, opcoes);
+      };
+      win.__somenteLeituraAplicado = true;
+    } else if (win.__somenteLeituraAplicado) {
+      // foi destravado (ou virou admin) — restaura o fetch original
+      if (win.__fetchOriginalAntesDoBloqueio) win.fetch = win.__fetchOriginalAntesDoBloqueio;
+      win.__somenteLeituraAplicado = false;
+    }
+  }
 
   function abrirAba(nome) {
     botoes.forEach((b) => b.classList.toggle('selecionada', b.dataset.aba === nome));
@@ -175,13 +603,19 @@
 
   botoes.forEach((b) => b.addEventListener('click', () => abrirAba(b.dataset.aba)));
 
-  // Reabre a última aba usada da vez anterior (ou "presença" por padrão).
-  let abaInicial = 'presenca';
-  try {
-    const salva = localStorage.getItem('diamond_app_ultima_aba');
-    if (salva && mapaFrame[salva]) abaInicial = salva;
-  } catch (e) {}
-  abrirAba(abaInicial);
+  let abasIniciadas = false;
+  function iniciarAbas() {
+    if (abasIniciadas) return;
+    abasIniciadas = true;
+    let abaInicial = 'presenca';
+    try {
+      const salva = localStorage.getItem('diamond_app_ultima_aba');
+      if (salva && mapaFrame[salva]) abaInicial = salva;
+    } catch (e) {}
+    abrirAba(abaInicial);
+  }
+
+  checkSessaoExistente();
 </script>
 
 </body>

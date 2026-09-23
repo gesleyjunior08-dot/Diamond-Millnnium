@@ -320,6 +320,21 @@ try {
   console.error('Falha ao iniciar Supabase:', e);
 }
 
+// Log de edições (painel administrativo, 2026-09-23) — ver o mesmo helper
+// em equipes.html pra explicação completa. Nome de quem editou vem da
+// sessão individual gravada pelo login único do app.html.
+async function registrarEdicao(acao, descricao) {
+  try {
+    if (!sb) return;
+    let nomeUsuario = 'Desconhecido';
+    try {
+      const raw = localStorage.getItem(`${OBRA_ID}:usuario_atual`);
+      if (raw) { const u = JSON.parse(raw); if (u && u.nome) nomeUsuario = u.nome; }
+    } catch (e2) {}
+    await sb.from('log_edicoes').insert({ pagina: 'dashboard', acao, descricao, usuario_nome: nomeUsuario });
+  } catch (e) { /* log é só um extra, nunca deve travar a ação real */ }
+}
+
 if (window.Chart) {
   Chart.defaults.animation = false;
   Chart.defaults.devicePixelRatio = Math.max(window.devicePixelRatio || 1, 3);
@@ -546,6 +561,8 @@ async function toggleDoc(funcionarioId, campo, checked) {
     const item = docChecklistData.find(f => f.id === funcionarioId);
     if (item) item[campo] = checked;
     renderDocChecklist();
+    const campoLabel = (DOC_CAMPOS.find(dc => dc.campo === campo) || {}).label || campo;
+    registrarEdicao('editar', `${checked ? 'Marcou' : 'Desmarcou'} "${campoLabel}" de ${item ? item.nome : funcionarioId}`);
   } catch (e) {
     console.error(e);
     alert('⚠️ Não consegui salvar essa marcação. Verifique a conexão e tente de novo.');
@@ -632,6 +649,7 @@ async function toggleAtivo(funcionarioId, checked) {
     // reflete a mudança nos outros painéis que também dependem de quem está ativo
     loadRoster();
     loadDocChecklist();
+    registrarEdicao('editar', `${checked ? 'Ativou' : 'Desativou'} ${item ? item.nome : funcionarioId}`);
   } catch (e) {
     console.error(e);
     alert('⚠️ Não consegui salvar essa mudança. Verifique a conexão e tente de novo.');

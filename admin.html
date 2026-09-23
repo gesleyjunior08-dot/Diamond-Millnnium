@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Painel Administrativo — Diamond Millennium</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --azul: #0053D8;
+    --azul-escuro: #063593;
+    --verde: #2F9E44;
+    --laranja: #E8590C;
+    --fundo: #f7f7f8;
+    --borda: #e2e2e6;
+    --cinza-texto: #585759;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; min-height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--fundo);
+    color: #1c1c1c;
+  }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 16px 16px calc(40px + env(safe-area-inset-bottom)); }
+
+  /* login (mesmo padrão do diario_obra.html) */
+  #telaLogin {
+    position: fixed; inset: 0;
+    background: linear-gradient(160deg, var(--azul-escuro), var(--azul) 65%);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px; z-index: 50;
+  }
+  #telaLogin.escondida { display: none; }
+  .cartaoLogin { background: #fff; border-radius: 20px; width: 100%; max-width: 340px; padding: 26px 22px; box-shadow: 0 20px 45px rgba(0,0,0,.25); }
+  .cartaoLogin h1 { margin: 0 0 4px; text-align: center; font-size: 17px; color: var(--azul-escuro); }
+  .cartaoLogin p { margin: 0 0 16px; text-align: center; font-size: 12.5px; color: var(--cinza-texto); }
+  .campo { margin-bottom: 10px; }
+  .campo label { display: block; font-size: 11.5px; font-weight: 700; color: #55555c; margin-bottom: 4px; }
+  .campo input { width: 100%; padding: 10px; border: 1.5px solid var(--borda); border-radius: 9px; font-size: 14.5px; font-family: inherit; background: #fafafa; }
+  .campo input:focus { outline: none; border-color: var(--azul); background: #fff; }
+  .btnPrincipal { width: 100%; padding: 11px; background: var(--azul); color: #fff; border: none; border-radius: 9px; font-size: 14.5px; font-weight: 700; cursor: pointer; }
+  #erroLogin { min-height: 16px; font-size: 12px; color: #c0392b; text-align: center; margin-top: 6px; }
+
+  #acessoNegado { display: none; min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; }
+  #acessoNegado.mostrar { display: flex; }
+  #acessoNegado .icone { font-size: 42px; margin-bottom: 10px; }
+  #acessoNegado h2 { margin: 0 0 6px; color: var(--azul-escuro); }
+  #acessoNegado p { color: var(--cinza-texto); max-width: 320px; }
+  #acessoNegado button { margin-top: 16px; }
+
+  #app { display: none; }
+  #app.mostrar { display: block; }
+
+  .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .head h1 { font-size: 19px; margin: 0; color: var(--azul-escuro); }
+  .head .sub { font-size: 12px; color: var(--cinza-texto); margin-top: 2px; }
+  .btnSair { background: #f1f0f3; border: none; color: #444; font-size: 12.5px; font-weight: 700; padding: 9px 14px; border-radius: 20px; cursor: pointer; white-space: nowrap; }
+
+  .cartao { background: #fff; border-radius: 14px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .cartao h2 { font-size: 14.5px; margin: 0 0 4px; color: var(--azul-escuro); }
+  .cartao .desc { font-size: 12px; color: var(--cinza-texto); margin-bottom: 12px; }
+
+  .pagina-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-top: 1px solid var(--borda); gap: 10px; }
+  .pagina-row:first-of-type { border-top: none; }
+  .pagina-info { min-width: 0; }
+  .pagina-nome { font-size: 14px; font-weight: 700; }
+  .pagina-meta { font-size: 11px; color: var(--cinza-texto); margin-top: 2px; }
+  .badge { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 20px; margin-left: 6px; }
+  .badge-aberto { background: #eaf7ec; color: var(--verde); }
+  .badge-leitura { background: #fdeee6; color: var(--laranja); }
+
+  .toggle { position: relative; width: 46px; height: 26px; flex-shrink: 0; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle .slider { position: absolute; inset: 0; background: #ccc; border-radius: 26px; cursor: pointer; transition: .15s; }
+  .toggle .slider::before { content: ''; position: absolute; width: 20px; height: 20px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .15s; }
+  .toggle input:checked + .slider { background: var(--laranja); }
+  .toggle input:checked + .slider::before { transform: translateX(20px); }
+  .toggle input:disabled + .slider { opacity: .5; cursor: not-allowed; }
+
+  .filtros { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .filtros select, .filtros input { padding: 8px 10px; border: 1.5px solid var(--borda); border-radius: 9px; font-size: 13px; font-family: inherit; background: #fafafa; }
+  .filtros select { flex: 1 1 140px; }
+  .filtros input[type="text"] { flex: 1 1 160px; }
+
+  .log-item { padding: 10px 0; border-top: 1px solid var(--borda); font-size: 13px; }
+  .log-item:first-of-type { border-top: none; }
+  .log-desc { margin-bottom: 3px; }
+  .log-meta { font-size: 11.5px; color: var(--cinza-texto); display: flex; gap: 8px; flex-wrap: wrap; }
+  .log-tag { background: var(--fundo); border-radius: 6px; padding: 1px 6px; }
+  .log-acao-criar { color: var(--verde); font-weight: 700; }
+  .log-acao-editar { color: var(--azul); font-weight: 700; }
+  .log-acao-excluir { color: #c0392b; font-weight: 700; }
+
+  .vazio, .carregando { text-align: center; color: var(--cinza-texto); font-size: 13px; padding: 20px 0; }
+  .btnMais { width: 100%; padding: 10px; background: var(--fundo); border: 1px solid var(--borda); border-radius: 9px; font-size: 13px; font-weight: 700; color: var(--azul); cursor: pointer; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+  <div id="telaLogin">
+    <div class="cartaoLogin">
+      <h1>Painel Administrativo</h1>
+      <p>Acesso restrito — entre com sua conta.</p>
+      <div class="campo">
+        <label>Usuário</label>
+        <input id="loginUser" type="text" autocomplete="username" placeholder="seu usuário">
+      </div>
+      <div class="campo">
+        <label>Senha</label>
+        <input id="loginPassword" type="password" autocomplete="current-password" placeholder="sua senha">
+      </div>
+      <div id="erroLogin"></div>
+      <button class="btnPrincipal" id="btnEntrar" onclick="doLogin()">Entrar</button>
+    </div>
+  </div>
+
+  <div id="acessoNegado">
+    <div class="icone">🔒</div>
+    <h2>Acesso restrito</h2>
+    <p>Esse painel é só pra administração do sistema. Sua conta não tem acesso aqui.</p>
+    <button class="btnSair" onclick="doLogout()">Sair</button>
+  </div>
+
+  <div id="app">
+    <div class="wrap">
+      <div class="head">
+        <div>
+          <h1>Painel Administrativo</h1>
+          <div class="sub" id="subUsuario">Diamond Millennium</div>
+        </div>
+        <button class="btnSair" onclick="doLogout()">Sair</button>
+      </div>
+
+      <div class="cartao">
+        <h2>🔒 Bloqueios de acesso</h2>
+        <div class="desc">Deixe uma ferramenta em "somente leitura" pra travar as edições de todo mundo (menos a sua) sem tirar o acesso de ninguém — todo mundo continua vendo tudo normal, só não consegue salvar nada.</div>
+        <div id="listaPaginas" class="carregando">Carregando...</div>
+      </div>
+
+      <div class="cartao">
+        <h2>📝 Edições recentes</h2>
+        <div class="desc">Toda edição feita em Equipes, Diário de Obra e Painel aparece aqui — com quem fez e quando.</div>
+        <div class="filtros">
+          <select id="filtroPagina" onchange="recarregarLog()">
+            <option value="">Todas as ferramentas</option>
+            <option value="equipes">Equipes</option>
+            <option value="diario_obra">Diário de Obra</option>
+            <option value="dashboard">Painel</option>
+            <option value="presenca">Presença</option>
+            <option value="boletim">Boletim</option>
+            <option value="semanal">Relatório Semanal</option>
+          </select>
+          <input type="text" id="filtroPessoa" placeholder="Buscar por pessoa..." oninput="recarregarLogComDebounce()">
+        </div>
+        <div id="listaLog" class="carregando">Carregando...</div>
+        <button class="btnMais" id="btnMaisLog" onclick="carregarMaisLog()" style="display:none;">Carregar mais</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const OBRA_ID = 'diamond_millennium';
+  const SUPABASE_URL = 'https://otlzehasidzannsczcnv.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_EsUxMlHlz4XiUjso5Yit-g_vtl7_Ius';
+  const ADMIN_LOGIN = 'junior'; // único login que enxerga este painel
+
+  const NOMES_PAGINA = {
+    presenca: 'Presença', equipes: 'Equipes', diario: 'Diário de Obra',
+    dashboard: 'Painel', semanal: 'Relatório Semanal', boletim: 'Boletim Diário',
+  };
+  // chave usada no log_edicoes é diferente da chave do app_paginas_config pro
+  // diário de obra ("diario_obra" no log, "diario" na config) — mantido assim
+  // porque o log já nasceu com esse nome nos arquivos que gravam nele.
+  const PAGINA_LOG_PARA_CONFIG = { diario_obra: 'diario', presenca: 'presenca', equipes: 'equipes', dashboard: 'dashboard', semanal: 'semanal', boletim: 'boletim' };
+
+  let sb = null;
+  try {
+    if (window.supabase) {
+      sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+    }
+  } catch (e) { console.error('Falha ao iniciar Supabase:', e); }
+
+  const memStore = {};
+  function safeGet(key) { const k = `${OBRA_ID}:${key}`; try { return localStorage.getItem(k); } catch (e) { return memStore[k] ?? null; } }
+  function safeSet(key, value) { const k = `${OBRA_ID}:${key}`; try { localStorage.setItem(k, value); } catch (e) { memStore[k] = value; } }
+  function safeRemove(key) { const k = `${OBRA_ID}:${key}`; try { localStorage.removeItem(k); } catch (e) { delete memStore[k]; } }
+
+  let usuarioAtual = null;
+
+  async function doLogin() {
+    const user = document.getElementById('loginUser').value.trim();
+    const pass = document.getElementById('loginPassword').value;
+    const errEl = document.getElementById('erroLogin');
+    errEl.textContent = '';
+    if (!user || !pass) { errEl.textContent = '❌ Preencha usuário e senha.'; return; }
+    if (!sb) { errEl.textContent = '⚠️ Sem conexão com o banco.'; return; }
+    const btn = document.getElementById('btnEntrar');
+    btn.disabled = true; btn.textContent = 'Entrando...';
+    try {
+      const { data, error } = await sb.from('usuarios_diario')
+        .select('id, nome, login, senha, ativo').ilike('login', user).maybeSingle();
+      if (error) throw error;
+      if (!data || !data.ativo || data.senha !== pass) { errEl.textContent = '❌ Usuário ou senha inválidos.'; return; }
+      usuarioAtual = { id: data.id, nome: data.nome, login: data.login };
+      safeSet('usuario_atual', JSON.stringify(usuarioAtual));
+      safeSet('logged_in', 'true');
+      mostrarConformeAcesso();
+    } catch (e) {
+      errEl.textContent = '⚠️ Erro ao entrar: ' + (e.message || e);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Entrar';
+    }
+  }
+
+  function doLogout() {
+    safeRemove('usuario_atual');
+    safeRemove('logged_in');
+    usuarioAtual = null;
+    document.getElementById('app').classList.remove('mostrar');
+    document.getElementById('acessoNegado').classList.remove('mostrar');
+    document.getElementById('telaLogin').classList.remove('escondida');
+  }
+
+  function checkSessaoExistente() {
+    const raw = safeGet('usuario_atual');
+    if (!raw) return;
+    try {
+      const u = JSON.parse(raw);
+      if (u && u.id) { usuarioAtual = u; mostrarConformeAcesso(); }
+    } catch (e) { safeRemove('usuario_atual'); }
+  }
+
+  function mostrarConformeAcesso() {
+    document.getElementById('telaLogin').classList.add('escondida');
+    const ehAdmin = usuarioAtual && (usuarioAtual.login || '').toLowerCase() === ADMIN_LOGIN;
+    if (!ehAdmin) {
+      document.getElementById('acessoNegado').classList.add('mostrar');
+      return;
+    }
+    document.getElementById('subUsuario').textContent = 'Logado como ' + usuarioAtual.nome;
+    document.getElementById('app').classList.add('mostrar');
+    carregarPaginas();
+    recarregarLog();
+  }
+
+  // ============================================================
+  // BLOQUEIOS DE ACESSO (app_paginas_config)
+  // ============================================================
+  async function carregarPaginas() {
+    const cont = document.getElementById('listaPaginas');
+    if (!sb) { cont.innerHTML = '<div class="vazio">Sem conexão.</div>'; return; }
+    try {
+      const { data, error } = await sb.from('app_paginas_config').select('*');
+      if (error) throw error;
+      const porPagina = {};
+      (data || []).forEach(r => { porPagina[r.pagina] = r; });
+      const ordem = ['presenca', 'equipes', 'diario', 'dashboard', 'semanal', 'boletim'];
+      cont.innerHTML = ordem.map(chave => {
+        const cfg = porPagina[chave] || { pagina: chave, somente_leitura: false };
+        const travado = !!cfg.somente_leitura;
+        const meta = cfg.atualizado_por
+          ? `Alterado por ${cfg.atualizado_por}${cfg.atualizado_em ? ' em ' + fmtDataHora(cfg.atualizado_em) : ''}`
+          : 'Nunca alterado';
+        return `
+          <div class="pagina-row">
+            <div class="pagina-info">
+              <div class="pagina-nome">${NOMES_PAGINA[chave] || chave}<span class="badge ${travado ? 'badge-leitura' : 'badge-aberto'}">${travado ? 'Somente leitura' : 'Aberto'}</span></div>
+              <div class="pagina-meta">${meta}</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" ${travado ? 'checked' : ''} onchange="alternarPagina('${chave}', this.checked, this)">
+              <span class="slider"></span>
+            </label>
+          </div>
+        `;
+      }).join('');
+    } catch (e) {
+      cont.innerHTML = '<div class="vazio">Erro ao carregar: ' + (e.message || e) + '</div>';
+    }
+  }
+
+  async function alternarPagina(chave, travar, checkboxEl) {
+    if (!sb) { alert('⚠️ Sem conexão.'); checkboxEl.checked = !travar; return; }
+    checkboxEl.disabled = true;
+    try {
+      const { error } = await sb.from('app_paginas_config').upsert({
+        pagina: chave,
+        somente_leitura: travar,
+        atualizado_por: usuarioAtual ? usuarioAtual.nome : null,
+        atualizado_em: new Date().toISOString(),
+      });
+      if (error) throw error;
+      await carregarPaginas();
+    } catch (e) {
+      alert('⚠️ Erro ao salvar: ' + (e.message || e));
+      checkboxEl.checked = !travar;
+      checkboxEl.disabled = false;
+    }
+  }
+
+  // ============================================================
+  // LOG DE EDIÇÕES
+  // ============================================================
+  const PAGINA_TAMANHO = 30;
+  let logOffset = 0;
+  let logAcabou = false;
+  let debounceTimer = null;
+
+  function recarregarLogComDebounce() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(recarregarLog, 350);
+  }
+
+  async function recarregarLog() {
+    logOffset = 0;
+    logAcabou = false;
+    document.getElementById('listaLog').innerHTML = '<div class="carregando">Carregando...</div>';
+    await carregarLog(true);
+  }
+
+  async function carregarMaisLog() {
+    await carregarLog(false);
+  }
+
+  async function carregarLog(substituir) {
+    if (!sb) { document.getElementById('listaLog').innerHTML = '<div class="vazio">Sem conexão.</div>'; return; }
+    const pagina = document.getElementById('filtroPagina').value;
+    const pessoa = document.getElementById('filtroPessoa').value.trim();
+    try {
+      let query = sb.from('log_edicoes').select('*').order('created_at', { ascending: false })
+        .range(logOffset, logOffset + PAGINA_TAMANHO - 1);
+      if (pagina) query = query.eq('pagina', pagina);
+      if (pessoa) query = query.ilike('usuario_nome', `%${pessoa}%`);
+      const { data, error } = await query;
+      if (error) throw error;
+      const itens = data || [];
+      logOffset += itens.length;
+      logAcabou = itens.length < PAGINA_TAMANHO;
+      const cont = document.getElementById('listaLog');
+      const html = itens.map(itemLogHtml).join('');
+      if (substituir) {
+        cont.innerHTML = html || '<div class="vazio">Nenhuma edição registrada ainda.</div>';
+      } else {
+        cont.innerHTML += html;
+      }
+      document.getElementById('btnMaisLog').style.display = logAcabou ? 'none' : 'block';
+    } catch (e) {
+      document.getElementById('listaLog').innerHTML = '<div class="vazio">Erro ao carregar: ' + (e.message || e) + '</div>';
+    }
+  }
+
+  function itemLogHtml(item) {
+    const classeAcao = 'log-acao-' + (item.acao || 'editar');
+    const rotuloAcao = { criar: 'Criou', editar: 'Editou', excluir: 'Excluiu' }[item.acao] || item.acao;
+    return `
+      <div class="log-item">
+        <div class="log-desc"><span class="${classeAcao}">${rotuloAcao}</span> — ${escapeHtml(item.descricao || '')}</div>
+        <div class="log-meta">
+          <span class="log-tag">${escapeHtml(item.usuario_nome || 'Desconhecido')}</span>
+          <span class="log-tag">${NOMES_PAGINA_LOG(item.pagina)}</span>
+          <span>${fmtDataHora(item.created_at)}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  function NOMES_PAGINA_LOG(chaveLog) {
+    const chaveConfig = PAGINA_LOG_PARA_CONFIG[chaveLog] || chaveLog;
+    return NOMES_PAGINA[chaveConfig] || chaveLog;
+  }
+
+  function fmtDataHora(iso) {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    } catch (e) { return iso || ''; }
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  checkSessaoExistente();
+</script>
+
+</body>
+</html>

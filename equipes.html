@@ -275,6 +275,13 @@ window.addEventListener('unhandledrejection', function(e) {
       </div>
       <div class="perfil-obs-status" id="perfilObsStatus"></div>
     </div>
+    <div class="perfil-obs" id="perfilCatracaWrap">
+      <div class="rotulo">Catraca (reconhecimento facial)</div>
+      <div class="perfil-obs-status" id="perfilCatracaStatus"></div>
+      <div class="perfil-obs-acoes">
+        <button class="perfil-obs-salvar" id="perfilCatracaBtn" onclick="cadastrarNaCatraca()">📷 Cadastrar na catraca</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -391,6 +398,27 @@ try {
 }
 
 // ============================================================
+// LOG DE EDIÇÕES (painel administrativo, 2026-09-23) — registra quem fez
+// cada edição importante, pro admin.html mostrar depois. Nunca trava a ação
+// principal se o registro falhar (ex.: tabela ainda não criada). O nome de
+// quem editou vem da sessão individual que o app.html grava no login único
+// (mesma chave "usuario_atual" usada pelo Diário de Obra) — se a pessoa
+// abriu esta tela solta, fora do app, não tem como saber quem é, e o log
+// fica com "Desconhecido".
+// ============================================================
+async function registrarEdicao(acao, descricao) {
+  try {
+    if (!sb) return;
+    let nomeUsuario = 'Desconhecido';
+    try {
+      const raw = localStorage.getItem(`${OBRA_ID}:usuario_atual`);
+      if (raw) { const u = JSON.parse(raw); if (u && u.nome) nomeUsuario = u.nome; }
+    } catch (e2) {}
+    await sb.from('log_edicoes').insert({ pagina: 'equipes', acao, descricao, usuario_nome: nomeUsuario });
+  } catch (e) { /* log é só um extra, nunca deve travar a ação real */ }
+}
+
+// ============================================================
 // STORAGE SEGURO (só usado pra lembrar o login neste navegador)
 // ============================================================
 const memStore = {};
@@ -468,7 +496,7 @@ async function loadData() {
   try {
     const { data, error } = await sb
       .from('funcionarios')
-      .select('id, empresa, nome, funcao, alocacao, tipo, ativo, encarregado, foto_path, ordem, updated_at, classificacao, observacao')
+      .select('id, empresa, nome, funcao, alocacao, tipo, ativo, encarregado, foto_path, ordem, updated_at, classificacao, observacao, matricula_catraca, catraca_cadastro_pendente')
       .eq('tipo', 'permanente')
       .eq('ativo', true)
       .order('nome', { ascending: true });
@@ -828,6 +856,7 @@ async function applyReorder(fid, targetKey, insertIndex) {
     const f = funcionarios.find(x => String(x.id) === String(u.id));
     if (f) f.ordem = u.ordem;
   });
+  const encarregadoMudou = encarregadoAnterior !== novoEncarregado;
   item.encarregado = novoEncarregado;
   render();
 
@@ -843,6 +872,12 @@ async function applyReorder(fid, targetKey, insertIndex) {
     const falhou = results.find(r => r.error);
     if (falhou) throw falhou.error;
     showToast('✅ Posição atualizada!');
+    // só loga quando arrastar de verdade mudou de equipe — reordenar dentro
+    // da mesma seção é rotina demais pra valer a pena registrar
+    if (encarregadoMudou) {
+      const nomeDestino = novoEncarregado ? (EQUIPE_PROPRIA.find(x => x.id === novoEncarregado) || {}).label : 'Sem encarregado';
+      registrarEdicao('editar', `Moveu ${item.nome} (arrastar) para "${nomeDestino || novoEncarregado}"`);
+    }
   } catch (e) {
     // desfaz a atualização otimista de todo mundo se o banco recusou
     updates.forEach(u => {
@@ -893,6 +928,7 @@ async function applyReorderEmpresa(empresaLabel, targetKey) {
     if (error) throw error;
     const nomeDestino = novoEncarregado ? (EQUIPE_PROPRIA.find(x => x.id === novoEncarregado) || {}).label : 'Sem encarregado';
     showToast(`✅ ${empresaLabel} agora em "${nomeDestino || novoEncarregado}"`);
+    registrarEdicao('editar', `Moveu a empresa "${empresaLabel}" (${afetados.length} pessoa(s)) para "${nomeDestino || novoEncarregado}"`);
   } catch (e) {
     // desfaz se o banco recusou
     afetados.forEach((f, i) => { f.encarregado = anteriores[i]; });
@@ -1028,7 +1064,62 @@ function abrirPerfil(funcionarioId) {
   document.getElementById('perfilObsStatus').textContent = '';
   document.getElementById('perfilObsSalvarBtn').disabled = false;
 
+  atualizarStatusCatraca(f);
+
   document.getElementById('perfilModal').classList.add('show');
+}
+
+// ------------------------------------------------------------
+// Cadastro remoto na catraca — botão só marca
+// funcionarios.catraca_cadastro_pendente = true; quem realmente fala com
+// o equipamento é o catraca_servidor.js rodando no computador da entrada
+// (ele fica de olho nessa marcação e cuida do resto sozinho). Ver
+// LEIA-ME_catraca.md pra detalhes de como isso funciona.
+// ------------------------------------------------------------
+function atualizarStatusCatraca(f) {
+  const status = document.getElementById('perfilCatracaStatus');
+  const btn = document.getElementById('perfilCatracaBtn');
+
+  if (f.matricula_catraca) {
+    status.textContent = '✅ Já cadastrada e reconhecendo o rosto normalmente.';
+    btn.textContent = '📷 Cadastrar de novo (atualizar rosto)';
+    btn.disabled = false;
+  } else if (f.catraca_cadastro_pendente) {
+    status.textContent = '⏳ Aguardando: leve essa pessoa até a catraca e peça pra ela olhar pra câmera pra concluir.';
+    btn.textContent = '📷 Cadastro já pedido';
+    btn.disabled = true;
+  } else {
+    status.textContent = 'Ainda não cadastrada na catraca.';
+    btn.textContent = '📷 Cadastrar na catraca';
+    btn.disabled = false;
+  }
+}
+
+async function cadastrarNaCatraca() {
+  const funcionarioId = perfilFuncionarioId;
+  if (!funcionarioId) return;
+  if (!sb) { showToast('⚠️ Sem conexão.'); return; }
+
+  const item = funcionarios.find(x => String(x.id) === String(funcionarioId));
+  if (!item) return;
+
+  const btn = document.getElementById('perfilCatracaBtn');
+  btn.disabled = true;
+
+  try {
+    const { error } = await sb
+      .from('funcionarios')
+      .update({ catraca_cadastro_pendente: true })
+      .eq('id', funcionarioId);
+    if (error) throw error;
+    item.catraca_cadastro_pendente = true;
+    atualizarStatusCatraca(item);
+    showToast('📷 Pedido enviado! Leve a pessoa até a catraca em alguns segundos e peça pra ela olhar pra câmera.');
+    registrarEdicao('editar', `Pediu cadastro na catraca para ${item.nome}`);
+  } catch (e) {
+    showToast('⚠️ Erro ao pedir cadastro na catraca: ' + (e.message || e));
+    btn.disabled = false;
+  }
 }
 
 function fecharPerfil(e) {
@@ -1058,6 +1149,7 @@ async function salvarObservacao() {
     if (item) item.observacao = texto || null;
     status.textContent = 'Comentário salvo ✓';
     showToast('✅ Comentário salvo!');
+    registrarEdicao('editar', `Salvou comentário sobre ${item ? item.nome : funcionarioId}`);
   } catch (e) {
     status.textContent = '';
     showToast('⚠️ Erro ao salvar comentário: ' + (e.message || e));
@@ -1122,6 +1214,8 @@ async function reassign(funcionarioId, encarregado) {
     if (item) item.encarregado = encarregado || null;
     render();
     showToast('✅ Equipe atualizada!');
+    const nomeDestino = encarregado ? (EQUIPE_PROPRIA.find(x => x.id === encarregado) || {}).label : 'Sem encarregado';
+    registrarEdicao('editar', `Mudou ${item ? item.nome : funcionarioId} (seletor) para "${nomeDestino || encarregado}"`);
   } catch (e) {
     showToast('⚠️ Erro ao mudar de equipe: ' + (e.message || e));
     render();
@@ -1175,6 +1269,7 @@ async function onPhotoSelected(event) {
     if (item) { item.foto_path = path; item.updated_at = nowIso; }
     render();
     showToast('✅ Foto atualizada!');
+    registrarEdicao('editar', `Trocou a foto de ${item ? item.nome : funcionarioId}`);
   } catch (e) {
     showToast('⚠️ Erro ao enviar foto: ' + (e.message || e));
     console.error(e);

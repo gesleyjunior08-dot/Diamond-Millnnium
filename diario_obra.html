@@ -444,6 +444,20 @@ try {
 }
 
 // ============================================================
+// LOG DE EDIÇÕES (painel administrativo, 2026-09-23) — registra quem fez
+// cada edição importante, pro admin.html mostrar depois. Nunca trava a ação
+// principal se o registro falhar. Usa "usuarioAtual" (declarado abaixo,
+// login individual já existente deste arquivo) pra saber quem foi.
+// ============================================================
+async function registrarEdicao(acao, descricao) {
+  try {
+    if (!sb) return;
+    const nomeUsuario = (typeof usuarioAtual !== 'undefined' && usuarioAtual && usuarioAtual.nome) ? usuarioAtual.nome : 'Desconhecido';
+    await sb.from('log_edicoes').insert({ pagina: 'diario_obra', acao, descricao, usuario_nome: nomeUsuario });
+  } catch (e) { /* log é só um extra, nunca deve travar a ação real */ }
+}
+
+// ============================================================
 // STORAGE SEGURO (guarda QUEM está logado neste navegador — chave própria
 // deste arquivo, "usuario_atual". Diferente do resto do sistema (que usa
 // uma chave "logged_in" compartilhada entre telas com o login fixo
@@ -533,6 +547,7 @@ async function cadastrarUsuario() {
   document.getElementById('cadastroUsuarioBox').classList.remove('show');
   showApp();
   showToast(`✅ Bem-vindo, ${data.nome}!`);
+  registrarEdicao('criar', `Se cadastrou como "${data.nome}" (${data.login})`);
 }
 
 function doLogout() {
@@ -844,6 +859,7 @@ async function salvarNovoServico() {
   document.getElementById('inpNovoServico').value = '';
   document.getElementById('novoServicoBox').classList.remove('show');
   showToast(`✅ Serviço "${nome}" cadastrado.`);
+  registrarEdicao('criar', `Cadastrou o serviço "${nome}"`);
 }
 
 // ============================================================
@@ -895,6 +911,7 @@ async function salvarEdicaoServico(id) {
   if (!novoNome) { showToast('⚠️ Digite o nome do serviço.'); return; }
   const duplicado = tiposServicoTodos.some(t => t.id !== id && t.ativo && t.nome.toLowerCase() === novoNome.toLowerCase());
   if (duplicado) { showToast('⚠️ Já existe outro serviço com esse nome.'); return; }
+  const nomeAnterior = tiposServicoPorId[id] ? tiposServicoPorId[id].nome : null;
   const { data, error } = await sb.from('tipos_servico').update({ nome: novoNome }).eq('id', id).select().single();
   if (error) { showToast('⚠️ Erro ao editar serviço: ' + error.message); return; }
   const t = tiposServicoPorId[id];
@@ -904,6 +921,7 @@ async function salvarEdicaoServico(id) {
   renderListaServicosGerenciar();
   renderFeedRecente();
   showToast(`✅ Serviço renomeado para "${data.nome}".`);
+  registrarEdicao('editar', `Renomeou o serviço "${nomeAnterior}" para "${data.nome}"`);
 }
 
 async function excluirServico(id) {
@@ -932,6 +950,7 @@ async function excluirServico(id) {
     fb.className = 'unidade-feedback';
   }
   showToast(`🗑️ Serviço "${t.nome}" excluído.`);
+  registrarEdicao('excluir', `Excluiu o serviço "${t.nome}"`);
 }
 
 // ============================================================
@@ -1015,6 +1034,7 @@ async function salvarEdicaoUsuario(id) {
   }
   renderListaUsuariosGerenciar();
   showToast(`✅ Usuário "${data.nome}" atualizado.`);
+  registrarEdicao('editar', `Editou o usuário "${data.nome}"${novaSenha ? ' (trocou a senha)' : ''}`);
 }
 
 async function excluirUsuario(id) {
@@ -1038,6 +1058,7 @@ async function excluirUsuario(id) {
   u.ativo = false;
   renderListaUsuariosGerenciar();
   showToast(`🗑️ Login de "${u.nome}" excluído.`);
+  registrarEdicao('excluir', `Excluiu o login de "${u.nome}"`);
 }
 
 function toggleNovoUsuarioBox() {
@@ -1066,6 +1087,7 @@ async function salvarNovoUsuario() {
   document.getElementById('novoUsuarioBox').classList.remove('show');
   renderListaUsuariosGerenciar();
   showToast(`✅ Usuário "${nome}" cadastrado.`);
+  registrarEdicao('criar', `Cadastrou o usuário "${nome}" (${loginDesejado})`);
 }
 
 // ============================================================
@@ -1250,6 +1272,7 @@ async function excluirRegistro(id) {
   if (registroEditandoId === id) { sairModoEdicao(); limparFormulario(); }
   await atualizarListasVisiveis();
   showToast('🗑️ Registro excluído.');
+  registrarEdicao('excluir', `Excluiu o registro: ${descricao}`);
 }
 
 async function salvarRegistro() {
@@ -1322,18 +1345,22 @@ async function salvarRegistro() {
     }
     if (error) throw error;
 
+    const servicoNome = (tiposServicoPorId[servicoId] || {}).nome || '(serviço)';
+    const descricaoRegistro = `${parsed.andar}º andar, apto ${String(parsed.apartamento).padStart(2, '0')} — ${servicoNome}`;
     if (idEmEdicao) {
       registrosPorId[idEmEdicao] = data;
       showToast('✅ Registro atualizado!');
       sairModoEdicao();
       limparFormulario();
       await atualizarListasVisiveis();
+      registrarEdicao('editar', `Editou o registro: ${descricaoRegistro}`);
     } else {
       showToast('✅ Registro salvo!');
       limparFormulario();
       registrosRecentes.unshift(data);
       indexarRegistros([data]);
       renderFeedRecente();
+      registrarEdicao('criar', `Registrou serviço: ${descricaoRegistro}`);
     }
   } catch (e) {
     showToast('⚠️ Erro ao salvar: ' + (e.message || e));
@@ -1443,6 +1470,7 @@ async function toggleMedido(id, novoValor) {
   }
   atualizarRegistroEmListas(id, { medido: data.medido });
   showToast(data.medido ? '✅ Marcado como medido.' : 'Desmarcado como medido.');
+  registrarEdicao('editar', `${data.medido ? 'Marcou' : 'Desmarcou'} como medido o registro da unidade ${data.unidade}`);
 }
 
 function atualizarRegistroEmListas(id, patch) {
@@ -1667,6 +1695,7 @@ async function excluirTarefa(id) {
   const filtroData = document.getElementById('inpFiltroDataTarefa').value;
   if (filtroData) await buscarTarefasPorDia(); else renderListaTarefas(tarefas);
   showToast('🗑️ Tarefa excluída.');
+  registrarEdicao('excluir', `Excluiu a tarefa: ${fmtData(t.data)} — ${t.descricao}`);
 }
 
 async function salvarTarefa() {
@@ -1705,10 +1734,12 @@ async function salvarTarefa() {
       if (idx >= 0) tarefas[idx] = resultado;
       showToast('✅ Tarefa atualizada!');
       sairModoEdicaoTarefa();
+      registrarEdicao('editar', `Editou a tarefa: ${fmtData(resultado.data)} — ${resultado.descricao}`);
     } else {
       showToast('✅ Tarefa salva!');
       tarefas.unshift(resultado);
       indexarTarefas([resultado]);
+      registrarEdicao('criar', `Criou a tarefa: ${fmtData(resultado.data)} — ${resultado.descricao}`);
     }
     limparFormularioTarefa();
     atualizarDescricoesTarefaDatalist();
