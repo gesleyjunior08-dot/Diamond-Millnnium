@@ -32,6 +32,14 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
     background: var(--fundo);
     overscroll-behavior: none;
+    /* Trava a rolagem da página inteira — só o conteúdo de dentro de cada
+       ferramenta (dentro do iframe) deve rolar. Sem isso, em alguns
+       navegadores a própria página do app.html conseguia rolar um pouco,
+       arrastando junto o cabeçalho e a barra de sub-abas de ferramentas
+       como o Diário de Obra — que são "sticky" só *dentro* do iframe de
+       cada uma, então rolagem *fora* do iframe não é o que elas esperam
+       (2026-09-23, bug real reportado pelo usuário). */
+    overflow: hidden;
   }
 
   /* ===================== TELA DE LOGIN / CADASTRO ===================== */
@@ -185,6 +193,7 @@
     flex: 1 1 auto;
     min-height: 0;
     background: #fff;
+    overflow: hidden;
   }
   #conteudo iframe {
     position: absolute; inset: 0;
