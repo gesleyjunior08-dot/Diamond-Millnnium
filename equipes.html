@@ -161,6 +161,8 @@
   .perfil-obs-acoes button{border:none;border-radius:9px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;min-height:38px;}
   .perfil-obs-salvar{background:var(--charcoal);color:#fff;}
   .perfil-obs-salvar:disabled{opacity:0.5;cursor:default;}
+  .perfil-obs-cancelar{background:#fff;color:#b3261e;border:1.5px solid #b3261e !important;}
+  .perfil-obs-cancelar:disabled{opacity:0.5;cursor:default;}
   .perfil-obs-status{font-size:11.5px;opacity:0.55;margin-top:6px;text-align:right;min-height:14px;}
 
   @media (min-width:700px){
@@ -279,6 +281,7 @@ window.addEventListener('unhandledrejection', function(e) {
       <div class="rotulo">Catraca (reconhecimento facial)</div>
       <div class="perfil-obs-status" id="perfilCatracaStatus"></div>
       <div class="perfil-obs-acoes">
+        <button class="perfil-obs-cancelar" id="perfilCatracaCancelarBtn" onclick="cancelarCadastroCatraca()" style="display:none">✖ Cancelar pedido</button>
         <button class="perfil-obs-salvar" id="perfilCatracaBtn" onclick="cadastrarNaCatraca()">📷 Cadastrar na catraca</button>
       </div>
     </div>
@@ -1079,19 +1082,24 @@ function abrirPerfil(funcionarioId) {
 function atualizarStatusCatraca(f) {
   const status = document.getElementById('perfilCatracaStatus');
   const btn = document.getElementById('perfilCatracaBtn');
+  const cancelarBtn = document.getElementById('perfilCatracaCancelarBtn');
 
   if (f.matricula_catraca) {
     status.textContent = '✅ Já cadastrada e reconhecendo o rosto normalmente.';
     btn.textContent = '📷 Cadastrar de novo (atualizar rosto)';
     btn.disabled = false;
+    cancelarBtn.style.display = 'none';
   } else if (f.catraca_cadastro_pendente) {
-    status.textContent = '⏳ Aguardando: leve essa pessoa até a catraca e peça pra ela olhar pra câmera pra concluir.';
+    status.textContent = '⏳ Aguardando: leve essa pessoa até a catraca e peça pra ela olhar pra câmera pra concluir. Se não der certo, cancele o pedido aqui embaixo pra poder tentar de novo.';
     btn.textContent = '📷 Cadastro já pedido';
     btn.disabled = true;
+    cancelarBtn.style.display = '';
+    cancelarBtn.disabled = false;
   } else {
     status.textContent = 'Ainda não cadastrada na catraca.';
     btn.textContent = '📷 Cadastrar na catraca';
     btn.disabled = false;
+    cancelarBtn.style.display = 'none';
   }
 }
 
@@ -1119,6 +1127,41 @@ async function cadastrarNaCatraca() {
   } catch (e) {
     showToast('⚠️ Erro ao pedir cadastro na catraca: ' + (e.message || e));
     btn.disabled = false;
+  }
+}
+
+// Cancela um pedido de cadastro que ficou parado esperando (ex.: a pessoa não
+// foi até a catraca a tempo, ou travou por causa de algum problema no
+// catraca_servidor.js) — sem isso, o botão "Cadastro já pedido" fica travado
+// pra sempre e não dá pra pedir de novo. Só desmarca o pedido pendente; não
+// mexe em matricula_catraca nem desfaz nada que já tenha sido cadastrado de
+// verdade na catraca.
+async function cancelarCadastroCatraca() {
+  const funcionarioId = perfilFuncionarioId;
+  if (!funcionarioId) return;
+  if (!sb) { showToast('⚠️ Sem conexão.'); return; }
+
+  const item = funcionarios.find(x => String(x.id) === String(funcionarioId));
+  if (!item) return;
+
+  if (!confirm(`Cancelar o pedido de cadastro na catraca de "${item.nome}"?\n\nDepois de cancelar, dá pra pedir de novo a qualquer momento.`)) return;
+
+  const cancelarBtn = document.getElementById('perfilCatracaCancelarBtn');
+  cancelarBtn.disabled = true;
+
+  try {
+    const { error } = await sb
+      .from('funcionarios')
+      .update({ catraca_cadastro_pendente: false })
+      .eq('id', funcionarioId);
+    if (error) throw error;
+    item.catraca_cadastro_pendente = false;
+    atualizarStatusCatraca(item);
+    showToast('✖ Pedido cancelado. Pode pedir de novo quando quiser.');
+    registrarEdicao('editar', `Cancelou pedido de cadastro na catraca de ${item.nome}`);
+  } catch (e) {
+    showToast('⚠️ Erro ao cancelar: ' + (e.message || e));
+    cancelarBtn.disabled = false;
   }
 }
 
