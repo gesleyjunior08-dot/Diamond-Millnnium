@@ -147,7 +147,7 @@ window.addEventListener('unhandledrejection', function(e) {
 
     <div class="panel admin-panel" id="painelAdmin">
       <h3>🧑‍💼 Ativar / Desativar funcionários</h3>
-      <p class="admin-hint">Quem está <b>Ativo</b> aparece na lista de presença do app. Desativar tem o mesmo efeito de excluir no app (some da lista), mas mantém o histórico — e dá pra reativar aqui a qualquer momento.</p>
+      <p class="admin-hint">Quem está <b>Ativo</b> aparece na lista de presença do app. Desativar tem o mesmo efeito de excluir no app (some da lista), mas mantém o histórico — e dá pra reativar aqui a qualquer momento. Pra quem já tem o rosto cadastrado na catraca (🔒), desativar também bloqueia a passagem física dela em até ~10s (o rosto continua salvo, e reativar libera de novo automaticamente).</p>
       <div class="admin-controls">
         <input type="text" id="adminSearch" class="campo-busca" placeholder="Buscar por nome..." oninput="renderAdminPanel()">
         <select id="adminStatusFiltro" onchange="renderAdminPanel()">
@@ -350,7 +350,7 @@ async function loadAdminPanel() {
   try {
     const { data, error } = await sb
       .from('funcionarios')
-      .select('id, empresa, nome, funcao, ativo')
+      .select('id, empresa, nome, funcao, ativo, matricula_catraca')
       .eq('tipo', 'permanente');
     if (error) throw error;
     adminData = data || [];
@@ -392,7 +392,7 @@ function renderAdminPanel() {
         ${byCompany[emp].map(f => `
           <div class="admin-row ${f.ativo ? '' : 'inativo'}">
             <div class="admin-nome-funcao">
-              <span>${f.nome}</span>
+              <span>${f.nome}${f.matricula_catraca !== null && f.matricula_catraca !== undefined ? ' 🔒' : ''}</span>
               <span class="admin-func-sub">${f.funcao}</span>
             </div>
             <div class="admin-status">
@@ -411,17 +411,25 @@ function renderAdminPanel() {
 
 async function toggleAtivo(funcionarioId, checked) {
   if (!sb) { alert('⚠️ Sem conexão.'); return; }
+  const item = adminData.find(f => f.id === funcionarioId);
+  // Se essa pessoa já tem o rosto cadastrado na catraca (matricula_catraca
+  // preenchida), avisa o catraca_servidor.js pra bloquear/liberar o acesso
+  // físico dela também — ele confere catraca_acesso_pendente a cada 10s e
+  // manda o comando "enableuser" pra catraca (2026-09-24, EXPERIMENTAL).
+  const temFaceCadastrada = item && item.matricula_catraca !== null && item.matricula_catraca !== undefined;
+  const payload = { ativo: checked };
+  if (temFaceCadastrada) payload.catraca_acesso_pendente = true;
   try {
-    const { error } = await sb.from('funcionarios').update({ ativo: checked }).eq('id', funcionarioId);
+    const { error } = await sb.from('funcionarios').update(payload).eq('id', funcionarioId);
     if (error) throw error;
-    const item = adminData.find(f => f.id === funcionarioId);
     if (item) item.ativo = checked;
     renderAdminPanel();
     // reflete a mudança no checklist de documentação (mesma tela) — o
     // roster do Painel/Dashboard não dá mais pra atualizar direto daqui,
     // porque agora são duas ferramentas separadas
     loadDocChecklist();
-    registrarEdicao('editar', `${checked ? 'Ativou' : 'Desativou'} ${item ? item.nome : funcionarioId}`);
+    const avisoCatraca = temFaceCadastrada ? ` (catraca: pedido de ${checked ? 'liberação' : 'bloqueio'} enviado)` : '';
+    registrarEdicao('editar', `${checked ? 'Ativou' : 'Desativou'} ${item ? item.nome : funcionarioId}${avisoCatraca}`);
   } catch (e) {
     console.error(e);
     alert('⚠️ Não consegui salvar essa mudança. Verifique a conexão e tente de novo.');
