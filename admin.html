@@ -105,6 +105,18 @@
 
   .vazio, .carregando { text-align: center; color: var(--cinza-texto); font-size: 13px; padding: 20px 0; }
   .btnMais { width: 100%; padding: 10px; background: var(--fundo); border: 1px solid var(--borda); border-radius: 9px; font-size: 13px; font-weight: 700; color: var(--azul); cursor: pointer; margin-top: 6px; }
+
+  /* sugestões (2026-09-23) */
+  .sugestao-row { padding: 12px 0; border-top: 1px solid var(--borda); }
+  .sugestao-row:first-of-type { border-top: none; }
+  .sugestao-row.nao-lida { background: #fbfaff; margin: 0 -16px; padding: 12px 16px; border-top-color: transparent; }
+  .sugestao-texto { font-size: 13.5px; line-height: 1.45; white-space: pre-wrap; word-break: break-word; margin-bottom: 6px; }
+  .sugestao-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .sugestao-info { font-size: 11.5px; color: var(--cinza-texto); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .badge-nova { background: #fdeee6; color: var(--laranja); }
+  .badge-lidaok { background: #eaf7ec; color: var(--verde); }
+  .btnMarcarSugestao { background: var(--fundo); border: 1px solid var(--borda); color: #444; font-size: 11.5px; font-weight: 700; padding: 6px 11px; border-radius: 20px; cursor: pointer; white-space: nowrap; }
+  .btnMarcarSugestao:disabled { opacity: .6; }
 </style>
 </head>
 <body>
@@ -169,11 +181,25 @@
             <option value="semanal">Relatório Semanal</option>
             <option value="rh">RH</option>
             <option value="cadastro">Cadastro</option>
+            <option value="sugestoes">Sugestões</option>
           </select>
           <input type="text" id="filtroPessoa" placeholder="Buscar por pessoa..." oninput="recarregarLogComDebounce()">
         </div>
         <div id="listaLog" class="carregando">Carregando...</div>
         <button class="btnMais" id="btnMaisLog" onclick="carregarMaisLog()" style="display:none;">Carregar mais</button>
+      </div>
+
+      <div class="cartao">
+        <h2>💡 Sugestões dos usuários</h2>
+        <div class="desc">Sugestões, ideias e críticas enviadas por qualquer pessoa logada, pela aba "Sugestões". As mais novas (ainda não lidas) aparecem destacadas.</div>
+        <div class="filtros">
+          <select id="filtroSugestao" onchange="recarregarSugestoes()">
+            <option value="todas">Todas</option>
+            <option value="nao_lidas" selected>Só não lidas</option>
+            <option value="lidas">Só já lidas</option>
+          </select>
+        </div>
+        <div id="listaSugestoes" class="carregando">Carregando...</div>
       </div>
     </div>
   </div>
@@ -187,7 +213,7 @@
   const NOMES_PAGINA = {
     presenca: 'Presença', equipes: 'Equipes', diario: 'Diário de Obra',
     dashboard: 'Painel', semanal: 'Relatório Semanal', boletim: 'Boletim Diário',
-    rh: 'RH', cadastro: 'Cadastro',
+    rh: 'RH', cadastro: 'Cadastro', sugestoes: 'Sugestões',
   };
   // chave usada no log_edicoes é diferente da chave do app_paginas_config pro
   // diário de obra ("diario_obra" no log, "diario" na config) — mantido assim
@@ -263,6 +289,7 @@
     carregarPaginas();
     carregarPermissoes();
     recarregarLog();
+    recarregarSugestoes();
   }
 
   // ============================================================
@@ -458,6 +485,64 @@
   function NOMES_PAGINA_LOG(chaveLog) {
     const chaveConfig = PAGINA_LOG_PARA_CONFIG[chaveLog] || chaveLog;
     return NOMES_PAGINA[chaveConfig] || chaveLog;
+  }
+
+  // ============================================================
+  // SUGESTÕES (tabela "sugestoes" — sugestoes.html) — 2026-09-23
+  // ============================================================
+  async function recarregarSugestoes() {
+    document.getElementById('listaSugestoes').innerHTML = '<div class="carregando">Carregando...</div>';
+    await carregarSugestoes();
+  }
+
+  async function carregarSugestoes() {
+    const cont = document.getElementById('listaSugestoes');
+    if (!sb) { cont.innerHTML = '<div class="vazio">Sem conexão.</div>'; return; }
+    const filtro = document.getElementById('filtroSugestao').value;
+    try {
+      let query = sb.from('sugestoes').select('*').order('created_at', { ascending: false }).limit(200);
+      if (filtro === 'nao_lidas') query = query.eq('lida', false);
+      if (filtro === 'lidas') query = query.eq('lida', true);
+      const { data, error } = await query;
+      if (error) throw error;
+      const itens = data || [];
+      cont.innerHTML = itens.length
+        ? itens.map(itemSugestaoHtml).join('')
+        : '<div class="vazio">Nenhuma sugestão por aqui ainda.</div>';
+    } catch (e) {
+      // tabela pode ainda não existir (sugestoes_setup.sql não rodado)
+      cont.innerHTML = '<div class="vazio">Erro ao carregar: ' + (e.message || e) + '</div>';
+    }
+  }
+
+  function itemSugestaoHtml(item) {
+    const lida = !!item.lida;
+    return `
+      <div class="sugestao-row ${lida ? '' : 'nao-lida'}">
+        <div class="sugestao-texto">${escapeHtml(item.texto || '')}</div>
+        <div class="sugestao-meta">
+          <div class="sugestao-info">
+            <span class="log-tag">${escapeHtml(item.usuario_nome || 'Desconhecido')}</span>
+            <span class="badge ${lida ? 'badge-lidaok' : 'badge-nova'}">${lida ? 'Lida' : 'Nova'}</span>
+            <span>${fmtDataHora(item.created_at)}</span>
+          </div>
+          <button class="btnMarcarSugestao" onclick="alternarLidaSugestao('${item.id}', ${!lida}, this)">${lida ? 'Marcar não lida' : 'Marcar como lida'}</button>
+        </div>
+      </div>
+    `;
+  }
+
+  async function alternarLidaSugestao(id, novaLida, btnEl) {
+    if (!sb) { alert('⚠️ Sem conexão.'); return; }
+    btnEl.disabled = true;
+    try {
+      const { error } = await sb.from('sugestoes').update({ lida: novaLida }).eq('id', id);
+      if (error) throw error;
+      await carregarSugestoes();
+    } catch (e) {
+      alert('⚠️ Erro ao salvar: ' + (e.message || e));
+      btnEl.disabled = false;
+    }
   }
 
   function fmtDataHora(iso) {

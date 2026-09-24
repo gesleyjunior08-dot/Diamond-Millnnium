@@ -334,6 +334,9 @@
         <button class="aba" data-aba="cadastro">
           <span class="icone">📝</span><span class="rotulo">Cadastro</span>
         </button>
+        <button class="aba" data-aba="sugestoes">
+          <span class="icone">💡</span><span class="rotulo">Sugestões</span>
+        </button>
         <button class="aba escondida" data-aba="admin" id="abaAdmin">
           <span class="icone">🔐</span><span class="rotulo">Admin</span>
         </button>
@@ -355,6 +358,7 @@
       <iframe id="frame-boletim" data-src="boletim_diario.html" title="Boletim Diário"></iframe>
       <iframe id="frame-rh" data-src="rh.html" title="RH"></iframe>
       <iframe id="frame-cadastro" data-src="cadastro.html" title="Cadastro de Pessoal"></iframe>
+      <iframe id="frame-sugestoes" data-src="sugestoes.html" title="Sugestões"></iframe>
       <iframe id="frame-admin" data-src="admin.html" title="Administração"></iframe>
     </div>
     <div id="avisoSomenteLeitura"></div>
@@ -532,11 +536,15 @@
     boletim: document.getElementById('frame-boletim'),
     rh: document.getElementById('frame-rh'),
     cadastro: document.getElementById('frame-cadastro'),
+    sugestoes: document.getElementById('frame-sugestoes'),
     admin: document.getElementById('frame-admin'),
   };
   // só essas 8 podem ser travadas em "somente leitura" e restringidas por
   // pessoa pelo admin.html — a aba "admin" nunca entra nessa lista (ela é
-  // o próprio controle)
+  // o próprio controle). "sugestoes" também fica de fora de propósito
+  // (2026-09-23): é pra ficar sempre aberta pra qualquer um sugerir algo,
+  // mesmo que a obra esteja travada em somente-leitura ou a pessoa esteja
+  // restrita a só algumas abas.
   const PAGINAS_TRAVAVEIS = ['presenca', 'equipes', 'diario', 'dashboard', 'semanal', 'boletim', 'rh', 'cadastro'];
 
   // CSS injetado em cada ferramenta (mesma origem) assim que ela carrega,
