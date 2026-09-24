@@ -163,7 +163,10 @@
   .perfil-obs-salvar:disabled{opacity:0.5;cursor:default;}
   .perfil-obs-cancelar{background:#fff;color:#b3261e;border:1.5px solid #b3261e !important;}
   .perfil-obs-cancelar:disabled{opacity:0.5;cursor:default;}
+  .perfil-obs-prereg{background:#fff;color:var(--charcoal);border:1.5px solid var(--charcoal) !important;}
+  .perfil-obs-prereg:disabled{opacity:0.5;cursor:default;}
   .perfil-obs-status{font-size:11.5px;opacity:0.55;margin-top:6px;text-align:right;min-height:14px;}
+  .perfil-obs-status-prereg{font-size:11.5px;opacity:0.7;margin-top:4px;text-align:right;color:var(--charcoal);}
 
   @media (min-width:700px){
     .perfil-modal{align-items:center;}
@@ -282,8 +285,10 @@ window.addEventListener('unhandledrejection', function(e) {
       <div class="perfil-obs-status" id="perfilCatracaStatus"></div>
       <div class="perfil-obs-acoes">
         <button class="perfil-obs-cancelar" id="perfilCatracaCancelarBtn" onclick="cancelarCadastroCatraca()" style="display:none">✖ Cancelar pedido</button>
+        <button class="perfil-obs-prereg" id="perfilCatracaPreregBtn" onclick="salvarNomeNaCatraca()" style="display:none">💾 Salvar nome na catraca</button>
         <button class="perfil-obs-salvar" id="perfilCatracaBtn" onclick="cadastrarNaCatraca()">📷 Cadastrar na catraca</button>
       </div>
+      <div class="perfil-obs-status-prereg" id="perfilCatracaPreregStatus" style="display:none"></div>
     </div>
   </div>
 </div>
@@ -499,7 +504,7 @@ async function loadData() {
   try {
     const { data, error } = await sb
       .from('funcionarios')
-      .select('id, empresa, nome, funcao, alocacao, tipo, ativo, encarregado, foto_path, ordem, updated_at, classificacao, observacao, matricula_catraca, catraca_cadastro_pendente')
+      .select('id, empresa, nome, funcao, alocacao, tipo, ativo, encarregado, foto_path, ordem, updated_at, classificacao, observacao, matricula_catraca, catraca_cadastro_pendente, catraca_prereg_pendente')
       .eq('tipo', 'permanente')
       .eq('ativo', true)
       .order('nome', { ascending: true });
@@ -1083,23 +1088,41 @@ function atualizarStatusCatraca(f) {
   const status = document.getElementById('perfilCatracaStatus');
   const btn = document.getElementById('perfilCatracaBtn');
   const cancelarBtn = document.getElementById('perfilCatracaCancelarBtn');
+  const preregBtn = document.getElementById('perfilCatracaPreregBtn');
+  const preregStatus = document.getElementById('perfilCatracaPreregStatus');
+
+  // status da linha de baixo (pré-registro experimental) — independente do
+  // status principal, só aparece enquanto fizer sentido (ver abaixo)
+  preregStatus.style.display = 'none';
 
   if (f.matricula_catraca) {
     status.textContent = '✅ Já cadastrada e reconhecendo o rosto normalmente.';
     btn.textContent = '📷 Cadastrar de novo (atualizar rosto)';
     btn.disabled = false;
     cancelarBtn.style.display = 'none';
+    preregBtn.style.display = 'none';
   } else if (f.catraca_cadastro_pendente) {
     status.textContent = '⏳ Aguardando: leve essa pessoa até a catraca e peça pra ela olhar pra câmera pra concluir. Se não der certo, cancele o pedido aqui embaixo pra poder tentar de novo.';
     btn.textContent = '📷 Cadastro já pedido';
     btn.disabled = true;
     cancelarBtn.style.display = '';
     cancelarBtn.disabled = false;
+    preregBtn.style.display = 'none';
   } else {
     status.textContent = 'Ainda não cadastrada na catraca.';
     btn.textContent = '📷 Cadastrar na catraca';
     btn.disabled = false;
     cancelarBtn.style.display = 'none';
+    preregBtn.style.display = '';
+    preregBtn.disabled = false;
+    if (f.catraca_prereg_pendente) {
+      preregBtn.textContent = '💾 Salvando nome...';
+      preregBtn.disabled = true;
+      preregStatus.style.display = '';
+      preregStatus.textContent = '💾 Enviando pedido pra catraca salvar só o nome (sem abrir a captura) — confira em alguns segundos na telinha dela, menu de Usuários. Isso é experimental, ainda sendo testado.';
+    } else {
+      preregBtn.textContent = '💾 Salvar nome na catraca';
+    }
   }
 }
 
@@ -1127,6 +1150,69 @@ async function cadastrarNaCatraca() {
   } catch (e) {
     showToast('⚠️ Erro ao pedir cadastro na catraca: ' + (e.message || e));
     btn.disabled = false;
+  }
+}
+
+// Pré-salvar só o nome na catraca, SEM abrir a captura ao vivo —
+// EXPERIMENTAL (2026-09-24). Pra quando a pessoa cadastrada no sistema
+// ainda vai demorar pra aparecer fisicamente na obra: em vez de esperar
+// ela estar na frente da câmera (como o "📷 Cadastrar na catraca" normal
+// exige, com 3 minutos de janela), isso só marca
+// funcionarios.catraca_prereg_pendente = true — o catraca_servidor.js
+// tenta salvar o nome dela na catraca com o comando "setuserinfo" (sem
+// abrir nada na tela) e volta a desmarcar sozinho na hora (não fica
+// esperando nada). Quando a pessoa chegar de verdade, o porteiro acha o
+// nome dela na telinha da catraca (menu Usuários) e captura o rosto por
+// lá — o vínculo com o sistema acontece sozinho na primeira passagem
+// (mesmo mecanismo de "vínculo automático por nome" que já existe pra
+// qualquer pessoa cadastrada direto na catraca).
+// Ainda não confirmado no hardware físico se a catraca realmente guarda
+// o nome assim — ver aviso no LEIA-ME_catraca.md.
+async function salvarNomeNaCatraca() {
+  const funcionarioId = perfilFuncionarioId;
+  if (!funcionarioId) return;
+  if (!sb) { showToast('⚠️ Sem conexão.'); return; }
+
+  const item = funcionarios.find(x => String(x.id) === String(funcionarioId));
+  if (!item) return;
+
+  const preregBtn = document.getElementById('perfilCatracaPreregBtn');
+  preregBtn.disabled = true;
+
+  try {
+    const { error } = await sb
+      .from('funcionarios')
+      .update({ catraca_prereg_pendente: true })
+      .eq('id', funcionarioId);
+    if (error) throw error;
+    item.catraca_prereg_pendente = true;
+    atualizarStatusCatraca(item);
+    showToast('💾 Pedido enviado! Em ~10-20s confira na telinha da catraca (Usuários) se o nome apareceu — é experimental, me avisa como foi.');
+    registrarEdicao('editar', `Pediu pré-registro (só nome) na catraca para ${item.nome}`);
+
+    // depois de um tempo, confere de novo no banco — se o servidor já
+    // rodou e desmarcou sozinho (fluxo normal), o botão volta ao normal;
+    // se continuar marcado (servidor desligado, por exemplo), deixa
+    // destravado de novo pra poder tentar outra vez, sem ficar preso.
+    setTimeout(async () => {
+      if (perfilFuncionarioId !== funcionarioId) return; // perfil já fechado/trocado
+      try {
+        const { data, error: error2 } = await sb
+          .from('funcionarios')
+          .select('catraca_prereg_pendente, matricula_catraca')
+          .eq('id', funcionarioId)
+          .maybeSingle();
+        if (error2) throw error2;
+        if (data) {
+          item.catraca_prereg_pendente = data.catraca_prereg_pendente;
+          item.matricula_catraca = data.matricula_catraca;
+          atualizarStatusCatraca(item);
+        }
+      } catch (e2) { /* melhor esforço — se falhar, o botão só continua como estava */ }
+    }, 15000);
+  } catch (e) {
+    showToast('⚠️ Erro ao pedir pré-registro: ' + (e.message || e));
+    preregBtn.disabled = false;
   }
 }
 
