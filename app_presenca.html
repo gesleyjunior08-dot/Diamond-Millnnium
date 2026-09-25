@@ -37,6 +37,10 @@
   .search{position:relative;margin:10px 0;}
   .search input{width:100%;padding:8px 8px 8px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;}
 
+  .tabbar{display:flex;gap:8px;margin-top:10px;}
+  .tab-btn{flex:1;padding:9px;border:none;border-radius:8px;background:#2A2F36;color:#ccc;font-size:12px;font-weight:600;cursor:pointer;font-family:Arial;}
+  .tab-btn.active{background:var(--yellow);color:var(--charcoal);}
+
   .pending-banner{background:#E8590C;color:#fff;padding:10px 16px;font-size:13px;font-weight:600;text-align:center;cursor:pointer;}
   .summary{display:flex;gap:10px;padding:14px 16px 6px;}
   .stat{flex:1;background:#fff;border:1px solid #ddd;border-radius:10px;padding:10px;text-align:center;}
@@ -64,6 +68,9 @@
   .toggle button:first-child{border-right:1px solid #ddd;}
   .toggle button.active-p{background:#DFF3E3;color:var(--green);}
   .toggle button.active-f{background:#FCE7DB;color:var(--orange);}
+
+  .toggle-single button{border:1px solid #ddd;border-radius:8px;background:#fff;color:#666;font-size:12px;font-weight:600;padding:8px 10px;cursor:pointer;white-space:nowrap;font-family:Arial;}
+  .toggle-single button.active-p{background:#DFF3E3;color:var(--green);border-color:#DFF3E3;}
 
   .btn-del{border:none;background:transparent;color:#B00020;font-size:16px;cursor:pointer;padding:4px 6px;}
   .btn-edit{border:none;background:transparent;color:#585759;font-size:16px;cursor:pointer;padding:4px 6px;}
@@ -98,6 +105,8 @@
   .modal-actions button{flex:1;padding:12px;border:none;border-radius:8px;font-weight:600;cursor:pointer;}
   .btn-confirm{background:var(--yellow);color:var(--charcoal);}
   .btn-cancel{background:var(--concrete);color:#1E2227;}
+  .btn-move{width:100%;margin-top:10px;padding:10px;border:none;border-radius:8px;background:var(--teal);color:#fff;font-weight:600;font-size:12px;cursor:pointer;font-family:Arial;}
+  .btn-move-hint{font-size:11px;opacity:0.6;margin-top:6px;text-align:center;}
 
   .toast{position:fixed;bottom:78px;left:50%;transform:translateX(-50%);background:var(--charcoal);color:#fff;padding:8px 16px;border-radius:20px;font-size:12px;opacity:0;z-index:30;transition:opacity 0.3s;max-width:90%;text-align:center;}
   .toast.show{opacity:1;}
@@ -139,7 +148,11 @@ window.addEventListener('unhandledrejection', function(e) {
     <input type="date" id="dateInput" onchange="changeDate()">
   </div>
   <div class="search">
-    <input type="text" id="searchInput" placeholder="Buscar..." oninput="render()">
+    <input type="text" id="searchInput" placeholder="Buscar..." oninput="render(); renderEsporadicos();">
+  </div>
+  <div class="tabbar">
+    <button class="tab-btn active" id="tabPresencaBtn" onclick="switchTab('presenca')">👷 Presença</button>
+    <button class="tab-btn" id="tabEsporadicoBtn" onclick="switchTab('esporadico')">🚚 Esporádicos</button>
   </div>
 </div>
 
@@ -153,11 +166,18 @@ window.addEventListener('unhandledrejection', function(e) {
   <div class="stat"><div class="n" id="statTotal">0</div><div class="l">Total</div></div>
 </div>
 
+<div class="summary" style="display:none;" id="summaryEsporadicos">
+  <div class="stat"><div class="n" id="statEsporadicosHoje">0</div><div class="l">Passaram hoje</div></div>
+  <div class="stat"><div class="n" id="statEsporadicosTotal">0</div><div class="l">Cadastrados</div></div>
+</div>
+
 <div class="list" id="list"></div>
+<div class="list" id="listEsporadicos" style="display:none;"></div>
 
 <button class="btn-add" id="addBtn" onclick="openModal()" style="display:none;" title="Adicionar funcionário fixo">➕</button>
 <button class="btn-visitor" id="addVisitorBtn" onclick="openVisitorModal()" style="display:none;" title="Adicionar visitante do dia">👤</button>
 <button class="btn-saida" id="saidaBtn" onclick="openSaidaModal()" style="display:none;" title="Marcar saída antecipada">🚪</button>
+<button class="btn-add" id="addEsporadicoBtn" onclick="openEsporadicoModal()" style="display:none;" title="Adicionar prestador esporádico">🚚</button>
 
 <div class="modal" id="modal">
   <div class="modal-content">
@@ -220,6 +240,37 @@ window.addEventListener('unhandledrejection', function(e) {
       <button class="btn-confirm" onclick="saveEdit()">Salvar</button>
       <button class="btn-cancel" onclick="closeEditModal()">Cancelar</button>
     </div>
+    <button class="btn-move" id="btnMoverEsporadico" onclick="moverParaEsporadico()">🚚 Mover pra Esporádicos</button>
+    <div class="btn-move-hint">Pra gente que vem de vez em quando (entregador, motorista etc.) e não deve contar no total da Presença.</div>
+  </div>
+</div>
+
+<div class="modal" id="modalEsporadico">
+  <div class="modal-content">
+    <h2>🚚 Novo prestador esporádico</h2>
+    <div class="form-group"><label>Nome</label><input type="text" id="espNome" placeholder="Ex: Carlos"></div>
+    <div class="form-group"><label>O que faz</label><input type="text" id="espFuncao" placeholder="Ex: Entrega de café, Motorista"></div>
+    <div class="form-group"><label>Empresa/Origem <span class="opcional-tag">(opcional)</span></label><input type="text" id="espEmpresa" placeholder="Ex: Padaria Central"></div>
+    <div class="modal-actions">
+      <button class="btn-confirm" onclick="addEsporadico()">Adicionar</button>
+      <button class="btn-cancel" onclick="closeEsporadicoModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modalEditEsporadico">
+  <div class="modal-content">
+    <h2>✏️ Editar esporádico</h2>
+    <div class="form-group"><label>Nome</label><input type="text" id="editEspNome"></div>
+    <div class="form-group"><label>O que faz</label><input type="text" id="editEspFuncao"></div>
+    <div class="form-group"><label>Empresa/Origem <span class="opcional-tag">(opcional)</span></label><input type="text" id="editEspEmpresa"></div>
+    <input type="hidden" id="editEspId">
+    <div class="modal-actions">
+      <button class="btn-confirm" onclick="saveEditEsporadico()">Salvar</button>
+      <button class="btn-cancel" onclick="closeEditEsporadicoModal()">Cancelar</button>
+    </div>
+    <button class="btn-move" onclick="moverParaPermanente()">👷 Mover pra Presença (fixo)</button>
+    <div class="btn-move-hint">Pra quando essa pessoa virou funcionário fixo de verdade — passa a contar no total da Presença e precisa de empresa preenchida.</div>
   </div>
 </div>
 
@@ -254,10 +305,12 @@ try {
 // ============================================================
 let currentUser = null;
 let funcionarios = [];      // lista carregada (permanentes ativos + visitantes de hoje)
-let presenca = {};          // { funcionario_id: 'presente'|'falta' }
+let esporadicos = [];       // pessoas esporádicas cadastradas (ativas) - entregador de café, motorista específico etc. Nunca entram no total da aba Presença.
+let presenca = {};          // { funcionario_id: 'presente'|'falta' } - também guarda a presença dos esporádicos, pelo mesmo id
 let saidas = {};            // { funcionario_id: {hora_entrada, hora_saida} } - só quem saiu mais cedo, no dia atual
 let currentDate = todayStr();
 let syncing = false;
+let activeTab = 'presenca'; // 'presenca' | 'esporadico'
 
 function todayStr() {
   const d = new Date();
@@ -310,6 +363,12 @@ function cacheFuncionarios() {
 }
 function loadFuncionariosCache() {
   funcionarios = JSON.parse(safeGet('funcionarios_cache') || '[]');
+}
+function cacheEsporadicos() {
+  safeSet('esporadicos_cache', JSON.stringify(esporadicos));
+}
+function loadEsporadicosCache() {
+  esporadicos = JSON.parse(safeGet('esporadicos_cache') || '[]');
 }
 function cachePresenca(dateStr) {
   safeSet(`presenca_${dateStr}`, JSON.stringify(presenca));
@@ -407,12 +466,16 @@ function doLogout() {
   currentUser = null;
   presenca = {};
   funcionarios = [];
+  esporadicos = [];
+  activeTab = 'presenca';
   document.getElementById('loginScreen').classList.remove('hidden');
   document.getElementById('mainApp').style.display = 'none';
   document.getElementById('summaryBar').style.display = 'none';
+  document.getElementById('summaryEsporadicos').style.display = 'none';
   document.getElementById('addBtn').style.display = 'none';
   document.getElementById('addVisitorBtn').style.display = 'none';
   document.getElementById('saidaBtn').style.display = 'none';
+  document.getElementById('addEsporadicoBtn').style.display = 'none';
   document.getElementById('footerBar').style.display = 'none';
   document.getElementById('loginUser').value = '';
   document.getElementById('loginPassword').value = '';
@@ -455,19 +518,42 @@ function limparCacheAntigo(diasParaManter = 30) {
 async function showApp() {
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('mainApp').style.display = 'block';
-  document.getElementById('summaryBar').style.display = 'flex';
-  document.getElementById('addBtn').style.display = 'block';
-  document.getElementById('addVisitorBtn').style.display = 'block';
-  document.getElementById('saidaBtn').style.display = 'block';
   document.getElementById('footerBar').style.display = 'flex';
   document.getElementById('dateInput').value = currentDate;
   updateConnIndicator();
   updatePendingBadge();
 
   await loadFuncionariosFromServerOrCache();
+  await loadEsporadicosFromServerOrCache();
   await changeDate();
 
+  switchTab('presenca');
+
   if (isOnline()) syncNow(false);
+}
+
+// ============================================================
+// ABAS (Presença x Esporádicos)
+// ============================================================
+function switchTab(tab) {
+  activeTab = tab;
+  const isPresenca = tab === 'presenca';
+
+  document.getElementById('tabPresencaBtn').classList.toggle('active', isPresenca);
+  document.getElementById('tabEsporadicoBtn').classList.toggle('active', !isPresenca);
+
+  document.getElementById('summaryBar').style.display = isPresenca ? 'flex' : 'none';
+  document.getElementById('list').style.display = isPresenca ? 'block' : 'none';
+  document.getElementById('summaryEsporadicos').style.display = isPresenca ? 'none' : 'flex';
+  document.getElementById('listEsporadicos').style.display = isPresenca ? 'none' : 'block';
+
+  document.getElementById('addBtn').style.display = isPresenca ? 'block' : 'none';
+  document.getElementById('addVisitorBtn').style.display = isPresenca ? 'block' : 'none';
+  document.getElementById('saidaBtn').style.display = isPresenca ? 'block' : 'none';
+  document.getElementById('addEsporadicoBtn').style.display = isPresenca ? 'none' : 'block';
+
+  render();
+  renderEsporadicos();
 }
 
 async function loadFuncionariosFromServerOrCache() {
@@ -506,10 +592,39 @@ function populateEmpresaList() {
   dl.innerHTML = companies.map(c => `<option value="${c}"></option>`).join('');
 }
 
+// pessoas esporádicas (não-diárias) cadastradas uma vez só - entregador de café, motorista
+// específico etc. Diferente do "visitante do dia", não dependem da data (ficam cadastradas
+// enquanto ativas) e NUNCA entram nos totais da aba Presença - vivem numa aba própria.
+async function loadEsporadicosFromServerOrCache() {
+  const pendentes = esporadicos.filter(f => String(f.id).startsWith('temp_'));
+
+  if (isOnline()) {
+    try {
+      const { data, error } = await sb
+        .from('funcionarios')
+        .select('id, empresa, nome, funcao, tipo, ativo')
+        .eq('tipo', 'esporadico')
+        .eq('ativo', true)
+        .order('nome', { ascending: true });
+      if (error) throw error;
+      esporadicos = [...(data || []), ...pendentes];
+      cacheEsporadicos();
+      return;
+    } catch (e) {
+      showToast('⚠️ Não consegui atualizar a lista de esporádicos, usando dados salvos.');
+    }
+  }
+  loadEsporadicosCache();
+  pendentes.forEach(p => {
+    if (!esporadicos.some(f => f.id === p.id)) esporadicos.push(p);
+  });
+}
+
 async function changeDate() {
   currentDate = document.getElementById('dateInput').value || todayStr();
 
   await loadFuncionariosFromServerOrCache();
+  await loadEsporadicosFromServerOrCache();
 
   if (isOnline()) {
     try {
@@ -543,10 +658,16 @@ async function changeDate() {
       saidas[op.payload.funcionario_id] = { hora_entrada: op.payload.hora_entrada, hora_saida: op.payload.hora_saida };
       presenca[op.payload.funcionario_id] = 'presente';
     }
+    if (op.type === 'remove_presenca' && op.payload.data === currentDate) {
+      delete presenca[op.payload.funcionario_id];
+    }
   });
 
+  // só funcionários fixos/visitantes viram "falta" por padrão - esporádico sem marcação
+  // fica neutro (não veio hoje mesmo, não é falta de ninguém esperado)
   funcionarios.forEach(f => { if (!(f.id in presenca)) presenca[f.id] = 'falta'; });
   render();
+  renderEsporadicos();
 }
 
 let expandedState = {}; // lembra quais empreiteiras estão abertas/fechadas entre atualizações da lista
@@ -629,6 +750,68 @@ function render() {
   document.getElementById('statTotal').textContent = funcionarios.length;
 }
 
+function renderEsporadicos() {
+  const listEl = document.getElementById('listEsporadicos');
+  if (!listEl) return;
+
+  const q = (document.getElementById('searchInput').value || '').toLowerCase();
+  const pendingPresencaIds = new Set(
+    getQueue()
+      .filter(op => op.type === 'set_presenca' && op.payload.data === currentDate)
+      .map(op => op.payload.funcionario_id)
+  );
+
+  const ws = esporadicos
+    .filter(w => !q || w.nome.toLowerCase().includes(q) || (w.funcao || '').toLowerCase().includes(q))
+    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+
+  if (!ws.length) {
+    listEl.innerHTML = '<div class="empty">Nenhum prestador esporádico cadastrado ainda. Toque no 🚚 pra adicionar (entregador de café, motorista específico etc).</div>';
+  } else {
+    listEl.innerHTML = `<div class="company"><div class="workers">
+      ${ws.map(w => `
+        <div class="wrow">
+          <div class="winfo">
+            <div class="wname">${w.nome}</div>
+            <div class="wfunc">${w.funcao}${w.empresa && w.empresa !== 'PRESTADOR ESPORÁDICO' ? ' • ' + w.empresa : ''}</div>
+            ${String(w.id).startsWith('temp_') ? '<div class="wpending">⏳ aguardando sincronizar</div>' : ''}
+            ${!String(w.id).startsWith('temp_') && pendingPresencaIds.has(w.id) ? '<div class="wpending">🔄 sincronizando...</div>' : ''}
+          </div>
+          <div class="toggle-single">
+            <button onclick="toggleEsporadicoPresenca('${w.id}')" class="${presenca[w.id] === 'presente' ? 'active-p' : ''}">${presenca[w.id] === 'presente' ? '✅ Esteve aqui' : 'Marcar presença'}</button>
+          </div>
+          <button class="btn-edit" onclick="editEsporadico('${w.id}')" title="Editar">✏️</button>
+          <button class="btn-del" onclick="deleteEsporadico('${w.id}', '${w.nome.replace(/'/g, "\\'")}')" title="Excluir">🗑️</button>
+        </div>
+      `).join('')}
+    </div></div>`;
+  }
+
+  document.getElementById('statEsporadicosHoje').textContent = esporadicos.filter(w => presenca[w.id] === 'presente').length;
+  document.getElementById('statEsporadicosTotal').textContent = esporadicos.length;
+}
+
+function toggleEsporadicoPresenca(id) {
+  if (presenca[id] === 'presente') {
+    delete presenca[id];
+    cachePresenca(currentDate);
+    const q = getQueue().filter(op => !((op.type === 'set_presenca' || op.type === 'remove_presenca') && op.payload.funcionario_id === id && op.payload.data === currentDate));
+    q.push({ id: 'op_' + Date.now() + '_' + Math.random().toString(36).slice(2), type: 'remove_presenca', payload: { funcionario_id: id, data: currentDate } });
+    saveQueue(q);
+    renderEsporadicos();
+    if (isOnline()) syncNow(false);
+  } else {
+    presenca[id] = 'presente';
+    cachePresenca(currentDate);
+    const q = getQueue().filter(op => !((op.type === 'set_presenca' || op.type === 'remove_presenca') && op.payload.funcionario_id === id && op.payload.data === currentDate));
+    q.push({ id: 'op_' + Date.now() + '_' + Math.random().toString(36).slice(2), type: 'set_presenca', payload: { funcionario_id: id, data: currentDate, status: 'presente' } });
+    saveQueue(q);
+    renderEsporadicos();
+    if (isOnline()) syncNow(false);
+    else showToast('💾 Salvo localmente. Sincroniza quando voltar o WiFi.');
+  }
+}
+
 function editWorker(id) {
   const worker = funcionarios.find(f => String(f.id) === String(id));
   if (!worker) return;
@@ -638,6 +821,8 @@ function editWorker(id) {
   document.getElementById('editNome').value = worker.nome;
   document.getElementById('editFuncao').value = worker.funcao;
   document.getElementById('editAlocacao').value = worker.alocacao || '';
+  // "Mover pra Esporádicos" só faz sentido pra funcionário fixo - visitante do dia já é temporário por natureza
+  document.getElementById('btnMoverEsporadico').style.display = (worker.tipo === 'permanente') ? 'block' : 'none';
   document.getElementById('modalEdit').classList.add('show');
 }
 
@@ -699,6 +884,212 @@ function saveEdit() {
   if (isOnline()) syncNow(false);
 }
 
+// Move um funcionário fixo (tipo='permanente') pra Esporádicos, sem apagar e recriar -
+// mantém o mesmo id, então o histórico de presença dele continua todo vinculado certinho.
+function moverParaEsporadico() {
+  const id = document.getElementById('editFuncionarioId').value;
+  const worker = funcionarios.find(f => String(f.id) === String(id));
+  if (!worker) { closeEditModal(); return; }
+
+  const nome = document.getElementById('editNome').value.trim().toUpperCase();
+  const funcao = document.getElementById('editFuncao').value.trim().toUpperCase();
+  const empresa = document.getElementById('editEmpresa').value.trim().toUpperCase() || 'PRESTADOR ESPORÁDICO';
+
+  if (!nome || !funcao) {
+    showToast('⚠️ Preencha nome e função antes de mover.');
+    return;
+  }
+
+  if (!confirm(`Mover "${nome}" pra Esporádicos? Ela sai do total da aba Presença e passa a aparecer na aba 🚚 Esporádicos - o histórico de presença dela continua salvo.`)) return;
+
+  const jaExiste = esporadicos.some(f => f.nome === nome && f.funcao === funcao);
+  if (jaExiste) {
+    showToast(`⚠️ Já existe alguém como "${nome}" (${funcao}) em Esporádicos.`);
+    return;
+  }
+
+  worker.tipo = 'esporadico';
+  worker.empresa = empresa;
+  worker.nome = nome;
+  worker.funcao = funcao;
+  worker.alocacao = null;
+
+  funcionarios = funcionarios.filter(f => String(f.id) !== String(id));
+  esporadicos.push(worker);
+  cacheFuncionarios();
+  cacheEsporadicos();
+
+  if (String(id).startsWith('temp_')) {
+    // ainda nem tinha sincronizado como fixo - só troca o tipo do próprio pedido pendente
+    const q = getQueue();
+    const addOp = q.find(op => op.tempId === id && op.type === 'add_funcionario');
+    if (addOp) {
+      addOp.type = 'add_esporadico';
+      addOp.payload = { empresa, nome, funcao, tipo: 'esporadico', ativo: true, created_by: addOp.payload.created_by };
+    }
+    saveQueue(q);
+  } else {
+    const q = getQueue().filter(op => !(op.type === 'edit_funcionario' && op.payload.funcionario_id === id));
+    q.push({
+      id: 'op_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+      type: 'mudar_tipo',
+      payload: { funcionario_id: id, tipo: 'esporadico', empresa, nome, funcao, alocacao: null }
+    });
+    saveQueue(q);
+  }
+
+  closeEditModal();
+  render();
+  renderEsporadicos();
+  showToast('🚚 Movido pra Esporádicos!');
+  if (isOnline()) syncNow(false);
+}
+
+// Move um esporádico de volta pra funcionário fixo (tipo='permanente'), quando a pessoa
+// que era esporádica virou parte fixa da equipe.
+function moverParaPermanente() {
+  const id = document.getElementById('editEspId').value;
+  const worker = esporadicos.find(f => String(f.id) === String(id));
+  if (!worker) { closeEditEsporadicoModal(); return; }
+
+  const nome = document.getElementById('editEspNome').value.trim().toUpperCase();
+  const funcao = document.getElementById('editEspFuncao').value.trim().toUpperCase();
+  const empresa = document.getElementById('editEspEmpresa').value.trim().toUpperCase();
+
+  if (!nome || !funcao || !empresa) {
+    showToast('⚠️ Preencha empresa, nome e função antes de mover (funcionário fixo precisa de empresa).');
+    return;
+  }
+
+  if (!confirm(`Mover "${nome}" pra Presença como funcionário fixo? Ela passa a contar no total normal e vai precisar de presença/falta marcada todo dia.`)) return;
+
+  const jaExiste = funcionarios.some(f =>
+    f.tipo === 'permanente' && f.empresa === empresa && f.nome === nome && f.funcao === funcao
+  );
+  if (jaExiste) {
+    showToast(`⚠️ Já existe outra pessoa cadastrada como "${nome}" em ${empresa} - ${funcao}.`);
+    return;
+  }
+
+  worker.tipo = 'permanente';
+  worker.empresa = empresa;
+  worker.nome = nome;
+  worker.funcao = funcao;
+  worker.alocacao = null;
+
+  esporadicos = esporadicos.filter(f => String(f.id) !== String(id));
+  funcionarios.push(worker);
+  if (!(worker.id in presenca)) presenca[worker.id] = 'falta';
+  cacheFuncionarios();
+  cacheEsporadicos();
+  cachePresenca(currentDate);
+
+  if (String(id).startsWith('temp_')) {
+    const q = getQueue();
+    const addOp = q.find(op => op.tempId === id && op.type === 'add_esporadico');
+    if (addOp) {
+      addOp.type = 'add_funcionario';
+      addOp.payload = { empresa, nome, funcao, alocacao: null, tipo: 'permanente', ativo: true, created_by: addOp.payload.created_by };
+    }
+    saveQueue(q);
+  } else {
+    const q = getQueue().filter(op => !(op.type === 'edit_esporadico' && op.payload.funcionario_id === id));
+    q.push({
+      id: 'op_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+      type: 'mudar_tipo',
+      payload: { funcionario_id: id, tipo: 'permanente', empresa, nome, funcao, alocacao: null }
+    });
+    saveQueue(q);
+  }
+
+  closeEditEsporadicoModal();
+  render();
+  renderEsporadicos();
+  showToast('👷 Movido pra Presença (fixo)!');
+  if (isOnline()) syncNow(false);
+}
+
+function editEsporadico(id) {
+  const w = esporadicos.find(f => String(f.id) === String(id));
+  if (!w) return;
+
+  document.getElementById('editEspId').value = id;
+  document.getElementById('editEspNome').value = w.nome;
+  document.getElementById('editEspFuncao').value = w.funcao;
+  document.getElementById('editEspEmpresa').value = (w.empresa && w.empresa !== 'PRESTADOR ESPORÁDICO') ? w.empresa : '';
+  document.getElementById('modalEditEsporadico').classList.add('show');
+}
+
+function closeEditEsporadicoModal() {
+  document.getElementById('modalEditEsporadico').classList.remove('show');
+}
+
+function saveEditEsporadico() {
+  const id = document.getElementById('editEspId').value;
+  const nome = document.getElementById('editEspNome').value.trim().toUpperCase();
+  const funcao = document.getElementById('editEspFuncao').value.trim().toUpperCase();
+  const empresa = document.getElementById('editEspEmpresa').value.trim().toUpperCase() || 'PRESTADOR ESPORÁDICO';
+
+  if (!nome || !funcao) {
+    showToast('⚠️ Preencha nome e o que a pessoa faz.');
+    return;
+  }
+
+  const w = esporadicos.find(f => String(f.id) === String(id));
+  if (!w) { closeEditEsporadicoModal(); return; }
+
+  w.nome = nome;
+  w.funcao = funcao;
+  w.empresa = empresa;
+  cacheEsporadicos();
+
+  if (String(id).startsWith('temp_')) {
+    const q = getQueue();
+    const addOp = q.find(op => op.tempId === id && op.type === 'add_esporadico');
+    if (addOp) { addOp.payload.nome = nome; addOp.payload.funcao = funcao; addOp.payload.empresa = empresa; }
+    saveQueue(q);
+  } else {
+    const q = getQueue().filter(op => !(op.type === 'edit_esporadico' && op.payload.funcionario_id === id));
+    q.push({
+      id: 'op_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+      type: 'edit_esporadico',
+      payload: { funcionario_id: id, nome, funcao, empresa }
+    });
+    saveQueue(q);
+  }
+
+  closeEditEsporadicoModal();
+  renderEsporadicos();
+  showToast('✅ Atualizado!');
+  if (isOnline()) syncNow(false);
+}
+
+function deleteEsporadico(id, nome) {
+  if (!confirm(`Excluir "${nome}" da lista de esporádicos definitivamente? (o histórico de presença dele continua salvo)`)) return;
+
+  esporadicos = esporadicos.filter(f => String(f.id) !== String(id));
+  delete presenca[id];
+  cacheEsporadicos();
+  cachePresenca(currentDate);
+
+  if (String(id).startsWith('temp_')) {
+    const q = getQueue().filter(op => op.tempId !== id && !((op.type === 'set_presenca' || op.type === 'remove_presenca') && op.payload.funcionario_id === id));
+    saveQueue(q);
+  } else {
+    const q = getQueue().filter(op => !((op.type === 'set_presenca' || op.type === 'remove_presenca') && op.payload.funcionario_id === id));
+    q.push({
+      id: 'op_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+      type: 'delete_esporadico',
+      payload: { funcionario_id: id }
+    });
+    saveQueue(q);
+  }
+
+  renderEsporadicos();
+  showToast('🗑️ Removido!');
+  if (isOnline()) syncNow(false);
+}
+
 function deleteWorker(id, nome) {
   const worker = funcionarios.find(f => String(f.id) === String(id));
   if (!worker) return;
@@ -742,11 +1133,16 @@ function viewPendencias() {
     let desc = `${i + 1}. `;
     if (op.type === 'add_funcionario') desc += `Adicionar fixo: ${op.payload.nome} — ${op.payload.empresa} (${op.payload.funcao})`;
     else if (op.type === 'add_visitor') desc += `Adicionar visitante: ${op.payload.nome} (${op.payload.funcao})`;
+    else if (op.type === 'add_esporadico') desc += `Adicionar esporádico: ${op.payload.nome} (${op.payload.funcao})`;
     else if (op.type === 'set_presenca') desc += `Marcar ${op.payload.status} em ${op.payload.data}`;
+    else if (op.type === 'remove_presenca') desc += `Desmarcar presença em ${op.payload.data}`;
     else if (op.type === 'set_saida') desc += `Saída antecipada em ${op.payload.data}`;
     else if (op.type === 'delete_funcionario') desc += `Excluir funcionário fixo`;
     else if (op.type === 'edit_funcionario') desc += `Editar: ${op.payload.nome} — ${op.payload.empresa} (${op.payload.funcao})`;
+    else if (op.type === 'edit_esporadico') desc += `Editar esporádico: ${op.payload.nome} (${op.payload.funcao})`;
     else if (op.type === 'delete_visitor') desc += `Excluir visitante`;
+    else if (op.type === 'delete_esporadico') desc += `Excluir esporádico`;
+    else if (op.type === 'mudar_tipo') desc += `Mover "${op.payload.nome}" pra ${op.payload.tipo === 'esporadico' ? 'Esporádicos' : 'Presença (fixo)'}`;
     else desc += op.type;
 
     if (op.lastError) {
@@ -787,10 +1183,16 @@ function viewPendencias() {
         funcionarios = funcionarios.filter(f => f.id !== removed.tempId);
         delete presenca[removed.tempId];
       }
+      if (removed.type === 'add_esporadico' && removed.tempId) {
+        esporadicos = esporadicos.filter(f => f.id !== removed.tempId);
+        delete presenca[removed.tempId];
+      }
     });
     cacheFuncionarios();
+    cacheEsporadicos();
     cachePresenca(currentDate);
     render();
+    renderEsporadicos();
     saveQueue(newQ);
     showToast(`🗑️ ${removedOps.length} pendência(s) descartada(s).`);
   }
@@ -832,9 +1234,9 @@ async function syncNow(manual) {
     const succeededIds = new Set();   // ids de operações confirmadas - só essas somem da fila
     const errorById = {};             // ids de operações que falharam, com o motivo
 
-    // 1) adições de funcionário/visitante primeiro (geram os IDs reais)
+    // 1) adições de funcionário/visitante/esporádico primeiro (geram os IDs reais)
     for (const op of q) {
-      if (op.type === 'add_funcionario' || op.type === 'add_visitor') {
+      if (op.type === 'add_funcionario' || op.type === 'add_visitor' || op.type === 'add_esporadico') {
         try {
           const { data, error } = await sb
             .from('funcionarios')
@@ -853,7 +1255,7 @@ async function syncNow(manual) {
     // 2) o resto (presença, saída antecipada, edição, exclusão)
     for (const op of q) {
       if (succeededIds.has(op.id)) continue; // já processado no passo 1
-      if (op.type === 'add_funcionario' || op.type === 'add_visitor') continue; // já tratado acima
+      if (op.type === 'add_funcionario' || op.type === 'add_visitor' || op.type === 'add_esporadico') continue; // já tratado acima
 
       if (op.type === 'set_presenca') {
         let funcId = op.payload.funcionario_id;
@@ -927,6 +1329,49 @@ async function syncNow(manual) {
         } catch (e) {
           errorById[op.id] = (e && e.message) ? e.message : String(e);
         }
+      } else if (op.type === 'edit_esporadico') {
+        try {
+          const { error } = await sb
+            .from('funcionarios')
+            .update({ empresa: op.payload.empresa, nome: op.payload.nome, funcao: op.payload.funcao })
+            .eq('id', op.payload.funcionario_id);
+          if (error) throw error;
+          succeededIds.add(op.id);
+        } catch (e) {
+          errorById[op.id] = (e && e.message) ? e.message : String(e);
+        }
+      } else if (op.type === 'delete_esporadico') {
+        try {
+          const { error } = await sb.from('funcionarios').update({ ativo: false }).eq('id', op.payload.funcionario_id);
+          if (error) throw error;
+          succeededIds.add(op.id);
+        } catch (e) {
+          errorById[op.id] = (e && e.message) ? e.message : String(e);
+        }
+      } else if (op.type === 'mudar_tipo') {
+        try {
+          const { error } = await sb
+            .from('funcionarios')
+            .update({ tipo: op.payload.tipo, empresa: op.payload.empresa, nome: op.payload.nome, funcao: op.payload.funcao, alocacao: op.payload.alocacao })
+            .eq('id', op.payload.funcionario_id);
+          if (error) throw error;
+          succeededIds.add(op.id);
+        } catch (e) {
+          errorById[op.id] = (e && e.message) ? e.message : String(e);
+        }
+      } else if (op.type === 'remove_presenca') {
+        let funcId = op.payload.funcionario_id;
+        if (String(funcId).startsWith('temp_')) {
+          if (idMap[funcId]) funcId = idMap[funcId];
+          else continue;
+        }
+        try {
+          const { error } = await sb.from('presenca').delete().eq('funcionario_id', funcId).eq('data', op.payload.data);
+          if (error) throw error;
+          succeededIds.add(op.id);
+        } catch (e) {
+          errorById[op.id] = (e && e.message) ? e.message : String(e);
+        }
       }
     }
 
@@ -942,6 +1387,7 @@ async function syncNow(manual) {
 
     if (Object.keys(idMap).length) {
       funcionarios = funcionarios.map(f => idMap[f.id] ? { ...f, id: idMap[f.id] } : f);
+      esporadicos = esporadicos.map(f => idMap[f.id] ? { ...f, id: idMap[f.id] } : f);
       Object.keys(idMap).forEach(tempId => {
         if (tempId in presenca) {
           presenca[idMap[tempId]] = presenca[tempId];
@@ -949,6 +1395,7 @@ async function syncNow(manual) {
         }
       });
       cacheFuncionarios();
+      cacheEsporadicos();
       cachePresenca(currentDate);
     }
 
@@ -969,6 +1416,7 @@ async function syncNow(manual) {
 async function refreshFromServer() {
   try {
     await loadFuncionariosFromServerOrCache();
+    await loadEsporadicosFromServerOrCache();
     const { data, error } = await sb
       .from('presenca')
       .select('funcionario_id, status, hora_entrada, hora_saida, saida_antecipada')
@@ -982,7 +1430,8 @@ async function refreshFromServer() {
       });
       const pendingIds = new Set(getQueue().filter(op => op.type === 'set_presenca').map(op => op.payload.funcionario_id));
       const pendingSaidaIds = new Set(getQueue().filter(op => op.type === 'set_saida').map(op => op.payload.funcionario_id));
-      Object.keys(serverPresenca).forEach(id => { if (!pendingIds.has(id)) presenca[id] = serverPresenca[id]; });
+      const pendingRemoveIds = new Set(getQueue().filter(op => op.type === 'remove_presenca').map(op => op.payload.funcionario_id));
+      Object.keys(serverPresenca).forEach(id => { if (!pendingIds.has(id) && !pendingRemoveIds.has(id)) presenca[id] = serverPresenca[id]; });
       Object.keys(serverSaidas).forEach(id => { if (!pendingSaidaIds.has(id)) saidas[id] = serverSaidas[id]; });
       funcionarios.forEach(f => { if (!(f.id in presenca)) presenca[f.id] = 'falta'; });
       cachePresenca(currentDate);
@@ -990,6 +1439,7 @@ async function refreshFromServer() {
     }
   } catch (e) {}
   render();
+  renderEsporadicos();
 }
 
 // ============================================================
@@ -999,6 +1449,8 @@ function openModal() { document.getElementById('modal').classList.add('show'); }
 function closeModal() { document.getElementById('modal').classList.remove('show'); }
 function openVisitorModal() { document.getElementById('modalVisitor').classList.add('show'); }
 function closeVisitorModal() { document.getElementById('modalVisitor').classList.remove('show'); }
+function openEsporadicoModal() { document.getElementById('modalEsporadico').classList.add('show'); }
+function closeEsporadicoModal() { document.getElementById('modalEsporadico').classList.remove('show'); }
 
 function openSaidaModal() {
   document.getElementById('saidaNomeSearch').value = '';
@@ -1138,6 +1590,43 @@ function addVisitor() {
   closeVisitorModal();
   render();
   showToast('✅ Visitante adicionado! Ele some da lista automaticamente amanhã.');
+  if (isOnline()) syncNow(false);
+}
+
+function addEsporadico() {
+  const nome = document.getElementById('espNome').value.trim().toUpperCase();
+  const funcao = document.getElementById('espFuncao').value.trim().toUpperCase();
+  const empresa = document.getElementById('espEmpresa').value.trim().toUpperCase() || 'PRESTADOR ESPORÁDICO';
+
+  if (!nome || !funcao) {
+    showToast('⚠️ Preencha nome e o que a pessoa faz.');
+    return;
+  }
+
+  const jaExiste = esporadicos.some(f => f.nome === nome && f.funcao === funcao);
+  const jaNaFila = getQueue().some(op =>
+    op.type === 'add_esporadico' && op.payload.nome === nome && op.payload.funcao === funcao
+  );
+  if (jaExiste || jaNaFila) {
+    showToast(`⚠️ "${nome}" já está cadastrado (ou pendente de sincronizar) como ${funcao}.`);
+    return;
+  }
+
+  const tempId = 'temp_' + Date.now();
+  const payload = { empresa, nome, funcao, tipo: 'esporadico', ativo: true, created_by: currentUser ? currentUser.id : null };
+
+  esporadicos.push({ id: tempId, ...payload });
+  cacheEsporadicos();
+
+  queuePush({ id: 'op_' + Date.now() + '_' + Math.random().toString(36).slice(2), type: 'add_esporadico', tempId, payload });
+
+  document.getElementById('espNome').value = '';
+  document.getElementById('espFuncao').value = '';
+  document.getElementById('espEmpresa').value = '';
+
+  closeEsporadicoModal();
+  renderEsporadicos();
+  showToast('✅ Prestador esporádico adicionado! Agora é só marcar presença quando ele aparecer.');
   if (isOnline()) syncNow(false);
 }
 
