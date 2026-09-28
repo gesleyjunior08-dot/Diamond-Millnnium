@@ -67,16 +67,6 @@
   .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
   @media (max-width:700px){.grid-2{grid-template-columns:1fr;}}
 
-  .mov-list{list-style:none;}
-  .mov-item{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0;font-size:13px;}
-  .visit-title{color:#0B3D91;border-bottom-color:#0B3D91;}
-  .mov-item.visit-item{color:#0B3D91;}
-  .mov-item:last-child{border-bottom:none;}
-  .mov-item .sub{color:var(--gray);font-size:11px;}
-  .mov-empty{color:var(--gray);font-size:12px;padding:8px 0;}
-  .tag-in{color:var(--green);font-weight:700;font-size:11px;}
-  .tag-out{color:var(--red);font-weight:700;font-size:11px;}
-
   .doc-bar-row{margin-bottom:14px;}
   .doc-bar-label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;}
   .doc-bar-track{background:var(--gray-light);border-radius:6px;height:10px;overflow:hidden;}
@@ -91,18 +81,39 @@
 
   .loading, .empty{text-align:center;padding:24px;color:var(--gray);font-size:13px;}
 
+  /* ---- Relatório fotográfico (2026-09-28) — fotos + título por semana, ---- */
+  /* ---- inspirado no relatório fotográfico em Word que o usuário já usava ---- */
+  .foto-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px;}
+  @media (max-width:600px){.foto-grid{grid-template-columns:1fr;}}
+  .foto-card{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;position:relative;}
+  .foto-img-wrap{position:relative;aspect-ratio:4/3;background:var(--gray-light);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;}
+  .foto-img-wrap img{width:100%;height:100%;object-fit:cover;display:block;}
+  .foto-img-placeholder{color:var(--gray);font-size:12px;text-align:center;padding:12px;line-height:1.5;}
+  .foto-img-wrap.uploading{opacity:0.5;pointer-events:none;}
+  .foto-remove-btn{position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.55);color:#fff;border:none;border-radius:6px;width:26px;height:26px;font-size:14px;line-height:1;cursor:pointer;z-index:2;}
+  .foto-titulo-input{display:block;width:100%;border:none;border-top:1px solid var(--line);padding:10px 12px;font-size:12px;font-weight:700;text-align:center;text-transform:uppercase;color:var(--navy);background:transparent;font-family:inherit;}
+  .foto-titulo-input:focus{outline:2px solid var(--blue);outline-offset:-2px;}
+  .btn-add-foto{width:100%;padding:16px;border:2px dashed #c7ccd4;border-radius:10px;background:#fff;color:var(--blue);font-weight:600;font-size:13px;cursor:pointer;}
+  .foto-empty-hint{color:var(--gray);font-size:12px;padding:6px 2px 14px;grid-column:1/-1;}
+
+  .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:#1C1C1C;color:#fff;padding:11px 18px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:200;max-width:88vw;text-align:center;}
+  .toast.show{opacity:1;transform:translate(-50%,0);}
+
   @page { margin: 1.6cm 1.3cm; }
   @media print {
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     body{background:#fff;}
-    .toolbar, .err-banner, .login-screen{display:none !important;}
+    .toolbar, .err-banner, .login-screen, .toast{display:none !important;}
     #report{padding:0;max-width:100%;}
-    .panel, .cover{break-inside:avoid;}
+    .panel, .cover, .foto-card{break-inside:avoid;}
+    .foto-remove-btn, .btn-add-foto, .foto-empty-hint{display:none !important;}
+    .foto-titulo-input{color:#000;}
   }
 </style>
 </head>
 <body>
 <div class="err-banner" id="errBanner"></div>
+<div class="toast" id="toast"></div>
 <script>
 window.addEventListener('error', function(e) {
   var b = document.getElementById('errBanner');
@@ -161,32 +172,14 @@ window.addEventListener('error', function(e) {
     </div>
   </div>
 
-  <div class="section-title">Movimentação de pessoal na semana</div>
-  <div class="grid-2">
-    <div class="panel">
-      <h3><span class="tag-in">↑ ENTRADAS</span> — novos cadastros</h3>
-      <ul class="mov-list" id="entradasList"><div class="loading">Carregando...</div></ul>
-    </div>
-    <div class="panel">
-      <h3><span class="tag-out">↓ SAÍDAS</span> — desativados</h3>
-      <ul class="mov-list" id="saidasList"><div class="loading">Carregando...</div></ul>
-    </div>
-  </div>
-
   <div class="section-title">Situação da documentação (visão geral atual)</div>
   <div class="panel" id="docPanel">
     <div class="loading">Carregando...</div>
   </div>
 
-  <div class="section-title">🚪 Saídas antecipadas na semana</div>
-  <div class="panel" id="saidasAntecipadasPanel">
-    <div class="loading">Carregando...</div>
-  </div>
-
-  <div class="section-title visit-title">👤 Visitantes da semana (não entram nos totais acima)</div>
-  <div class="panel" id="visitantesSemanaPanel">
-    <div class="loading">Carregando...</div>
-  </div>
+  <div class="section-title">📷 Relatório fotográfico</div>
+  <div class="foto-grid" id="fotoGrid"><div class="loading">Carregando...</div></div>
+  <button type="button" class="btn-add-foto" onclick="adicionarFotoRelatorio()">+ Adicionar foto</button>
 
   <div class="assinaturas">
     <div class="assinatura-item">
@@ -206,6 +199,7 @@ window.addEventListener('error', function(e) {
 const OBRA_ID = 'diamond_millennium';
 const SUPABASE_URL = 'https://otlzehasidzannsczcnv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_EsUxMlHlz4XiUjso5Yit-g_vtl7_Ius';
+const BUCKET_FOTOS_RELATORIO = 'fotos-relatorio';
 let sb = null;
 try {
   if (window.supabase) {
@@ -297,7 +291,6 @@ async function gerarRelatorio() {
       .eq('funcionarios.ativo', true);
     if (error) throw error;
     const allRows = (data || []).filter(r => r.funcionarios);
-    const visitantes = allRows.filter(r => r.funcionarios.tipo === 'visitante' && r.status === 'presente');
     const rows = allRows.filter(r => r.funcionarios.tipo !== 'visitante');
 
     const { count: totalAtivos } = await sb.from('funcionarios').select('id', { count: 'exact', head: true }).eq('tipo', 'permanente').eq('ativo', true);
@@ -305,10 +298,8 @@ async function gerarRelatorio() {
     renderCards(rows, ini, fim, totalAtivos || 0);
     renderChartDias(rows, segunda);
     renderChartEmpresas(rows);
-    renderSaidasAntecipadas(rows.filter(r => r.saida_antecipada));
-    renderVisitantesSemana(visitantes);
-    await renderMovimentacao(ini, fim);
     await renderDocumentacao();
+    await renderFotosRelatorio(ini);
   } catch (e) {
     document.getElementById('cards').innerHTML = '<div class="empty">Erro ao carregar dados.</div>';
     console.error(e);
@@ -332,42 +323,6 @@ function renderCards(rows, ini, fim, totalAtivos) {
     <div class="card"><div class="n">${taxa}%</div><div class="l">Taxa de presença</div></div>
     <div class="card"><div class="n">${diasComRegistro}</div><div class="l">Dias com registro</div></div>
     <div class="card"><div class="n" style="color:#C9A227;">${saidasAntecipadas.length}</div><div class="l">Saídas antecipadas</div></div>
-  `;
-}
-
-function renderSaidasAntecipadas(rows) {
-  const panel = document.getElementById('saidasAntecipadasPanel');
-  if (!panel) return;
-  if (!rows.length) {
-    panel.innerHTML = '<div class="empty">Ninguém saiu mais cedo nesta semana.</div>';
-    return;
-  }
-  const sorted = [...rows].sort((a, b) => a.data.localeCompare(b.data) || a.funcionarios.nome.localeCompare(b.funcionarios.nome, 'pt-BR'));
-  panel.innerHTML = `
-    <ul class="mov-list">
-      ${sorted.map(r => {
-        const horas = [
-          r.hora_entrada ? `Entrada ${r.hora_entrada.slice(0,5)}` : null,
-          r.hora_saida ? `Saída ${r.hora_saida.slice(0,5)}` : null
-        ].filter(Boolean).join(' • ') || 'sem horário informado';
-        return `<li class="mov-item"><span>${fmtBR(r.data)} — <b>${r.funcionarios.nome}</b> (${r.funcionarios.empresa})</span><span class="sub">${horas}</span></li>`;
-      }).join('')}
-    </ul>
-  `;
-}
-
-function renderVisitantesSemana(rows) {
-  const panel = document.getElementById('visitantesSemanaPanel');
-  if (!panel) return;
-  if (!rows.length) {
-    panel.innerHTML = '<div class="empty">Nenhum visitante nesta semana.</div>';
-    return;
-  }
-  const sorted = [...rows].sort((a, b) => a.data.localeCompare(b.data) || a.funcionarios.nome.localeCompare(b.funcionarios.nome, 'pt-BR'));
-  panel.innerHTML = `
-    <ul class="mov-list">
-      ${sorted.map(r => `<li class="mov-item visit-item"><span>${fmtBR(r.data)} — <b>${r.funcionarios.nome}</b></span><span class="sub">${r.funcionarios.funcao || 'N/D'}</span></li>`).join('')}
-    </ul>
   `;
 }
 
@@ -406,44 +361,6 @@ function renderChartEmpresas(rows) {
     },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } } } }
   });
-}
-
-async function renderMovimentacao(ini, fim) {
-  const entradasEl = document.getElementById('entradasList');
-  const saidasEl = document.getElementById('saidasList');
-  entradasEl.innerHTML = '<div class="loading">Carregando...</div>';
-  saidasEl.innerHTML = '<div class="loading">Carregando...</div>';
-
-  try {
-    const { data: entradas, error: e1 } = await sb
-      .from('funcionarios')
-      .select('nome, empresa, funcao, created_at')
-      .eq('tipo', 'permanente')
-      .gte('created_at', ini)
-      .lt('created_at', toISO(addDias(new Date(fim + 'T00:00:00'), 1)));
-    if (e1) throw e1;
-
-    const { data: saidas, error: e2 } = await sb
-      .from('funcionarios')
-      .select('nome, empresa, funcao, updated_at')
-      .eq('tipo', 'permanente')
-      .eq('ativo', false)
-      .gte('updated_at', ini)
-      .lt('updated_at', toISO(addDias(new Date(fim + 'T00:00:00'), 1)));
-    if (e2) throw e2;
-
-    entradasEl.innerHTML = (entradas && entradas.length)
-      ? entradas.map(f => `<li class="mov-item"><span>${f.nome}</span><span class="sub">${f.empresa} — ${f.funcao}</span></li>`).join('')
-      : '<div class="mov-empty">Nenhum funcionário novo nesta semana.</div>';
-
-    saidasEl.innerHTML = (saidas && saidas.length)
-      ? saidas.map(f => `<li class="mov-item"><span>${f.nome}</span><span class="sub">${f.empresa} — ${f.funcao}</span></li>`).join('')
-      : '<div class="mov-empty">Ninguém desativado nesta semana.</div>';
-  } catch (e) {
-    entradasEl.innerHTML = '<div class="mov-empty">Não foi possível carregar (rode o patch_updated_at_diamond.sql).</div>';
-    saidasEl.innerHTML = '<div class="mov-empty">—</div>';
-    console.error(e);
-  }
 }
 
 async function renderDocumentacao() {
@@ -485,6 +402,160 @@ async function renderDocumentacao() {
 }
 
 window.addEventListener('beforeprint', () => { if (chartDias) chartDias.resize(); if (chartEmpresas) chartEmpresas.resize(); });
+
+// ============================================================
+// RELATÓRIO FOTOGRÁFICO (2026-09-28) — pedido do usuário a partir de um
+// relatório em Word que ele já usava: uma seção pra anexar fotos com
+// título, campos padrão (foto + título), e um botão pra adicionar quantas
+// forem precisas. Fica amarrado à SEMANA do relatório (mesma âncora
+// segunda-a-sexta calculada em gerarRelatorio) — trocar de semana mostra as
+// fotos daquela semana, nunca mistura uma semana com outra. Fica salvo no
+// Supabase (tabela `relatorio_fotos` + bucket `fotos-relatorio`), então
+// fechar a aba e abrir de novo mantém tudo.
+// ============================================================
+function escapeHtml(s) {
+  return (s || '').toString()
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function showToastRel(msg) {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// Redimensiona/comprime a foto no navegador antes de enviar (mesmo padrão
+// já usado em equipes.html/diario_obra.html) — evita subir foto de celular
+// gigante pro Storage. createImageBitmap com imageOrientation 'from-image'
+// já corrige a rotação automática de fotos tiradas na vertical.
+async function fileToResizedJpeg(file, maxSize, quality) {
+  let bitmap;
+  try {
+    bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  } catch (e) {
+    bitmap = await createImageBitmap(file);
+  }
+  const scale = Math.min(1, maxSize / Math.max(bitmap.width, bitmap.height));
+  const w = Math.max(1, Math.round(bitmap.width * scale));
+  const h = Math.max(1, Math.round(bitmap.height * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(b => b ? resolve(b) : reject(new Error('Falha ao gerar imagem')), 'image/jpeg', quality);
+  });
+}
+
+let semanaAtualFotos = null; // "YYYY-MM-DD" da segunda-feira da semana que está na tela agora
+let fotosRelatorio = [];
+const debounceTituloTimers = {};
+
+function urlFotoRelatorio(path) {
+  if (!path || !sb) return null;
+  return sb.storage.from(BUCKET_FOTOS_RELATORIO).getPublicUrl(path).data.publicUrl;
+}
+
+async function renderFotosRelatorio(semanaInicio) {
+  semanaAtualFotos = semanaInicio;
+  const cont = document.getElementById('fotoGrid');
+  if (!sb) { cont.innerHTML = '<div class="empty">Sem conexão com o Supabase.</div>'; return; }
+  cont.innerHTML = '<div class="loading">Carregando...</div>';
+  const { data, error } = await sb.from('relatorio_fotos')
+    .select('*').eq('semana_inicio', semanaInicio).order('ordem', { ascending: true });
+  if (error) {
+    cont.innerHTML = '<div class="empty">Erro ao carregar fotos (rode o relatorio_fotos_setup.sql se ainda não rodou).</div>';
+    console.error(error);
+    return;
+  }
+  fotosRelatorio = data || [];
+  desenharFotosRelatorio();
+}
+
+function desenharFotosRelatorio() {
+  const cont = document.getElementById('fotoGrid');
+  if (!fotosRelatorio.length) {
+    cont.innerHTML = '<div class="foto-empty-hint">Nenhuma foto ainda nessa semana — toque em "+ Adicionar foto" pra começar.</div>';
+    return;
+  }
+  cont.innerHTML = fotosRelatorio.map(f => {
+    const url = urlFotoRelatorio(f.foto_path);
+    return `
+      <div class="foto-card" id="fotoCard_${f.id}">
+        <div class="foto-img-wrap" onclick="document.getElementById('fotoInput_${f.id}').click()">
+          ${url ? `<img src="${url}" alt="">` : `<div class="foto-img-placeholder">📷<br>Toque pra<br>escolher a foto</div>`}
+          <input type="file" id="fotoInput_${f.id}" accept="image/*" capture="environment" style="display:none" onchange="onFotoRelatorioSelecionada(event, ${f.id})">
+        </div>
+        <button type="button" class="foto-remove-btn" title="Remover essa foto" onclick="removerFotoRelatorio(${f.id})">✕</button>
+        <input type="text" class="foto-titulo-input" placeholder="TÍTULO DA FOTO" value="${escapeHtml(f.titulo || '')}" oninput="onTituloFotoRelatorioMudou(${f.id}, this.value)">
+      </div>
+    `;
+  }).join('');
+}
+
+// Salva o título com um pequeno atraso depois que a pessoa para de digitar
+// (evita mandar uma requisição pro banco a cada letra digitada).
+function onTituloFotoRelatorioMudou(id, valor) {
+  const item = fotosRelatorio.find(f => f.id === id);
+  if (item) item.titulo = valor;
+  clearTimeout(debounceTituloTimers[id]);
+  debounceTituloTimers[id] = setTimeout(async () => {
+    if (!sb) return;
+    const { error } = await sb.from('relatorio_fotos').update({ titulo: valor }).eq('id', id);
+    if (error) { showToastRel('⚠️ Erro ao salvar título: ' + error.message); console.error(error); }
+  }, 700);
+}
+
+async function adicionarFotoRelatorio() {
+  if (!sb) { showToastRel('⚠️ Sem conexão com o banco.'); return; }
+  if (!semanaAtualFotos) { showToastRel('⚠️ Gere o relatório de uma semana primeiro.'); return; }
+  const proximaOrdem = fotosRelatorio.length ? Math.max(...fotosRelatorio.map(f => f.ordem || 0)) + 1 : 0;
+  const { data, error } = await sb.from('relatorio_fotos')
+    .insert({ semana_inicio: semanaAtualFotos, titulo: '', ordem: proximaOrdem })
+    .select().single();
+  if (error) { showToastRel('⚠️ Erro ao adicionar: ' + error.message); console.error(error); return; }
+  fotosRelatorio.push(data);
+  desenharFotosRelatorio();
+  // já abre a escolha da foto, pra economizar um toque
+  setTimeout(() => { const inp = document.getElementById(`fotoInput_${data.id}`); if (inp) inp.click(); }, 150);
+}
+
+async function removerFotoRelatorio(id) {
+  if (!confirm('Remover essa foto do relatório?')) return;
+  const { error } = await sb.from('relatorio_fotos').delete().eq('id', id);
+  if (error) { showToastRel('⚠️ Erro ao remover: ' + error.message); console.error(error); return; }
+  fotosRelatorio = fotosRelatorio.filter(f => f.id !== id);
+  desenharFotosRelatorio();
+}
+
+async function onFotoRelatorioSelecionada(event, id) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { showToastRel('⚠️ Selecione um arquivo de imagem.'); return; }
+  if (!sb) { showToastRel('⚠️ Sem conexão.'); return; }
+
+  const wrap = document.querySelector(`#fotoCard_${id} .foto-img-wrap`);
+  if (wrap) wrap.classList.add('uploading');
+  showToastRel('📤 Enviando foto...');
+  try {
+    const blob = await fileToResizedJpeg(file, 1000, 0.82);
+    const nomeArquivo = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+    const { error: upErr } = await sb.storage.from(BUCKET_FOTOS_RELATORIO).upload(nomeArquivo, blob, { upsert: false, contentType: 'image/jpeg' });
+    if (upErr) throw upErr;
+    const { error: updErr } = await sb.from('relatorio_fotos').update({ foto_path: nomeArquivo }).eq('id', id);
+    if (updErr) throw updErr;
+    const item = fotosRelatorio.find(f => f.id === id);
+    if (item) item.foto_path = nomeArquivo;
+    desenharFotosRelatorio();
+    showToastRel('✅ Foto salva!');
+  } catch (e) {
+    showToastRel('⚠️ Erro ao enviar foto: ' + (e.message || e));
+    console.error(e);
+    if (wrap) wrap.classList.remove('uploading');
+  }
+}
 
 checkExistingSession();
 </script>
