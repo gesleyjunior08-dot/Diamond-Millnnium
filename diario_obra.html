@@ -234,11 +234,38 @@ window.addEventListener('unhandledrejection', function(e) {
         <div class="editando-banner" id="editandoBanner">✏️ Editando um registro existente — role até o final e toque em "Salvar edição", ou em "Cancelar edição" pra desistir.</div>
 
         <div class="form-group">
+          <label>Onde foi o serviço</label>
+          <select id="selTipoLocal" onchange="onMudaTipoLocal()">
+            <option value="apartamento">Apartamento</option>
+            <option value="andar_completo">Andar completo</option>
+            <option value="corredor">Corredor</option>
+            <option value="balancinho">Balancinho</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="grupoLocalApartamento">
           <label>Unidade (andar + apartamento)</label>
           <input type="text" id="inpUnidade" placeholder="Ex.: 1401" inputmode="numeric">
-          <div class="unidade-feedback" id="unidadeFeedback"></div>
           <div class="unidade-hint">Prédio: 5º ao 28º andar, apartamentos 01 a 16 (07 a 14 = Grande/2 banheiros, os demais = Pequeno). Digite andar+apartamento juntos, ex.: 501 (5º andar, apto 01) ou 1401 (14º andar, apto 01).</div>
         </div>
+
+        <div class="form-group" id="grupoLocalAndarCompleto" style="display:none;">
+          <label>Qual andar (completo)</label>
+          <select id="selAndarCompleto"></select>
+        </div>
+
+        <div class="form-group" id="grupoLocalCorredor" style="display:none;">
+          <label>Corredor de qual andar</label>
+          <select id="selAndarCorredor"></select>
+        </div>
+
+        <div class="form-group" id="grupoLocalBalancinho" style="display:none;">
+          <label>Número do balancinho</label>
+          <input type="number" id="inpNumeroBalancinho" placeholder="Ex.: 3" inputmode="numeric" min="1">
+          <div class="unidade-hint">Só o número do balancinho — ele se move pela fachada, não fica preso a um andar.</div>
+        </div>
+
+        <div class="unidade-feedback" id="unidadeFeedback"></div>
 
         <div class="form-group">
           <label>Serviço</label>
@@ -334,7 +361,18 @@ window.addEventListener('unhandledrejection', function(e) {
     <!-- ================= ABA: POR UNIDADE ================= -->
     <div class="aba-conteudo" id="aba-unidade">
       <div class="busca-box">
+        <select id="selTipoLocalBusca" onchange="onMudaTipoLocalBusca()">
+          <option value="apartamento">Apartamento</option>
+          <option value="andar_completo">Andar completo</option>
+          <option value="corredor">Corredor</option>
+          <option value="balancinho">Balancinho</option>
+        </select>
+      </div>
+      <div class="busca-box">
         <input type="text" id="inpBuscaUnidade" placeholder="Ex.: 1401" inputmode="numeric" oninput="buscarPorUnidade()">
+        <select id="selBuscaAndarCompleto" style="display:none" onchange="buscarPorUnidade()"></select>
+        <select id="selBuscaAndarCorredor" style="display:none" onchange="buscarPorUnidade()"></select>
+        <input type="number" id="inpBuscaNumeroBalancinho" style="display:none" placeholder="Ex.: 3" inputmode="numeric" min="1" oninput="buscarPorUnidade()">
         <select id="selFiltroMedidoUnidade" class="sel-filtro-medido" onchange="renderListaPorUnidade()">
           <option value="todos">Todos</option>
           <option value="nao">Não medidos</option>
@@ -342,7 +380,7 @@ window.addEventListener('unhandledrejection', function(e) {
         </select>
       </div>
       <div class="unidade-feedback" id="buscaUnidadeFeedback" style="margin-bottom:10px;"></div>
-      <div id="listaPorUnidade"><div class="empty">Digite uma unidade pra ver o que já foi feito nela.</div></div>
+      <div id="listaPorUnidade"><div class="empty">Escolha um local pra ver o que já foi feito nele.</div></div>
     </div>
 
     <!-- ================= ABA: TAREFAS DO DIA ================= -->
@@ -623,6 +661,164 @@ function parseUnidade(raw) {
     ok: true, andar, apartamento: apto, tipo, codigo,
     label: `${andar}º andar, apto ${String(apto).padStart(2, '0')} (${tipo === 'G' ? 'Grande' : 'Pequeno'})`,
   };
+}
+
+// ============================================================
+// LOCAL DO SERVIÇO (2026-09-28) — antes só existia "unidade" (andar +
+// apartamento). Usuário pediu 3 opções novas, pra serviço que não é dentro
+// de um apartamento específico: Andar completo, Corredor (os dois sempre
+// amarrados a um andar, 5º ao 28º) e Balancinho (só o número do
+// equipamento, sem andar — ele se move pela fachada cobrindo vários
+// andares, então não faz sentido prender a um andar específico).
+//
+// Continua tudo guardado na mesma coluna `unidade` (texto) que já existia
+// — o bloqueio de serviço repetido no mesmo local (servicoJaExisteNaUnidade)
+// e a busca "Por unidade" continuam funcionando exatamente igual, sem
+// precisar mexer nelas, só passando um código diferente:
+//   apartamento     -> "1401"  (igual sempre foi)
+//   andar completo  -> "AND14"
+//   corredor        -> "COR14"
+//   balancinho      -> "BAL03"
+// (as siglas nunca colidem com o código de apartamento, que é só dígito).
+//
+// Colunas novas em rdo_registros: tipo_local (texto, default 'apartamento'
+// — registros antigos viram 'apartamento' sozinhos) e numero_balancinho
+// (inteiro, só usado quando tipo_local='balancinho'). andar/apartamento/
+// tipo_apto viraram opcionais (aceitam null), já que só fazem sentido pra
+// alguns dos 4 tipos. Ver diario_obra_local_setup.sql.
+// ============================================================
+function preencherSelectAndares(selectId) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  let html = '<option value="">Escolha o andar...</option>';
+  for (let a = ANDAR_MIN; a <= ANDAR_MAX; a++) html += `<option value="${a}">${a}º andar</option>`;
+  sel.innerHTML = html;
+}
+
+function onMudaTipoLocal() {
+  const tipo = document.getElementById('selTipoLocal').value;
+  document.getElementById('grupoLocalApartamento').style.display = tipo === 'apartamento' ? 'block' : 'none';
+  document.getElementById('grupoLocalAndarCompleto').style.display = tipo === 'andar_completo' ? 'block' : 'none';
+  document.getElementById('grupoLocalCorredor').style.display = tipo === 'corredor' ? 'block' : 'none';
+  document.getElementById('grupoLocalBalancinho').style.display = tipo === 'balancinho' ? 'block' : 'none';
+  atualizarFeedbackLocal();
+  verificarDuplicidadeServico();
+}
+
+// Lê o formulário de "Novo registro" (aba principal) e devolve um
+// descritor único, igual pros 4 tipos — quem chama (salvarRegistro,
+// verificarDuplicidadeServico, editarRegistro) não precisa saber qual tipo
+// está selecionado, só usa .codigo/.label/.tipo_local/etc.
+function resolverLocalForm() {
+  const tipo = document.getElementById('selTipoLocal').value;
+  if (tipo === 'apartamento') {
+    const p = parseUnidade(document.getElementById('inpUnidade').value);
+    if (!p.ok) return { ok: false, motivo: p.motivo };
+    return {
+      ok: true, tipo_local: 'apartamento', andar: p.andar, apartamento: p.apartamento,
+      tipo_apto: p.tipo, numero_balancinho: null, codigo: p.codigo, label: p.label,
+    };
+  }
+  if (tipo === 'andar_completo') {
+    const raw = document.getElementById('selAndarCompleto').value;
+    if (!raw) return { ok: false, motivo: 'Escolha o andar.' };
+    const andar = parseInt(raw, 10);
+    return {
+      ok: true, tipo_local: 'andar_completo', andar, apartamento: null, tipo_apto: null,
+      numero_balancinho: null, codigo: `AND${String(andar).padStart(2, '0')}`, label: `${andar}º andar completo`,
+    };
+  }
+  if (tipo === 'corredor') {
+    const raw = document.getElementById('selAndarCorredor').value;
+    if (!raw) return { ok: false, motivo: 'Escolha o andar do corredor.' };
+    const andar = parseInt(raw, 10);
+    return {
+      ok: true, tipo_local: 'corredor', andar, apartamento: null, tipo_apto: null,
+      numero_balancinho: null, codigo: `COR${String(andar).padStart(2, '0')}`, label: `Corredor do ${andar}º andar`,
+    };
+  }
+  if (tipo === 'balancinho') {
+    const raw = document.getElementById('inpNumeroBalancinho').value;
+    const numero = parseInt(raw, 10);
+    if (!raw.trim() || isNaN(numero) || numero < 1) return { ok: false, motivo: 'Digite o número do balancinho.' };
+    return {
+      ok: true, tipo_local: 'balancinho', andar: null, apartamento: null, tipo_apto: null,
+      numero_balancinho: numero, codigo: `BAL${String(numero).padStart(2, '0')}`, label: `Balancinho ${String(numero).padStart(2, '0')}`,
+    };
+  }
+  return { ok: false, motivo: 'Escolha onde foi o serviço.' };
+}
+
+// true se o campo do tipo selecionado ainda está vazio (pessoa não mexeu
+// ainda) — usado só pra não mostrar erro antes da hora, igual já era feito
+// só com o campo de apartamento.
+function campoLocalAindaVazio() {
+  const tipo = document.getElementById('selTipoLocal').value;
+  if (tipo === 'apartamento') return !document.getElementById('inpUnidade').value.trim();
+  if (tipo === 'andar_completo') return !document.getElementById('selAndarCompleto').value;
+  if (tipo === 'corredor') return !document.getElementById('selAndarCorredor').value;
+  if (tipo === 'balancinho') return !document.getElementById('inpNumeroBalancinho').value.trim();
+  return true;
+}
+
+function atualizarFeedbackLocal() {
+  const el = document.getElementById('unidadeFeedback');
+  if (campoLocalAindaVazio()) { el.textContent = ''; el.className = 'unidade-feedback'; return; }
+  const r = resolverLocalForm();
+  if (r.ok) { el.textContent = '✓ ' + r.label; el.className = 'unidade-feedback ok'; }
+  else { el.textContent = '⚠ ' + r.motivo; el.className = 'unidade-feedback erro'; }
+}
+
+// Mesma lógica, só que pro seletor da aba "Por unidade" (busca) — devolve
+// { vazio: true } quando a pessoa ainda não escolheu/digitou nada nesse tipo.
+function resolverLocalBusca() {
+  const tipo = document.getElementById('selTipoLocalBusca').value;
+  if (tipo === 'apartamento') {
+    const raw = document.getElementById('inpBuscaUnidade').value;
+    if (!raw.trim()) return { vazio: true };
+    const p = parseUnidade(raw);
+    if (!p.ok) return { ok: false, motivo: p.motivo };
+    return { ok: true, codigo: p.codigo, label: p.label };
+  }
+  if (tipo === 'andar_completo') {
+    const raw = document.getElementById('selBuscaAndarCompleto').value;
+    if (!raw) return { vazio: true };
+    const andar = parseInt(raw, 10);
+    return { ok: true, codigo: `AND${String(andar).padStart(2, '0')}`, label: `${andar}º andar completo` };
+  }
+  if (tipo === 'corredor') {
+    const raw = document.getElementById('selBuscaAndarCorredor').value;
+    if (!raw) return { vazio: true };
+    const andar = parseInt(raw, 10);
+    return { ok: true, codigo: `COR${String(andar).padStart(2, '0')}`, label: `Corredor do ${andar}º andar` };
+  }
+  if (tipo === 'balancinho') {
+    const raw = document.getElementById('inpBuscaNumeroBalancinho').value;
+    if (!raw.trim()) return { vazio: true };
+    const numero = parseInt(raw, 10);
+    if (isNaN(numero) || numero < 1) return { ok: false, motivo: 'Número de balancinho inválido.' };
+    return { ok: true, codigo: `BAL${String(numero).padStart(2, '0')}`, label: `Balancinho ${String(numero).padStart(2, '0')}` };
+  }
+  return { vazio: true };
+}
+
+function onMudaTipoLocalBusca() {
+  const tipo = document.getElementById('selTipoLocalBusca').value;
+  document.getElementById('inpBuscaUnidade').style.display = tipo === 'apartamento' ? '' : 'none';
+  document.getElementById('selBuscaAndarCompleto').style.display = tipo === 'andar_completo' ? '' : 'none';
+  document.getElementById('selBuscaAndarCorredor').style.display = tipo === 'corredor' ? '' : 'none';
+  document.getElementById('inpBuscaNumeroBalancinho').style.display = tipo === 'balancinho' ? '' : 'none';
+  buscarPorUnidade();
+}
+
+// Texto humano pra mostrar um registro já salvo (card, exclusão, log de
+// edição) — cobre os 4 tipos de local a partir do registro vindo do banco.
+function labelLocalRegistro(r) {
+  const tipo = r.tipo_local || 'apartamento'; // registros antigos (antes desse recurso) não tinham essa coluna
+  if (tipo === 'andar_completo') return `${r.andar}º andar completo`;
+  if (tipo === 'corredor') return `Corredor do ${r.andar}º andar`;
+  if (tipo === 'balancinho') return `Balancinho ${String(r.numero_balancinho).padStart(2, '0')}`;
+  return `${r.andar}º andar, apto ${String(r.apartamento).padStart(2, '0')}`;
 }
 
 // ============================================================
@@ -1128,14 +1324,21 @@ function urlFotoRdo(path) {
 // VALIDAÇÃO AO VIVO DA UNIDADE (campo de novo registro)
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('inpUnidade').addEventListener('input', () => {
-    const raw = document.getElementById('inpUnidade').value;
-    const el = document.getElementById('unidadeFeedback');
-    if (!raw.trim()) { el.textContent = ''; el.className = 'unidade-feedback'; return; }
-    const p = parseUnidade(raw);
-    if (p.ok) { el.textContent = '✓ ' + p.label; el.className = 'unidade-feedback ok'; }
-    else { el.textContent = '⚠ ' + p.motivo; el.className = 'unidade-feedback erro'; }
-    verificarDuplicidadeServico();
+  preencherSelectAndares('selAndarCompleto');
+  preencherSelectAndares('selAndarCorredor');
+  preencherSelectAndares('selBuscaAndarCompleto');
+  preencherSelectAndares('selBuscaAndarCorredor');
+  ['inpUnidade', 'inpNumeroBalancinho'].forEach((id) => {
+    document.getElementById(id).addEventListener('input', () => {
+      atualizarFeedbackLocal();
+      verificarDuplicidadeServico();
+    });
+  });
+  ['selAndarCompleto', 'selAndarCorredor'].forEach((id) => {
+    document.getElementById(id).addEventListener('change', () => {
+      atualizarFeedbackLocal();
+      verificarDuplicidadeServico();
+    });
   });
   document.getElementById('selServico').addEventListener('change', verificarDuplicidadeServico);
 });
@@ -1162,12 +1365,12 @@ async function servicoJaExisteNaUnidade(codigoUnidade, servicoId, ignorarId) {
 }
 async function verificarDuplicidadeServico() {
   const fb = document.getElementById('servicoFeedback');
-  const parsed = parseUnidade(document.getElementById('inpUnidade').value);
+  const local = resolverLocalForm();
   const servicoId = document.getElementById('selServico').value;
-  if (!parsed.ok || !servicoId) { fb.textContent = ''; fb.className = 'unidade-feedback'; return; }
-  const jaExiste = await servicoJaExisteNaUnidade(parsed.codigo, servicoId, registroEditandoId);
+  if (!local.ok || !servicoId) { fb.textContent = ''; fb.className = 'unidade-feedback'; return; }
+  const jaExiste = await servicoJaExisteNaUnidade(local.codigo, servicoId, registroEditandoId);
   if (jaExiste) {
-    fb.textContent = '⚠ Esse serviço já foi registrado nessa unidade.';
+    fb.textContent = '⚠ Esse serviço já foi registrado nesse local.';
     fb.className = 'unidade-feedback erro';
   } else {
     fb.textContent = '';
@@ -1179,9 +1382,12 @@ async function verificarDuplicidadeServico() {
 // SALVAR NOVO REGISTRO
 // ============================================================
 function limparFormulario() {
+  document.getElementById('selTipoLocal').value = 'apartamento';
   document.getElementById('inpUnidade').value = '';
-  document.getElementById('unidadeFeedback').textContent = '';
-  document.getElementById('unidadeFeedback').className = 'unidade-feedback';
+  document.getElementById('selAndarCompleto').value = '';
+  document.getElementById('selAndarCorredor').value = '';
+  document.getElementById('inpNumeroBalancinho').value = '';
+  onMudaTipoLocal(); // ajusta quais campos aparecem e limpa o feedback de local
   document.getElementById('selServico').value = '';
   document.getElementById('servicoFeedback').textContent = '';
   document.getElementById('servicoFeedback').className = 'unidade-feedback';
@@ -1212,11 +1418,19 @@ function editarRegistro(id) {
   document.getElementById('btnCancelarEdicao').style.display = 'block';
   document.getElementById('btnSalvarRegistro').textContent = 'Salvar edição';
 
-  const codigoUnidade = `${r.andar}${String(r.apartamento).padStart(2, '0')}`;
-  document.getElementById('inpUnidade').value = codigoUnidade;
-  const parsed = parseUnidade(codigoUnidade);
-  const fbUnidade = document.getElementById('unidadeFeedback');
-  if (parsed.ok) { fbUnidade.textContent = '✓ ' + parsed.label; fbUnidade.className = 'unidade-feedback ok'; }
+  const tipoLocal = r.tipo_local || 'apartamento'; // registros antigos (antes desse recurso) não tinham essa coluna
+  document.getElementById('selTipoLocal').value = tipoLocal;
+  onMudaTipoLocal();
+  if (tipoLocal === 'apartamento') {
+    document.getElementById('inpUnidade').value = `${r.andar}${String(r.apartamento).padStart(2, '0')}`;
+  } else if (tipoLocal === 'andar_completo') {
+    document.getElementById('selAndarCompleto').value = r.andar;
+  } else if (tipoLocal === 'corredor') {
+    document.getElementById('selAndarCorredor').value = r.andar;
+  } else if (tipoLocal === 'balancinho') {
+    document.getElementById('inpNumeroBalancinho').value = r.numero_balancinho;
+  }
+  atualizarFeedbackLocal();
 
   document.getElementById('selServico').value = r.tipo_servico_id;
   document.getElementById('selFunc1').value = r.funcionario_id_1 || '';
@@ -1256,15 +1470,14 @@ async function atualizarListasVisiveis() {
   await carregarFeedRecente();
   const fid = document.getElementById('selBuscaFunc').value;
   if (fid) await buscarPorFuncionario();
-  const unidadeBusca = document.getElementById('inpBuscaUnidade').value;
-  if (unidadeBusca.trim()) await buscarPorUnidade();
+  if (!resolverLocalBusca().vazio) await buscarPorUnidade();
 }
 
 async function excluirRegistro(id) {
   const r = registrosPorId[id];
   if (!r) { showToast('⚠️ Não achei esse registro (recarregue a lista e tente de novo).'); return; }
   const servico = tiposServicoPorId[r.tipo_servico_id];
-  const descricao = `${r.andar}º andar, apto ${String(r.apartamento).padStart(2, '0')} — ${servico ? servico.nome : '(serviço não encontrado)'}, ${fmtData(r.data_inicio)}`;
+  const descricao = `${labelLocalRegistro(r)} — ${servico ? servico.nome : '(serviço não encontrado)'}, ${fmtData(r.data_inicio)}`;
   if (!confirm(`Excluir esse registro?\n\n${descricao}\n\nNão tem como desfazer.`)) return;
   const { error } = await sb.from('rdo_registros').delete().eq('id', id);
   if (error) { showToast('⚠️ Erro ao excluir registro: ' + error.message); return; }
@@ -1278,14 +1491,14 @@ async function excluirRegistro(id) {
 async function salvarRegistro() {
   if (!sb) { showToast('⚠️ Sem conexão com o banco.'); return; }
 
-  const parsed = parseUnidade(document.getElementById('inpUnidade').value);
-  if (!parsed.ok) { showToast('⚠️ ' + parsed.motivo); return; }
+  const local = resolverLocalForm();
+  if (!local.ok) { showToast('⚠️ ' + local.motivo); return; }
 
   const servicoId = document.getElementById('selServico').value;
   if (!servicoId) { showToast('⚠️ Escolha o serviço.'); return; }
 
-  if (await servicoJaExisteNaUnidade(parsed.codigo, servicoId, registroEditandoId)) {
-    showToast('⚠️ Esse serviço já foi registrado nessa unidade. Escolha outro serviço ou outra unidade.');
+  if (await servicoJaExisteNaUnidade(local.codigo, servicoId, registroEditandoId)) {
+    showToast('⚠️ Esse serviço já foi registrado nesse local. Escolha outro serviço ou outro local.');
     return;
   }
 
@@ -1323,10 +1536,12 @@ async function salvarRegistro() {
     }
 
     const payload = {
-      unidade: parsed.codigo,
-      andar: parsed.andar,
-      apartamento: parsed.apartamento,
-      tipo_apto: parsed.tipo,
+      unidade: local.codigo,
+      tipo_local: local.tipo_local,
+      andar: local.andar,
+      apartamento: local.apartamento,
+      tipo_apto: local.tipo_apto,
+      numero_balancinho: local.numero_balancinho,
       tipo_servico_id: servicoId,
       funcionario_id_1: f1,
       funcionario_id_2: f2,
@@ -1346,7 +1561,7 @@ async function salvarRegistro() {
     if (error) throw error;
 
     const servicoNome = (tiposServicoPorId[servicoId] || {}).nome || '(serviço)';
-    const descricaoRegistro = `${parsed.andar}º andar, apto ${String(parsed.apartamento).padStart(2, '0')} — ${servicoNome}`;
+    const descricaoRegistro = `${local.label} — ${servicoNome}`;
     if (idEmEdicao) {
       registrosPorId[idEmEdicao] = data;
       showToast('✅ Registro atualizado!');
@@ -1380,11 +1595,13 @@ function renderCardRegistro(r) {
   const periodo = r.data_fim ? `${fmtData(r.data_inicio)} – ${fmtData(r.data_fim)}` : `${fmtData(r.data_inicio)} – em andamento`;
   const pessoas = [f1, f2].filter(Boolean).map(f => f.nome).join(' e ');
   const fotoUrl = urlFotoRdo(r.foto_path);
-  const legendaFoto = `${r.andar}º andar · apto ${String(r.apartamento).padStart(2, '0')} — ${servico ? servico.nome : ''}`;
+  const localLabel = labelLocalRegistro(r);
+  const legendaFoto = `${localLabel} — ${servico ? servico.nome : ''}`;
+  const badgeTipoApto = r.tipo_apto ? `<span class="badge-tipo badge-${r.tipo_apto}">${r.tipo_apto}</span>` : '';
   return `
     <div class="rdo-card${r.medido ? ' medido' : ''}">
       <div class="rdo-card-top">
-        <span class="rdo-unidade">${r.andar}º andar · apto ${String(r.apartamento).padStart(2, '0')}<span class="badge-tipo badge-${r.tipo_apto}">${r.tipo_apto}</span>${r.criado_por ? `<span class="rdo-autor"> · ${escapeHtml(r.criado_por)}</span>` : ''}</span>
+        <span class="rdo-unidade">${escapeHtml(localLabel)}${badgeTipoApto}${r.criado_por ? `<span class="rdo-autor"> · ${escapeHtml(r.criado_por)}</span>` : ''}</span>
         <div class="rdo-card-right">
           <span class="rdo-periodo">${periodo}</span>
           <div class="rdo-card-actions">
@@ -1470,7 +1687,7 @@ async function toggleMedido(id, novoValor) {
   }
   atualizarRegistroEmListas(id, { medido: data.medido });
   showToast(data.medido ? '✅ Marcado como medido.' : 'Desmarcado como medido.');
-  registrarEdicao('editar', `${data.medido ? 'Marcou' : 'Desmarcou'} como medido o registro da unidade ${data.unidade}`);
+  registrarEdicao('editar', `${data.medido ? 'Marcou' : 'Desmarcou'} como medido o registro de ${labelLocalRegistro(data)}`);
 }
 
 function atualizarRegistroEmListas(id, patch) {
@@ -1517,27 +1734,26 @@ function renderListaPorFuncionario() {
 // ABA: POR UNIDADE
 // ============================================================
 async function buscarPorUnidade() {
-  const raw = document.getElementById('inpBuscaUnidade').value;
   const feedback = document.getElementById('buscaUnidadeFeedback');
   const cont = document.getElementById('listaPorUnidade');
-  if (!raw.trim()) {
+  const local = resolverLocalBusca();
+  if (local.vazio) {
     feedback.textContent = ''; feedback.className = 'unidade-feedback';
     resultadosPorUnidade = [];
-    cont.innerHTML = '<div class="empty">Digite uma unidade pra ver o que já foi feito nela.</div>';
+    cont.innerHTML = '<div class="empty">Escolha um local pra ver o que já foi feito nele.</div>';
     return;
   }
-  const parsed = parseUnidade(raw);
-  if (!parsed.ok) {
-    feedback.textContent = '⚠ ' + parsed.motivo; feedback.className = 'unidade-feedback erro';
+  if (!local.ok) {
+    feedback.textContent = '⚠ ' + local.motivo; feedback.className = 'unidade-feedback erro';
     resultadosPorUnidade = [];
     cont.innerHTML = '';
     return;
   }
-  feedback.textContent = '✓ ' + parsed.label; feedback.className = 'unidade-feedback ok';
+  feedback.textContent = '✓ ' + local.label; feedback.className = 'unidade-feedback ok';
   if (!sb) { cont.innerHTML = '<div class="empty">Sem conexão com o banco.</div>'; return; }
   cont.innerHTML = '<div class="loading">Carregando...</div>';
   const { data, error } = await sb.from('rdo_registros')
-    .select('*').eq('unidade', parsed.codigo)
+    .select('*').eq('unidade', local.codigo)
     .order('data_inicio', { ascending: false });
   if (error) { resultadosPorUnidade = []; cont.innerHTML = '<div class="empty">Erro ao buscar: ' + escapeHtml(error.message) + '</div>'; return; }
   resultadosPorUnidade = data || [];
@@ -1546,14 +1762,12 @@ async function buscarPorUnidade() {
 }
 function renderListaPorUnidade() {
   const cont = document.getElementById('listaPorUnidade');
-  const raw = document.getElementById('inpBuscaUnidade').value;
-  if (!raw.trim()) return;
-  const parsed = parseUnidade(raw);
-  if (!parsed.ok) return;
-  if (!resultadosPorUnidade.length) { cont.innerHTML = '<div class="empty">Nenhum registro pra essa unidade ainda.</div>'; return; }
+  const local = resolverLocalBusca();
+  if (local.vazio || !local.ok) return;
+  if (!resultadosPorUnidade.length) { cont.innerHTML = '<div class="empty">Nenhum registro pra esse local ainda.</div>'; return; }
   const filtro = document.getElementById('selFiltroMedidoUnidade').value;
   const filtrado = filtrarPorMedido(resultadosPorUnidade, filtro);
-  if (!filtrado.length) { cont.innerHTML = '<div class="empty">Nenhum registro ' + (filtro === 'sim' ? 'medido' : 'não medido') + ' nessa unidade.</div>'; return; }
+  if (!filtrado.length) { cont.innerHTML = '<div class="empty">Nenhum registro ' + (filtro === 'sim' ? 'medido' : 'não medido') + ' nesse local.</div>'; return; }
   cont.innerHTML = filtrado.map(renderCardRegistro).join('');
 }
 
