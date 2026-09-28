@@ -37,9 +37,11 @@
   .head .sub{font-size:12px;opacity:0.7;margin-top:4px;}
   .head button{background:#999;color:#fff;border:none;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:12px;}
 
-  .filters{display:flex;gap:10px;padding:16px 20px;flex-wrap:wrap;background:#fff;border-bottom:1px solid #ddd;}
+  .filters{display:flex;gap:10px;padding:16px 20px;flex-wrap:wrap;background:#fff;border-bottom:1px solid #ddd;align-items:center;}
   .filters input, .filters select{padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;}
   .filters button{padding:8px 16px;background:var(--charcoal);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;}
+  .filter-check{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--charcoal);cursor:pointer;user-select:none;}
+  .filter-check input{width:15px;height:15px;cursor:pointer;}
 
   .content{padding:20px;max-width:1100px;margin:0 auto;}
 
@@ -196,6 +198,10 @@ window.addEventListener('unhandledrejection', function(e) {
     <input type="date" id="filterDataIni">
     <input type="date" id="filterDataFim">
     <select id="filterEmpresa"><option value="">Todas as empreiteiras</option></select>
+    <label class="filter-check" title="Por padrão, os prestadores esporádicos (cadastrados na aba 🚚 do app de presença) não entram nos números e gráficos abaixo. Marque aqui pra incluir também.">
+      <input type="checkbox" id="filterEsporadicos" onchange="loadData(); atualizarDiaRelatorio();">
+      Incluir esporádicos
+    </label>
     <button onclick="loadData(); atualizarDiaRelatorio();">Filtrar</button>
     <button onclick="resetFilters()" style="background:#999;">Limpar</button>
   </div>
@@ -649,6 +655,7 @@ async function atualizarDiaRelatorio() {
 
     let rows = (data || []).filter(r => r.funcionarios);
     if (empresaFiltro) rows = rows.filter(r => r.funcionarios.empresa === empresaFiltro);
+    rows = filtrarEsporadicos(rows);
 
     renderChartEmpresaDia(rows);
     renderFuncaoLista(rows);
@@ -688,7 +695,7 @@ function renderQuemVeio(rows, wrap) {
           <div class="qv-item">
             <span class="qv-func">${f.funcao}</span>
             <span class="qv-aloc">${f.alocacao || '—'}</span>
-            <span class="qv-nome">${f.nome}${f.tipo === 'visitante' ? ' (visitante)' : ''}</span>
+            <span class="qv-nome">${f.nome}${f.tipo === 'visitante' ? ' (visitante)' : ''}${f.tipo === 'esporadico' ? ' (esporádico)' : ''}</span>
           </div>
         `).join('')}
       </div>
@@ -716,10 +723,21 @@ window.addEventListener('afterprint', () => {
   if (chartEvolucao) chartEvolucao.resize();
 });
 
+function incluirEsporadicos() {
+  const chk = document.getElementById('filterEsporadicos');
+  return !!(chk && chk.checked);
+}
+
+function filtrarEsporadicos(rows) {
+  if (incluirEsporadicos()) return rows;
+  return rows.filter(r => r.funcionarios.tipo !== 'esporadico');
+}
+
 function resetFilters() {
   document.getElementById('filterDataIni').value = segundaDaSemanaStr();
   document.getElementById('filterDataFim').value = todayStr();
   document.getElementById('filterEmpresa').value = '';
+  document.getElementById('filterEsporadicos').checked = false;
   loadData();
   atualizarDiaRelatorio();
 }
@@ -750,6 +768,7 @@ async function loadData() {
 
     let rows = (data || []).filter(r => r.funcionarios);
     if (empresaFiltro) rows = rows.filter(r => r.funcionarios.empresa === empresaFiltro);
+    rows = filtrarEsporadicos(rows);
 
     renderCards(rows, ini, fim, ultimoDiaResult);
     renderChartEvolucao(rows, ini, fim, empresaFiltro);
@@ -764,14 +783,16 @@ async function getPresencaDiaCount(dia, empresaFiltro) {
   try {
     let query = sb
       .from('presenca')
-      .select('status, funcionarios!inner(empresa, ativo)')
+      .select('status, funcionarios!inner(empresa, ativo, tipo)')
       .eq('data', dia)
       .eq('status', 'presente')
       .eq('funcionarios.ativo', true);
     if (empresaFiltro) query = query.eq('funcionarios.empresa', empresaFiltro);
     const { data, error } = await query;
     if (error) throw error;
-    return (data || []).length;
+    let rows = (data || []).filter(r => r.funcionarios);
+    rows = filtrarEsporadicos(rows);
+    return rows.length;
   } catch (e) {
     console.error(e);
     return null;

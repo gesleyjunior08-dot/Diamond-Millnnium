@@ -67,16 +67,6 @@
   .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
   @media (max-width:700px){.grid-2{grid-template-columns:1fr;}}
 
-  .mov-list{list-style:none;}
-  .mov-item{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0;font-size:13px;}
-  .visit-title{color:#0B3D91;border-bottom-color:#0B3D91;}
-  .mov-item.visit-item{color:#0B3D91;}
-  .mov-item:last-child{border-bottom:none;}
-  .mov-item .sub{color:var(--gray);font-size:11px;}
-  .mov-empty{color:var(--gray);font-size:12px;padding:8px 0;}
-  .tag-in{color:var(--green);font-weight:700;font-size:11px;}
-  .tag-out{color:var(--red);font-weight:700;font-size:11px;}
-
   .doc-bar-row{margin-bottom:14px;}
   .doc-bar-label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;}
   .doc-bar-track{background:var(--gray-light);border-radius:6px;height:10px;overflow:hidden;}
@@ -182,30 +172,8 @@ window.addEventListener('error', function(e) {
     </div>
   </div>
 
-  <div class="section-title">Movimentação de pessoal na semana</div>
-  <div class="grid-2">
-    <div class="panel">
-      <h3><span class="tag-in">↑ ENTRADAS</span> — novos cadastros</h3>
-      <ul class="mov-list" id="entradasList"><div class="loading">Carregando...</div></ul>
-    </div>
-    <div class="panel">
-      <h3><span class="tag-out">↓ SAÍDAS</span> — desativados</h3>
-      <ul class="mov-list" id="saidasList"><div class="loading">Carregando...</div></ul>
-    </div>
-  </div>
-
   <div class="section-title">Situação da documentação (visão geral atual)</div>
   <div class="panel" id="docPanel">
-    <div class="loading">Carregando...</div>
-  </div>
-
-  <div class="section-title">🚪 Saídas antecipadas na semana</div>
-  <div class="panel" id="saidasAntecipadasPanel">
-    <div class="loading">Carregando...</div>
-  </div>
-
-  <div class="section-title visit-title">👤 Visitantes da semana (não entram nos totais acima)</div>
-  <div class="panel" id="visitantesSemanaPanel">
     <div class="loading">Carregando...</div>
   </div>
 
@@ -323,7 +291,6 @@ async function gerarRelatorio() {
       .eq('funcionarios.ativo', true);
     if (error) throw error;
     const allRows = (data || []).filter(r => r.funcionarios);
-    const visitantes = allRows.filter(r => r.funcionarios.tipo === 'visitante' && r.status === 'presente');
     const rows = allRows.filter(r => r.funcionarios.tipo !== 'visitante');
 
     const { count: totalAtivos } = await sb.from('funcionarios').select('id', { count: 'exact', head: true }).eq('tipo', 'permanente').eq('ativo', true);
@@ -331,9 +298,6 @@ async function gerarRelatorio() {
     renderCards(rows, ini, fim, totalAtivos || 0);
     renderChartDias(rows, segunda);
     renderChartEmpresas(rows);
-    renderSaidasAntecipadas(rows.filter(r => r.saida_antecipada));
-    renderVisitantesSemana(visitantes);
-    await renderMovimentacao(ini, fim);
     await renderDocumentacao();
     await renderFotosRelatorio(ini);
   } catch (e) {
@@ -359,42 +323,6 @@ function renderCards(rows, ini, fim, totalAtivos) {
     <div class="card"><div class="n">${taxa}%</div><div class="l">Taxa de presença</div></div>
     <div class="card"><div class="n">${diasComRegistro}</div><div class="l">Dias com registro</div></div>
     <div class="card"><div class="n" style="color:#C9A227;">${saidasAntecipadas.length}</div><div class="l">Saídas antecipadas</div></div>
-  `;
-}
-
-function renderSaidasAntecipadas(rows) {
-  const panel = document.getElementById('saidasAntecipadasPanel');
-  if (!panel) return;
-  if (!rows.length) {
-    panel.innerHTML = '<div class="empty">Ninguém saiu mais cedo nesta semana.</div>';
-    return;
-  }
-  const sorted = [...rows].sort((a, b) => a.data.localeCompare(b.data) || a.funcionarios.nome.localeCompare(b.funcionarios.nome, 'pt-BR'));
-  panel.innerHTML = `
-    <ul class="mov-list">
-      ${sorted.map(r => {
-        const horas = [
-          r.hora_entrada ? `Entrada ${r.hora_entrada.slice(0,5)}` : null,
-          r.hora_saida ? `Saída ${r.hora_saida.slice(0,5)}` : null
-        ].filter(Boolean).join(' • ') || 'sem horário informado';
-        return `<li class="mov-item"><span>${fmtBR(r.data)} — <b>${r.funcionarios.nome}</b> (${r.funcionarios.empresa})</span><span class="sub">${horas}</span></li>`;
-      }).join('')}
-    </ul>
-  `;
-}
-
-function renderVisitantesSemana(rows) {
-  const panel = document.getElementById('visitantesSemanaPanel');
-  if (!panel) return;
-  if (!rows.length) {
-    panel.innerHTML = '<div class="empty">Nenhum visitante nesta semana.</div>';
-    return;
-  }
-  const sorted = [...rows].sort((a, b) => a.data.localeCompare(b.data) || a.funcionarios.nome.localeCompare(b.funcionarios.nome, 'pt-BR'));
-  panel.innerHTML = `
-    <ul class="mov-list">
-      ${sorted.map(r => `<li class="mov-item visit-item"><span>${fmtBR(r.data)} — <b>${r.funcionarios.nome}</b></span><span class="sub">${r.funcionarios.funcao || 'N/D'}</span></li>`).join('')}
-    </ul>
   `;
 }
 
@@ -433,44 +361,6 @@ function renderChartEmpresas(rows) {
     },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } } } }
   });
-}
-
-async function renderMovimentacao(ini, fim) {
-  const entradasEl = document.getElementById('entradasList');
-  const saidasEl = document.getElementById('saidasList');
-  entradasEl.innerHTML = '<div class="loading">Carregando...</div>';
-  saidasEl.innerHTML = '<div class="loading">Carregando...</div>';
-
-  try {
-    const { data: entradas, error: e1 } = await sb
-      .from('funcionarios')
-      .select('nome, empresa, funcao, created_at')
-      .eq('tipo', 'permanente')
-      .gte('created_at', ini)
-      .lt('created_at', toISO(addDias(new Date(fim + 'T00:00:00'), 1)));
-    if (e1) throw e1;
-
-    const { data: saidas, error: e2 } = await sb
-      .from('funcionarios')
-      .select('nome, empresa, funcao, updated_at')
-      .eq('tipo', 'permanente')
-      .eq('ativo', false)
-      .gte('updated_at', ini)
-      .lt('updated_at', toISO(addDias(new Date(fim + 'T00:00:00'), 1)));
-    if (e2) throw e2;
-
-    entradasEl.innerHTML = (entradas && entradas.length)
-      ? entradas.map(f => `<li class="mov-item"><span>${f.nome}</span><span class="sub">${f.empresa} — ${f.funcao}</span></li>`).join('')
-      : '<div class="mov-empty">Nenhum funcionário novo nesta semana.</div>';
-
-    saidasEl.innerHTML = (saidas && saidas.length)
-      ? saidas.map(f => `<li class="mov-item"><span>${f.nome}</span><span class="sub">${f.empresa} — ${f.funcao}</span></li>`).join('')
-      : '<div class="mov-empty">Ninguém desativado nesta semana.</div>';
-  } catch (e) {
-    entradasEl.innerHTML = '<div class="mov-empty">Não foi possível carregar (rode o patch_updated_at_diamond.sql).</div>';
-    saidasEl.innerHTML = '<div class="mov-empty">—</div>';
-    console.error(e);
-  }
 }
 
 async function renderDocumentacao() {

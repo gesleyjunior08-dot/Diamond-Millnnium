@@ -41,11 +41,9 @@
 
   .section-header{background:#DCE3EC;font-weight:700;font-size:12px;padding:5px 10px;border-bottom:1px solid #000;border-top:1px solid #000;}
 
-  .propria-wrap{padding:10px;}
-  .propria-table-full{width:100%;max-width:400px;border-collapse:collapse;}
-  .propria-table-full td{padding:4px 8px;font-size:11px;border-bottom:1px dotted #ccc;}
-  .propria-table-full td.f{width:65%;}
-  .propria-table-full td.n{width:35%;text-align:right;font-weight:600;}
+  .propria-wrap{padding:10px;columns:2;column-gap:24px;}
+  .propria-row{display:flex;justify-content:space-between;gap:8px;padding:4px 8px;font-size:11px;border-bottom:1px dotted #ccc;break-inside:avoid;}
+  .propria-row .n{font-weight:600;white-space:nowrap;}
 
   .total-row{padding:8px 10px;font-weight:700;font-size:12px;border-top:2px solid #000;background:#f7f7f7;}
 
@@ -70,11 +68,18 @@
 
   .loading, .empty{text-align:center;padding:30px;color:var(--gray);font-size:13px;}
 
-  @page { margin: 1cm; }
+  @page { margin: 0.6cm; }
   @media print {
-    body{background:#fff;}
+    body{background:#fff;font-size:10.5px;}
     .toolbar, .err-banner, .login-screen{display:none !important;}
     #report{padding:0;max-width:100%;}
+    .section-header{padding:4px 10px;}
+    .propria-wrap{padding:6px;}
+    .terc-grid, .visit-wrap{padding:6px;}
+    .total-row{padding:5px 10px;}
+    .grand-total-bar{padding:7px 14px;}
+    .assinaturas{padding:10px 14px 8px;}
+    .assinatura-item .linha{margin-top:18px;}
   }
 </style>
 </head>
@@ -324,11 +329,9 @@ function renderPropria(rows) {
   });
   const funcoes = Object.keys(byFuncao).sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
-  wrap.innerHTML = `
-    <table class="propria-table-full">
-      ${funcoes.map(f => `<tr><td class="f">${f}</td><td class="n">${byFuncao[f]}</td></tr>`).join('')}
-    </table>
-  `;
+  wrap.innerHTML = funcoes.map(f => `
+    <div class="propria-row"><span class="f">${f}</span><span class="n">${byFuncao[f]}</span></div>
+  `).join('');
 
   totalRow.innerHTML = `<div style="display:flex;justify-content:space-between;">
     <span>Total de colaboradores - próprios</span><span>${rows.length} Colaboradores</span>
