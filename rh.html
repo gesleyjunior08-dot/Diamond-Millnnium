@@ -140,7 +140,7 @@ window.addEventListener('unhandledrejection', function(e) {
   <div class="content">
     <div class="panel doc-panel" id="painelDoc">
       <h3>📄 Documentação dos funcionários</h3>
-      <input type="text" id="docSearch" class="campo-busca" placeholder="Buscar por nome..." oninput="renderDocChecklist()">
+      <input type="text" id="docSearch" class="campo-busca" placeholder="Buscar por nome..." oninput="renderDocChecklist()" autocomplete="off">
       <div id="docResumo" class="doc-resumo"></div>
       <div id="docChecklistWrap"><div class="loading">Carregando...</div></div>
     </div>
@@ -149,8 +149,8 @@ window.addEventListener('unhandledrejection', function(e) {
       <h3>🧑‍💼 Ativar / Desativar funcionários</h3>
       <p class="admin-hint">Quem está <b>Ativo</b> aparece na lista de presença do app. Desativar tem o mesmo efeito de excluir no app (some da lista), mas mantém o histórico — e dá pra reativar aqui a qualquer momento. Pra quem já tem o rosto cadastrado na catraca (🔒), desativar também bloqueia a passagem física dela em até ~10s (o rosto continua salvo, e reativar libera de novo automaticamente).</p>
       <div class="admin-controls">
-        <input type="text" id="adminSearch" class="campo-busca" placeholder="Buscar por nome..." oninput="renderAdminPanel()">
-        <select id="adminStatusFiltro" onchange="renderAdminPanel()">
+        <input type="text" id="adminSearch" class="campo-busca" placeholder="Buscar por nome..." oninput="renderAdminPanel()" autocomplete="off">
+        <select id="adminStatusFiltro" onchange="renderAdminPanel()" autocomplete="off">
           <option value="todos">Todos</option>
           <option value="ativo">Só ativos</option>
           <option value="inativo">Só inativos</option>
@@ -252,6 +252,16 @@ function checkExistingSession() {
 async function showRH() {
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('rh').style.display = 'block';
+  // Garante que os campos de busca/filtro sempre comecem "zerados", mesmo se
+  // o navegador tentar restaurar um valor antigo ao recarregar a página —
+  // senão as listas podem vir abertas à toa (statusFiltro !== 'todos' força
+  // abrir tudo, e uma busca preenchida força abrir a empresa correspondente).
+  const campoDocSearch = document.getElementById('docSearch');
+  const campoAdminSearch = document.getElementById('adminSearch');
+  const campoAdminStatus = document.getElementById('adminStatusFiltro');
+  if (campoDocSearch) campoDocSearch.value = '';
+  if (campoAdminSearch) campoAdminSearch.value = '';
+  if (campoAdminStatus) campoAdminStatus.value = 'todos';
   await loadDocChecklist();
   await loadAdminPanel();
 }
