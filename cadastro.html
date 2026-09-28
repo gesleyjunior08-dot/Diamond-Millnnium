@@ -154,7 +154,7 @@ window.addEventListener('unhandledrejection', function(e) {
 
       <div class="aviso-duplicado" id="avisoDuplicado"></div>
 
-      <button class="btn-salvar" id="btnSalvar" onclick="salvarCadastro()">✅ Cadastrar e enviar pra catraca</button>
+      <button class="btn-salvar" id="btnSalvar" onclick="salvarCadastro()">✅ Cadastrar e salvar na catraca</button>
     </div>
 
     <h2 class="block-title">Cadastrados agora, nesta tela</h2>
@@ -170,8 +170,23 @@ window.addEventListener('unhandledrejection', function(e) {
 // ============================================================
 // CONFIG SUPABASE (mesmo projeto/tabela usados pelo resto do app — ver
 // equipes.html; "cadastro" só faz um INSERT novo em "funcionarios", já
-// marcando catraca_cadastro_pendente=true pra sair direto na fila do
-// catraca_servidor.js)
+// marcando catraca_prereg_pendente=true pra sair direto na fila do
+// catraca_servidor.js).
+//
+// TROCADO EM 2026-09-28 (pedido do usuário, explicando o processo real da
+// obra): antes marcava catraca_cadastro_pendente=true, que dispara o fluxo
+// AO VIVO — abre a captura na telinha da catraca na hora e EXPIRA em 3
+// minutos se ninguém estiver na frente da câmera. Só que aqui a pessoa é
+// cadastrada no sistema no dia da contratação, mas só volta fisicamente
+// pra registrar o rosto ~4 dias depois — então o pedido ao vivo sempre
+// expirava à toa. Agora usa catraca_prereg_pendente=true, que só RESERVA
+// nome+enrollid na memória da catraca (via comando "setusername", sem
+// captura nenhuma), sem prazo pra expirar — quando a pessoa aparecer de
+// verdade, é só capturar o rosto dela direto na telinha da própria
+// catraca (o nome já vai estar esperando lá) ou usar o "📷 Cadastrar na
+// catraca" no perfil dela em Equipes, se preferir puxar pelo sistema.
+// Precisa da coluna nova `catraca_prereg_pendente` — ver
+// catraca_prereg_setup.sql.
 // ============================================================
 const OBRA_ID = 'diamond_millennium';
 const SUPABASE_URL = 'https://otlzehasidzannsczcnv.supabase.co';
@@ -397,7 +412,7 @@ async function salvarCadastro() {
       alocacao: alocacao || null,
       tipo: 'permanente',
       ativo: true,
-      catraca_cadastro_pendente: true,
+      catraca_prereg_pendente: true,
     });
 
     if (error) {
@@ -413,7 +428,7 @@ async function salvarCadastro() {
 
     registrarEdicao('criar', `Cadastrou ${nome} (${funcao} — ${empresa})`);
     adicionarNaListaRecente(nome, empresa, funcao);
-    showToast(`✅ ${nome} cadastrado(a)! Leve até a catraca pra capturar o rosto.`, 4200);
+    showToast(`✅ ${nome} cadastrado(a)! O nome já vai ficar salvo na memória da catraca — quando ${nome.split(' ')[0]} voltar, é só capturar o rosto direto na telinha dela.`, 5000);
     buscarSugestoes();
 
     nomeEl.value = '';
