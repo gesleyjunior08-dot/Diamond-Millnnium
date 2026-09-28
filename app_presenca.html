@@ -432,6 +432,13 @@ function safeGet(key) {
   const k = `${OBRA_ID}:${key}`;
   try { return localStorage.getItem(k); } catch (e) { return memStore[k] ?? null; }
 }
+
+// Normaliza texto pra busca ignorando acento/maiúscula (2026-09-28, pedido
+// do usuário: "João" tem que ser achado buscando "joao") — mesma técnica já
+// usada no catraca_servidor.js (normalizarNome).
+function normalizarBusca(s) {
+  return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+}
 function safeSet(key, value) {
   const k = `${OBRA_ID}:${key}`;
   try { localStorage.setItem(k, value); } catch (e) { memStore[k] = value; }
@@ -673,7 +680,7 @@ async function changeDate() {
 let expandedState = {}; // lembra quais empreiteiras estão abertas/fechadas entre atualizações da lista
 
 function render() {
-  const q = document.getElementById('searchInput').value.toLowerCase();
+  const q = normalizarBusca(document.getElementById('searchInput').value);
   const pendingPresencaIds = new Set(
     getQueue()
       .filter(op => op.type === 'set_presenca' && op.payload.data === currentDate)
@@ -696,7 +703,7 @@ function render() {
 
   companies.forEach((c, i) => {
     const ws = byCompany[c]
-      .filter(w => !q || w.nome.toLowerCase().includes(q) || w.funcao.toLowerCase().includes(q))
+      .filter(w => !q || normalizarBusca(w.nome).includes(q) || normalizarBusca(w.funcao).includes(q))
       .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
     if (!ws.length) return;
     anyShown = true;
@@ -754,7 +761,7 @@ function renderEsporadicos() {
   const listEl = document.getElementById('listEsporadicos');
   if (!listEl) return;
 
-  const q = (document.getElementById('searchInput').value || '').toLowerCase();
+  const q = normalizarBusca(document.getElementById('searchInput').value);
   const pendingPresencaIds = new Set(
     getQueue()
       .filter(op => op.type === 'set_presenca' && op.payload.data === currentDate)
@@ -762,7 +769,7 @@ function renderEsporadicos() {
   );
 
   const ws = esporadicos
-    .filter(w => !q || w.nome.toLowerCase().includes(q) || (w.funcao || '').toLowerCase().includes(q))
+    .filter(w => !q || normalizarBusca(w.nome).includes(q) || normalizarBusca(w.funcao || '').includes(q))
     .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
 
   if (!ws.length) {
@@ -1463,13 +1470,13 @@ function openSaidaModal() {
 function closeSaidaModal() { document.getElementById('modalSaida').classList.remove('show'); }
 
 function filtrarSaidaNomes() {
-  const q = document.getElementById('saidaNomeSearch').value.toLowerCase().trim();
+  const q = normalizarBusca(document.getElementById('saidaNomeSearch').value);
   document.getElementById('saidaFuncionarioId').value = '';
   const resultsEl = document.getElementById('saidaNomeResults');
   if (!q) { resultsEl.innerHTML = ''; return; }
 
   const matches = funcionarios
-    .filter(f => f.nome.toLowerCase().includes(q))
+    .filter(f => normalizarBusca(f.nome).includes(q))
     .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
     .slice(0, 8);
 

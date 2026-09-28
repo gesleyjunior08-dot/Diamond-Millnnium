@@ -196,6 +196,29 @@ function safeGet(key) { const k = `${OBRA_ID}:${key}`; try { return localStorage
 function safeSet(key, value) { const k = `${OBRA_ID}:${key}`; try { localStorage.setItem(k, value); } catch (e) { memStore[k] = value; } }
 function safeRemove(key) { const k = `${OBRA_ID}:${key}`; try { localStorage.removeItem(k); } catch (e) { delete memStore[k]; } }
 
+// Normaliza texto pra busca ignorando acento/maiúscula (2026-09-28, pedido
+// do usuário: "João" tem que ser achado buscando "joao") — mesma técnica já
+// usada no catraca_servidor.js (normalizarNome).
+function normalizarBusca(s) {
+  return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+}
+
+// Mantém o scroll da página no lugar depois de uma função que troca
+// innerHTML e muda a altura do conteúdo (ex.: uma lista fecha/abre) — sem
+// isso, o navegador às vezes "empurra" a rolagem de volta pro topo quando
+// o conteúdo abaixo do que estava sendo visto encolhe de repente. Funciona
+// tanto com função síncrona quanto com uma que devolve Promise (aí só
+// restaura o scroll depois dela terminar).
+function preservarScroll(fn) {
+  const y = window.scrollY;
+  const resultado = fn();
+  if (resultado && typeof resultado.then === 'function') {
+    return resultado.finally(() => window.scrollTo(0, y));
+  }
+  window.scrollTo(0, y);
+  return resultado;
+}
+
 // Login próprio (só entra em jogo se essa página for aberta sozinha, fora
 // do app.html — dentro do app, a sessão já vem pronta e essa tela nunca
 // aparece). Mesmo padrão das outras ferramentas.
@@ -237,6 +260,7 @@ async function showRH() {
 // CHECKLIST DE DOCUMENTAÇÃO (movido do Painel/Dashboard em 2026-09-23)
 // ============================================================
 let docChecklistData = [];
+const gruposAbertosDoc = {}; // lembra quais empreiteiras estão abertas/fechadas entre atualizações (padrão: todas fechadas)
 const DOC_CAMPOS = [
   { campo: 'doc_ficha_registro', label: 'Ficha de Registro' },
   { campo: 'doc_nr12_18', label: 'NR 12 e NR 18' },
@@ -269,7 +293,7 @@ async function loadDocChecklist() {
 function renderDocChecklist() {
   const wrap = document.getElementById('docChecklistWrap');
   const resumoEl = document.getElementById('docResumo');
-  const q = (document.getElementById('docSearch').value || '').toLowerCase().trim();
+  const q = normalizarBusca(document.getElementById('docSearch').value);
 
   if (!docChecklistData.length) {
     wrap.innerHTML = '<div class="empty">Nenhum funcionário fixo cadastrado ainda.</div>';
@@ -284,7 +308,7 @@ function renderDocChecklist() {
     return `<span><b>${dc.label}:</b> ${completos}/${total}</span>`;
   }).join('');
 
-  const filtrados = docChecklistData.filter(f => !q || f.nome.toLowerCase().includes(q));
+  const filtrados = docChecklistData.filter(f => !q || normalizarBusca(f.nome).includes(q));
   if (!filtrados.length) {
     wrap.innerHTML = '<div class="empty">Nenhum funcionário encontrado.</div>';
     return;
@@ -297,8 +321,15 @@ function renderDocChecklist() {
 
   // cartões por funcionário (em vez de tabela larga) pra caber bem na tela
   // do celular — cada documento vira um "chip" com checkbox.
-  wrap.innerHTML = empresas.map((emp, i) => `
-    <details class="doc-company" ${q || i === 0 ? 'open' : ''}>
+  //
+  // Estado de aberto/fechado de cada empreiteira fica em gruposAbertosDoc,
+  // que sobrevive a re-renderizações (marcar um documento chama essa função
+  // de novo) — sem isso, toda marcação fechava tudo de volta pro padrão.
+  // Padrão (sem busca, 1ª vez que abre): TUDO FECHADO (pedido do usuário,
+  // 2026-09-28) — só abre o que o próprio usuário abrir, ou tudo que bater
+  // numa busca.
+  wrap.innerHTML = empresas.map((emp) => `
+    <details class="doc-company" data-emp="${emp.replace(/"/g, '&quot;')}" ${q || gruposAbertosDoc[emp] ? 'open' : ''}>
       <summary>${emp} <span>${byCompany[emp].length}</span></summary>
       <div>
         ${byCompany[emp].map(f => `
@@ -318,6 +349,10 @@ function renderDocChecklist() {
       </div>
     </details>
   `).join('');
+
+  wrap.querySelectorAll('details.doc-company').forEach(det => {
+    det.addEventListener('toggle', () => { gruposAbertosDoc[det.dataset.emp] = det.open; });
+  });
 }
 
 async function toggleDoc(funcionarioId, campo, checked) {
@@ -327,7 +362,7 @@ async function toggleDoc(funcionarioId, campo, checked) {
     if (error) throw error;
     const item = docChecklistData.find(f => f.id === funcionarioId);
     if (item) item[campo] = checked;
-    renderDocChecklist();
+    preservarScroll(renderDocChecklist);
     const campoLabel = (DOC_CAMPOS.find(dc => dc.campo === campo) || {}).label || campo;
     registrarEdicao('editar', `${checked ? 'Marcou' : 'Desmarcou'} "${campoLabel}" de ${item ? item.nome : funcionarioId}`);
   } catch (e) {
@@ -342,6 +377,7 @@ async function toggleDoc(funcionarioId, campo, checked) {
 // Painel/Dashboard em 2026-09-23)
 // ============================================================
 let adminData = [];
+const gruposAbertosAdmin = {}; // lembra quais empreiteiras estão abertas/fechadas entre atualizações (padrão: todas fechadas)
 
 async function loadAdminPanel() {
   const wrap = document.getElementById('adminWrap');
@@ -363,7 +399,7 @@ async function loadAdminPanel() {
 
 function renderAdminPanel() {
   const wrap = document.getElementById('adminWrap');
-  const q = (document.getElementById('adminSearch').value || '').toLowerCase().trim();
+  const q = normalizarBusca(document.getElementById('adminSearch').value);
   const statusFiltro = document.getElementById('adminStatusFiltro').value;
 
   if (!adminData.length) {
@@ -371,7 +407,7 @@ function renderAdminPanel() {
     return;
   }
 
-  let filtrados = adminData.filter(f => !q || f.nome.toLowerCase().includes(q));
+  let filtrados = adminData.filter(f => !q || normalizarBusca(f.nome).includes(q));
   if (statusFiltro === 'ativo') filtrados = filtrados.filter(f => f.ativo);
   if (statusFiltro === 'inativo') filtrados = filtrados.filter(f => !f.ativo);
 
@@ -385,8 +421,13 @@ function renderAdminPanel() {
   const empresas = Object.keys(byCompany).sort((a, b) => a.localeCompare(b, 'pt-BR'));
   empresas.forEach(e => byCompany[e].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')));
 
-  wrap.innerHTML = empresas.map((emp, i) => `
-    <details class="admin-company" ${q || statusFiltro !== 'todos' || i === 0 ? 'open' : ''}>
+  // Estado de aberto/fechado por empreiteira fica em gruposAbertosAdmin,
+  // que sobrevive a re-renderizações (ativar/desativar alguém chama essa
+  // função de novo) — sem isso, toda marcação fechava tudo de volta pro
+  // padrão. Padrão (sem busca/filtro de status, 1ª vez que abre): TUDO
+  // FECHADO (pedido do usuário, 2026-09-28).
+  wrap.innerHTML = empresas.map((emp) => `
+    <details class="admin-company" data-emp="${emp.replace(/"/g, '&quot;')}" ${q || statusFiltro !== 'todos' || gruposAbertosAdmin[emp] ? 'open' : ''}>
       <summary>${emp} <span>${byCompany[emp].length}</span></summary>
       <div>
         ${byCompany[emp].map(f => `
@@ -407,6 +448,10 @@ function renderAdminPanel() {
       </div>
     </details>
   `).join('');
+
+  wrap.querySelectorAll('details.admin-company').forEach(det => {
+    det.addEventListener('toggle', () => { gruposAbertosAdmin[det.dataset.emp] = det.open; });
+  });
 }
 
 async function toggleAtivo(funcionarioId, checked) {
@@ -423,11 +468,11 @@ async function toggleAtivo(funcionarioId, checked) {
     const { error } = await sb.from('funcionarios').update(payload).eq('id', funcionarioId);
     if (error) throw error;
     if (item) item.ativo = checked;
-    renderAdminPanel();
+    preservarScroll(renderAdminPanel);
     // reflete a mudança no checklist de documentação (mesma tela) — o
     // roster do Painel/Dashboard não dá mais pra atualizar direto daqui,
     // porque agora são duas ferramentas separadas
-    loadDocChecklist();
+    preservarScroll(loadDocChecklist);
     const avisoCatraca = temFaceCadastrada ? ` (catraca: pedido de ${checked ? 'liberação' : 'bloqueio'} enviado)` : '';
     registrarEdicao('editar', `${checked ? 'Ativou' : 'Desativou'} ${item ? item.nome : funcionarioId}${avisoCatraca}`);
   } catch (e) {

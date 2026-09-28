@@ -325,6 +325,13 @@ function segundaDaSemanaStr() {
   return `${y}-${m}-${day}`;
 }
 
+// Normaliza texto pra busca ignorando acento/maiúscula (2026-09-28, pedido
+// do usuário: "João" tem que ser achado buscando "joao") — mesma técnica já
+// usada no catraca_servidor.js/diario_obra.html (normalizarNome/normalizarBusca).
+function normalizarBusca(s) {
+  return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+}
+
 const memStore = {};
 function safeGet(key) { const k = `${OBRA_ID}:${key}`; try { return localStorage.getItem(k); } catch (e) { return memStore[k] ?? null; } }
 function safeSet(key, value) { const k = `${OBRA_ID}:${key}`; try { localStorage.setItem(k, value); } catch (e) { memStore[k] = value; } }
@@ -446,11 +453,11 @@ async function loadIndivFuncionarios() {
 }
 
 function renderIndivBusca() {
-  const q = (document.getElementById('indivSearch').value || '').toLowerCase().trim();
+  const q = normalizarBusca(document.getElementById('indivSearch').value);
   const wrap = document.getElementById('indivResultados');
   if (!q) { wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
 
-  const achados = indivFuncionarios.filter(f => f.nome.toLowerCase().includes(q)).slice(0, 30);
+  const achados = indivFuncionarios.filter(f => normalizarBusca(f.nome).includes(q)).slice(0, 30);
   wrap.style.display = 'block';
   if (!achados.length) {
     wrap.innerHTML = '<div class="empty">Ninguém encontrado com esse nome.</div>';

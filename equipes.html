@@ -426,6 +426,13 @@ async function registrarEdicao(acao, descricao) {
   } catch (e) { /* log é só um extra, nunca deve travar a ação real */ }
 }
 
+// Normaliza texto pra busca ignorando acento/maiúscula (2026-09-28, pedido
+// do usuário: "João" tem que ser achado buscando "joao") — mesma técnica já
+// usada no catraca_servidor.js/diario_obra.html (normalizarNome/normalizarBusca).
+function normalizarBusca(s) {
+  return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+}
+
 // ============================================================
 // STORAGE SEGURO (só usado pra lembrar o login neste navegador)
 // ============================================================
@@ -582,10 +589,10 @@ window.addEventListener('scroll', () => {
 
 function matchesSearch(f, q) {
   if (!q) return true;
-  return f.nome.toLowerCase().includes(q) ||
-    (f.funcao || '').toLowerCase().includes(q) ||
-    (f.empresa || '').toLowerCase().includes(q) ||
-    (f.alocacao || '').toLowerCase().includes(q);
+  return normalizarBusca(f.nome).includes(q) ||
+    normalizarBusca(f.funcao || '').includes(q) ||
+    normalizarBusca(f.empresa || '').includes(q) ||
+    normalizarBusca(f.alocacao || '').includes(q);
 }
 
 // Ordena pela posição manual (campo "ordem") quando existir; quem ainda não
@@ -614,7 +621,7 @@ let sectionExpandedState = {};
 
 function renderSections() {
   const wrap = document.getElementById('sectionsWrap');
-  const q = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+  const q = normalizarBusca(document.getElementById('searchInput').value);
   const proprios = funcionarios.filter(ehEquipePropria);
 
   // Só existem 4 seções agora: Sem encarregado + os 3 encarregados de
@@ -622,7 +629,7 @@ function renderSections() {
   // mais seção própria — o cartão de cada empresa mora dentro de uma dessas
   // 4, e o usuário decide qual arrastando o card (ver applyReorderEmpresa).
   const gruposTerceirizados = computeGruposTerceirizados()
-    .filter(g => !q || g.label.toLowerCase().includes(q) || g.pessoa.toLowerCase().includes(q));
+    .filter(g => !q || normalizarBusca(g.label).includes(q) || normalizarBusca(g.pessoa).includes(q));
 
   const groups = [
     { id: null, label: 'Sem encarregado', color: '#B00020', unassigned: true },
