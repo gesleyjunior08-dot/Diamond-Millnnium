@@ -167,6 +167,21 @@
   .checklist-funcionarios input{width:auto;margin:0;flex-shrink:0;}
   .checklist-vazio{font-size:12.5px;color:var(--brand-graymid);padding:8px 2px;}
 
+  /* ---------- mapa de serviços por andar (2026-09-29) ---------- */
+  .mapa-legenda{display:flex;align-items:center;gap:14px;font-size:11.5px;color:var(--brand-graymid);margin-bottom:12px;flex-wrap:wrap;}
+  .mapa-legenda .item{display:flex;align-items:center;gap:5px;}
+  .mapa-legenda .quad{width:14px;height:14px;border-radius:3px;display:inline-block;}
+  .mapa-legenda .quad.feito{background:var(--green);}
+  .mapa-legenda .quad.livre{background:#fff;border:1px solid #ccc;}
+  .mapa-scroll{overflow-x:auto;overflow-y:visible;border:1px solid #ddd;border-radius:10px;background:#fff;-webkit-overflow-scrolling:touch;}
+  .mapa-tabela{border-collapse:collapse;width:100%;min-width:660px;}
+  .mapa-tabela th, .mapa-tabela td{border:1px solid #e2e2e6;text-align:center;padding:0;}
+  .mapa-tabela th{background:var(--concrete);font-size:10.5px;font-weight:700;color:var(--brand-graymid);padding:7px 3px;position:sticky;top:0;z-index:2;}
+  .mapa-tabela td.mapa-andar{background:var(--concrete);font-weight:700;font-size:11px;color:var(--charcoal);padding:7px 6px;position:sticky;left:0;z-index:1;white-space:nowrap;}
+  .mapa-cel{width:34px;height:34px;font-size:13px;color:#fff;cursor:pointer;font-weight:700;}
+  .mapa-cel.feito{background:var(--green);}
+  .mapa-cel.corredor{width:72px;}
+
   .loading, .empty{text-align:center;padding:26px 12px;opacity:0.6;font-size:13px;}
 
   .toast{position:fixed;bottom:calc(20px + var(--safe-b));left:50%;transform:translateX(-50%);background:var(--brand-black);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;opacity:0;z-index:200;transition:opacity 0.3s;max-width:90%;text-align:center;}
@@ -222,6 +237,7 @@ window.addEventListener('unhandledrejection', function(e) {
     <button class="tab-btn" id="btn-aba-funcionario" onclick="mostrarAba('funcionario')">Por funcionário</button>
     <button class="tab-btn" id="btn-aba-unidade" onclick="mostrarAba('unidade')">Por unidade</button>
     <button class="tab-btn" id="btn-aba-tarefas" onclick="mostrarAba('tarefas')">Tarefas</button>
+    <button class="tab-btn" id="btn-aba-mapa" onclick="mostrarAba('mapa'); renderMapaServicos();">Mapa de serviços</button>
   </div>
 
   <div class="content">
@@ -425,6 +441,21 @@ window.addEventListener('unhandledrejection', function(e) {
         <button type="button" class="btn-secondary" onclick="limparFiltroDataTarefa()">Ver recentes</button>
       </div>
       <div id="listaTarefas"><div class="loading">Carregando...</div></div>
+    </div>
+
+    <!-- ================= ABA: MAPA DE SERVIÇOS POR ANDAR ================= -->
+    <div class="aba-conteudo" id="aba-mapa">
+      <div class="busca-box">
+        <select id="selMapaServico" onchange="renderMapaServicos()">
+          <option value="">— Escolha o serviço —</option>
+        </select>
+      </div>
+      <div class="mapa-legenda">
+        <span class="item"><span class="quad feito"></span> Já feito</span>
+        <span class="item"><span class="quad livre"></span> Ainda não</span>
+        <span class="item">Toque numa célula: feita abre pra ver/editar, vazia já prepara um registro novo nesse local</span>
+      </div>
+      <div id="mapaServicosWrap"><div class="empty">Escolha um serviço acima pra ver o mapa do prédio (5º ao 28º andar).</div></div>
     </div>
 
   </div>
@@ -1033,6 +1064,16 @@ function renderOpcoesServico() {
   sel.innerHTML = '<option value="">— Escolher —</option>' +
     tiposServico.map(t => `<option value="${t.id}">${escapeHtml(t.nome)}</option>`).join('');
   if (atual) sel.value = atual;
+
+  // mesma lista de serviços ativos, pro seletor da aba "Mapa de serviços"
+  // (2026-09-29) — mantém a seleção da pessoa se ela já tinha escolhido um
+  const selMapa = document.getElementById('selMapaServico');
+  if (selMapa) {
+    const atualMapa = selMapa.value;
+    selMapa.innerHTML = '<option value="">— Escolha o serviço —</option>' +
+      tiposServico.map(t => `<option value="${t.id}">${escapeHtml(t.nome)}</option>`).join('');
+    if (atualMapa) selMapa.value = atualMapa;
+  }
 }
 
 function toggleNovoServico() {
@@ -1967,6 +2008,101 @@ async function salvarTarefa() {
     btn.disabled = false;
     btn.textContent = tarefaEditandoId ? 'Salvar edição' : 'Salvar tarefa';
   }
+}
+
+// ============================================================
+// MAPA DE SERVIÇOS POR ANDAR (2026-09-29) — usuário pediu uma "semi-aba"
+// com uma tabela: eixo Y = andar (5º ao 28º, igual ANDAR_MIN/ANDAR_MAX já
+// usado no resto do arquivo), eixo X = apartamento (01 a 16) + corredor —
+// que nessa obra também cobre "área técnica" (confirmado com o usuário:
+// não é um tipo de local novo, é só outro nome pro corredor que já
+// existe, por isso a coluna leva os dois nomes no cabeçalho). Escolhe-se 1
+// serviço por vez (dropdown) e a tabela mostra o prédio inteiro pra esse
+// serviço: verde = já tem registro naquele local, vazio = ainda não.
+//
+// Tocar numa célula JÁ FEITA reaproveita editarRegistro() (mesma tela de
+// editar/excluir usada em qualquer outro lugar do app). Tocar numa célula
+// VAZIA pré-preenche a aba "Novo registro" com aquele local + o serviço
+// escolhido (reaproveitando resolverLocalForm/onMudaTipoLocal/
+// verificarDuplicidadeServico, sem nenhuma lógica de gravação nova) — só
+// falta escolher o funcionário e tocar em "Salvar registro", bem mais
+// rápido que preencher local+serviço à mão célula por célula.
+// ============================================================
+async function renderMapaServicos() {
+  const wrap = document.getElementById('mapaServicosWrap');
+  if (!wrap) return;
+  const servicoId = document.getElementById('selMapaServico').value;
+  if (!servicoId) {
+    wrap.innerHTML = '<div class="empty">Escolha um serviço acima pra ver o mapa do prédio (5º ao 28º andar).</div>';
+    return;
+  }
+  if (!sb) { wrap.innerHTML = '<div class="empty">Sem conexão com o Supabase.</div>'; return; }
+
+  wrap.innerHTML = '<div class="loading">Carregando...</div>';
+  const { data, error } = await sb.from('rdo_registros')
+    .select('id, unidade, tipo_local, andar, apartamento')
+    .eq('tipo_servico_id', servicoId);
+  if (error) {
+    wrap.innerHTML = '<div class="empty">Erro ao carregar o mapa.</div>';
+    console.error('Erro ao carregar mapa de serviços:', error);
+    return;
+  }
+
+  // por convenção, no máximo 1 registro por (unidade, serviço) — já é
+  // garantido pelo bloqueio de duplicidade de sempre (servicoJaExisteNaUnidade)
+  const porCodigo = {};
+  (data || []).forEach(r => { porCodigo[r.unidade] = r; });
+
+  // andar mais alto primeiro (28º no topo, 5º embaixo) — mesma leitura de
+  // uma elevação do prédio de verdade
+  let html = '<div class="mapa-scroll"><table class="mapa-tabela"><thead><tr><th>Andar</th>';
+  for (let apto = APTO_MIN; apto <= APTO_MAX; apto++) html += `<th>${String(apto).padStart(2, '0')}</th>`;
+  html += '<th>Corredor / Área técnica</th></tr></thead><tbody>';
+
+  for (let andar = ANDAR_MAX; andar >= ANDAR_MIN; andar--) {
+    html += `<tr><td class="mapa-andar">${andar}º</td>`;
+    for (let apto = APTO_MIN; apto <= APTO_MAX; apto++) {
+      const codigo = `${andar}${String(apto).padStart(2, '0')}`;
+      const r = porCodigo[codigo];
+      const idArg = r ? `'${r.id}'` : 'null';
+      html += `<td class="mapa-cel${r ? ' feito' : ''}" onclick="onClickCelulaMapa('apartamento', ${andar}, ${apto}, ${idArg})" title="${andar}º andar, apto ${String(apto).padStart(2, '0')}">${r ? '✓' : ''}</td>`;
+    }
+    const codigoCorredor = `COR${String(andar).padStart(2, '0')}`;
+    const rc = porCodigo[codigoCorredor];
+    const idArgCorredor = rc ? `'${rc.id}'` : 'null';
+    html += `<td class="mapa-cel corredor${rc ? ' feito' : ''}" onclick="onClickCelulaMapa('corredor', ${andar}, null, ${idArgCorredor})" title="Corredor / área técnica do ${andar}º andar">${rc ? '✓' : ''}</td>`;
+    html += '</tr>';
+  }
+  html += '</tbody></table></div>';
+  wrap.innerHTML = html;
+}
+
+function onClickCelulaMapa(tipoLocal, andar, apartamento, registroId) {
+  if (registroId) { editarRegistro(registroId); return; }
+  abrirRegistroRapidoDoMapa(tipoLocal, andar, apartamento);
+}
+
+function abrirRegistroRapidoDoMapa(tipoLocal, andar, apartamento) {
+  const servicoId = document.getElementById('selMapaServico').value;
+  if (!servicoId) { showToast('⚠️ Escolha o serviço primeiro.'); return; }
+
+  sairModoEdicao();
+  limparFormulario();
+  document.getElementById('selTipoLocal').value = tipoLocal;
+  onMudaTipoLocal();
+  if (tipoLocal === 'apartamento') {
+    document.getElementById('inpUnidade').value = `${andar}${String(apartamento).padStart(2, '0')}`;
+  } else if (tipoLocal === 'corredor') {
+    document.getElementById('selAndarCorredor').value = String(andar);
+  }
+  atualizarFeedbackLocal();
+  document.getElementById('selServico').value = servicoId;
+  verificarDuplicidadeServico();
+
+  mostrarAba('novo');
+  document.querySelector('.card-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  showToast('📍 Local e serviço já preenchidos — escolha o funcionário e toque em "Salvar registro".');
+  setTimeout(() => { const el = document.getElementById('inpFunc1Texto'); if (el) el.focus(); }, 300);
 }
 
 // ============================================================
