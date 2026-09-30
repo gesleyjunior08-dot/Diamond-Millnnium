@@ -120,6 +120,7 @@
   .rdo-servico{font-size:14.5px;font-weight:700;color:var(--charcoal);margin-bottom:2px;}
   .rdo-pessoas{font-size:13px;margin-bottom:2px;}
   .rdo-obs{font-size:12.5px;color:var(--brand-graymid);background:var(--concrete);padding:8px 10px;border-radius:8px;margin-top:6px;white-space:pre-wrap;}
+  .rdo-retrabalho{font-size:12px;font-weight:600;color:#8a4b00;background:#fff2df;padding:3px 8px;border-radius:6px;display:inline-block;margin-top:3px;}
   .rdo-foto-wrap{position:relative;display:inline-block;margin-top:8px;}
   .rdo-foto{width:96px;height:96px;object-fit:cover;border-radius:8px;display:block;cursor:pointer;background:var(--concrete);}
   .rdo-foto-zoom{position:absolute;bottom:-3px;right:-3px;width:24px;height:24px;border-radius:50%;background:rgba(28,28,30,0.75);border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1;color:#fff;cursor:pointer;}
@@ -300,6 +301,12 @@ window.addEventListener('unhandledrejection', function(e) {
             <div id="listaServicosGerenciar"></div>
           </div>
           <div class="unidade-feedback" id="servicoFeedback"></div>
+        </div>
+
+        <div class="form-group">
+          <label>Retrabalho (opcional)</label>
+          <input type="text" id="inpRetrabalho" placeholder="Ex.: Massa cheia">
+          <div class="unidade-hint">Preencha só se este registro for um retrabalho — descreva o que está sendo refeito.</div>
         </div>
 
         <div class="form-group">
@@ -1434,6 +1441,7 @@ function limparFormulario() {
   document.getElementById('selServico').value = '';
   document.getElementById('servicoFeedback').textContent = '';
   document.getElementById('servicoFeedback').className = 'unidade-feedback';
+  document.getElementById('inpRetrabalho').value = '';
   document.getElementById('selFunc1').value = '';
   document.getElementById('selFunc2').value = '';
   sincronizarTextoCombo('selFunc1', 'inpFunc1Texto', 'btnLimparFunc1');
@@ -1476,6 +1484,7 @@ function editarRegistro(id) {
   atualizarFeedbackLocal();
 
   document.getElementById('selServico').value = r.tipo_servico_id;
+  document.getElementById('inpRetrabalho').value = r.retrabalho || '';
   document.getElementById('selFunc1').value = r.funcionario_id_1 || '';
   document.getElementById('selFunc2').value = r.funcionario_id_2 || '';
   sincronizarTextoCombo('selFunc1', 'inpFunc1Texto', 'btnLimparFunc1');
@@ -1556,6 +1565,7 @@ async function salvarRegistro() {
   if (dataFim && dataFim < dataInicio) { showToast('⚠️ A data final não pode ser antes da inicial.'); return; }
 
   const observacao = document.getElementById('inpObs').value.trim() || null;
+  const retrabalho = document.getElementById('inpRetrabalho').value.trim() || null;
   const fotoFile = document.getElementById('inpFoto').files[0] || null;
   const removerFoto = document.getElementById('chkRemoverFoto').checked;
   const idEmEdicao = registroEditandoId;
@@ -1591,6 +1601,7 @@ async function salvarRegistro() {
       data_inicio: dataInicio,
       data_fim: dataFim,
       observacao,
+      retrabalho,
       foto_path: fotoPath,
     };
 
@@ -1654,6 +1665,7 @@ function renderCardRegistro(r) {
         </div>
       </div>
       <div class="rdo-servico">${escapeHtml(servico ? servico.nome : '(serviço não encontrado)')}</div>
+      ${r.retrabalho ? `<div class="rdo-retrabalho">🔁 Retrabalho: ${escapeHtml(r.retrabalho)}</div>` : ''}
       <div class="rdo-pessoas">${escapeHtml(pessoas || '—')}</div>
       ${r.observacao ? `<div class="rdo-obs">${escapeHtml(r.observacao)}</div>` : ''}
       ${fotoUrl ? `

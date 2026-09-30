@@ -157,6 +157,8 @@
   .perfil-obs{margin-top:18px;}
   .perfil-obs .rotulo{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;opacity:0.55;margin-bottom:6px;}
   .perfil-obs textarea{width:100%;min-height:96px;font-family:inherit;font-size:14.5px;padding:10px 12px;border:1px solid #ddd;border-radius:10px;background:#fafafa;resize:vertical;line-height:1.4;}
+  .perfil-obs input[type="text"]{width:100%;font-family:inherit;font-size:14.5px;padding:10px 12px;border:1px solid #ddd;border-radius:10px;background:#fafafa;box-sizing:border-box;}
+  .perfil-obs .hint{display:block;margin-top:6px;}
   .perfil-obs-acoes{display:flex;justify-content:flex-end;gap:8px;margin-top:8px;}
   .perfil-obs-acoes button{border:none;border-radius:9px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;min-height:38px;}
   .perfil-obs-salvar{background:var(--charcoal);color:#fff;}
@@ -267,6 +269,15 @@ window.addEventListener('unhandledrejection', function(e) {
         <div class="perfil-nome" id="perfilNome"></div>
         <div class="perfil-sub" id="perfilSub"></div>
       </div>
+    </div>
+    <div class="perfil-obs">
+      <div class="rotulo">Nome cadastrado</div>
+      <input type="text" id="perfilNomeInput" placeholder="Nome completo">
+      <div class="perfil-obs-acoes">
+        <button class="perfil-obs-salvar" id="perfilNomeSalvarBtn" onclick="salvarNomeCadastro()">Salvar nome</button>
+      </div>
+      <div class="perfil-obs-status" id="perfilNomeStatus"></div>
+      <span class="hint">Se essa pessoa já estiver cadastrada na catraca (rosto reconhecendo), o nome novo também é enviado pra lá automaticamente em alguns segundos.</span>
     </div>
     <div class="perfil-estrelas">
       <div class="rotulo">Classificação</div>
@@ -1067,6 +1078,10 @@ function abrirPerfil(funcionarioId) {
   document.getElementById('perfilSub').textContent =
     `${f.funcao}${f.alocacao ? ' • ' + f.alocacao : ''} — ${f.empresa}`;
 
+  document.getElementById('perfilNomeInput').value = f.nome;
+  document.getElementById('perfilNomeStatus').textContent = '';
+  document.getElementById('perfilNomeSalvarBtn').disabled = false;
+
   const estrelasEl = document.getElementById('perfilEstrelas');
   if (f.classificacao === null || f.classificacao === undefined) {
     estrelasEl.innerHTML = `<span class="semnota">Ainda sem classificação</span>`;
@@ -1289,6 +1304,65 @@ async function salvarObservacao() {
   } catch (e) {
     status.textContent = '';
     showToast('⚠️ Erro ao salvar comentário: ' + (e.message || e));
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// Corrigir o nome de alguém já cadastrado (ex.: erro de digitação). Se a
+// pessoa já tiver rosto cadastrado na catraca (matricula_catraca
+// preenchido), a mesma chamada já marca funcionarios.catraca_nome_pendente
+// = true — o catraca_servidor.js confere isso a cada 10s e manda pra
+// catraca renomear o mesmo enrollid (comando "setusername"), pra não
+// ficar com o nome antigo guardado só lá. EXPERIMENTAL — ver
+// LEIA-ME_catraca.md.
+async function salvarNomeCadastro() {
+  const funcionarioId = perfilFuncionarioId;
+  if (!funcionarioId) return;
+  if (!sb) { showToast('⚠️ Sem conexão.'); return; }
+
+  const input = document.getElementById('perfilNomeInput');
+  const btn = document.getElementById('perfilNomeSalvarBtn');
+  const status = document.getElementById('perfilNomeStatus');
+  const nomeNovo = input.value.trim();
+
+  if (!nomeNovo) {
+    status.textContent = 'Digite um nome antes de salvar.';
+    return;
+  }
+
+  const item = funcionarios.find(f => String(f.id) === String(funcionarioId));
+  const nomeAntigo = item ? item.nome : null;
+  if (nomeNovo === nomeAntigo) {
+    status.textContent = 'Nada mudou.';
+    return;
+  }
+
+  btn.disabled = true;
+  status.textContent = 'Salvando...';
+
+  const vaiAvisarCatraca = !!(item && item.matricula_catraca);
+  const payload = { nome: nomeNovo };
+  if (vaiAvisarCatraca) payload.catraca_nome_pendente = true;
+
+  try {
+    const { error } = await sb
+      .from('funcionarios')
+      .update(payload)
+      .eq('id', funcionarioId);
+    if (error) throw error;
+    if (item) {
+      item.nome = nomeNovo;
+      if (vaiAvisarCatraca) item.catraca_nome_pendente = true;
+    }
+    document.getElementById('perfilNome').textContent = nomeNovo;
+    status.textContent = vaiAvisarCatraca ? 'Nome salvo ✓ (avisando a catraca...)' : 'Nome salvo ✓';
+    showToast(vaiAvisarCatraca ? '✅ Nome salvo! Vai ser atualizado na catraca em alguns segundos.' : '✅ Nome salvo!');
+    registrarEdicao('editar', `Corrigiu o nome de "${nomeAntigo}" para "${nomeNovo}"`);
+    render();
+  } catch (e) {
+    status.textContent = '';
+    showToast('⚠️ Erro ao salvar nome: ' + (e.message || e));
   } finally {
     btn.disabled = false;
   }
