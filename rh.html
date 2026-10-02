@@ -50,6 +50,10 @@
   .doc-resumo{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;font-size:11.5px;}
   .doc-resumo span{background:var(--concrete);border-radius:20px;padding:5px 10px;}
   .doc-resumo b{color:var(--charcoal);}
+  .doc-resumo .resumo-aviso-vencendo{background:#FFF3D6;}
+  .doc-resumo .resumo-aviso-vencendo b{color:#8a6700;}
+  .doc-resumo .resumo-aviso-vencido{background:#FBE1DD;}
+  .doc-resumo .resumo-aviso-vencido b{color:#b3261e;}
 
   .doc-company{border:1px solid #ddd;border-radius:8px;margin-bottom:10px;overflow:hidden;}
   .doc-company summary{background:#f5f5f5;padding:10px 12px;font-weight:600;font-size:13px;cursor:pointer;display:flex;justify-content:space-between;list-style:none;}
@@ -62,6 +66,18 @@
   .doc-chip{display:flex;align-items:center;gap:5px;font-size:11px;border:1px solid #ddd;border-radius:20px;padding:5px 10px 5px 8px;background:#fafafa;cursor:pointer;user-select:none;}
   .doc-chip input{width:15px;height:15px;cursor:pointer;flex-shrink:0;}
   .doc-chip.marcado{background:#DFF3E3;border-color:#b7e2c2;color:#1e6b30;font-weight:600;}
+
+  /* ---------- ASO (exame médico) — datas + status, 2026-10-02 ---------- */
+  .aso-bloco{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px;padding:8px 10px;background:#fafafa;border:1px solid #eee;border-radius:10px;}
+  .aso-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.3px;opacity:0.55;width:100%;}
+  .aso-campo{display:flex;flex-direction:column;gap:2px;}
+  .aso-campo span{font-size:10px;opacity:0.6;}
+  .aso-campo input[type="date"]{font-size:12px;padding:4px 6px;border:1px solid #ddd;border-radius:6px;font-family:inherit;}
+  .aso-status{font-size:11px;font-weight:700;border-radius:20px;padding:5px 10px;white-space:nowrap;}
+  .aso-status.em-dia{background:#DFF3E3;color:#1e6b30;}
+  .aso-status.vencendo{background:#FFF3D6;color:#8a6700;}
+  .aso-status.vencido{background:#FBE1DD;color:#b3261e;}
+  .aso-status.sem-registro{background:#eee;color:#666;}
 
   /* ---------- ativar / desativar ---------- */
   .admin-hint{font-size:12px;opacity:0.75;margin-bottom:12px;line-height:1.5;}
@@ -274,12 +290,65 @@ const gruposAbertosDoc = {}; // lembra quais empreiteiras estão abertas/fechada
 const DOC_CAMPOS = [
   { campo: 'doc_ficha_registro', label: 'Ficha de Registro' },
   { campo: 'doc_nr12_18', label: 'NR 12 e NR 18' },
-  { campo: 'doc_aso', label: 'ASO' },
   { campo: 'doc_ordem_servico', label: 'Ordem de Serviço' },
   { campo: 'doc_contrato', label: 'Contrato' },
   { campo: 'doc_pgr', label: 'PGR' },
   { campo: 'doc_pcmso', label: 'PCMSO' }
 ];
+
+// ASO (exame médico periódico) saiu da lista genérica de caixinhas acima
+// em 2026-10-02 — pedido do usuário pra importar uma planilha com as
+// DATAS reais de último exame/próximo periódico (não só feito/não feito).
+// Ganhou bloco próprio (ver renderAsoBloco/statusAso/salvarDataAso
+// abaixo), com status calculado (em dia/vencendo/vencido) em vez de uma
+// caixinha manual.
+const DIAS_AVISO_VENCENDO_ASO = 30; // a partir de quantos dias antes do vencimento já avisa "vencendo"
+
+function statusAso(f) {
+  if (!f.aso_data_proximo_periodico) return { cls: 'sem-registro', label: 'Sem registro' };
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  const proximo = new Date(f.aso_data_proximo_periodico + 'T00:00:00');
+  const diffDias = Math.round((proximo - hoje) / 86400000);
+  if (diffDias < 0) return { cls: 'vencido', label: `Vencido há ${Math.abs(diffDias)}d` };
+  if (diffDias <= DIAS_AVISO_VENCENDO_ASO) return { cls: 'vencendo', label: `Vencendo em ${diffDias}d` };
+  return { cls: 'em-dia', label: 'Em dia' };
+}
+
+function renderAsoBloco(f) {
+  const status = statusAso(f);
+  return `
+    <div class="aso-bloco">
+      <span class="aso-label">ASO (exame médico)</span>
+      <label class="aso-campo">
+        <span>Último exame</span>
+        <input type="date" value="${f.aso_data_ultimo_exame || ''}" onchange="salvarDataAso('${f.id}', 'aso_data_ultimo_exame', this.value)">
+      </label>
+      <label class="aso-campo">
+        <span>Próximo periódico</span>
+        <input type="date" value="${f.aso_data_proximo_periodico || ''}" onchange="salvarDataAso('${f.id}', 'aso_data_proximo_periodico', this.value)">
+      </label>
+      <span class="aso-status ${status.cls}">${status.label}</span>
+    </div>
+  `;
+}
+
+async function salvarDataAso(funcionarioId, campo, valor) {
+  if (!sb) { alert('⚠️ Sem conexão.'); return; }
+  const valorFinal = valor || null;
+  try {
+    const { error } = await sb.from('funcionarios').update({ [campo]: valorFinal }).eq('id', funcionarioId);
+    if (error) throw error;
+    const item = docChecklistData.find(f => f.id === funcionarioId);
+    if (item) item[campo] = valorFinal;
+    preservarScroll(renderDocChecklist);
+    const campoLabel = campo === 'aso_data_ultimo_exame' ? 'último exame' : 'próximo periódico';
+    registrarEdicao('editar', `Atualizou a data do ${campoLabel} (ASO) de ${item ? item.nome : funcionarioId} para ${valorFinal || '(vazio)'}`);
+  } catch (e) {
+    console.error(e);
+    alert('⚠️ Não consegui salvar essa data. Verifique a conexão e tente de novo.');
+    loadDocChecklist();
+  }
+}
 
 async function loadDocChecklist() {
   const wrap = document.getElementById('docChecklistWrap');
@@ -288,7 +357,7 @@ async function loadDocChecklist() {
   try {
     const { data, error } = await sb
       .from('funcionarios')
-      .select('id, empresa, nome, funcao, doc_ficha_registro, doc_nr12_18, doc_aso, doc_ordem_servico, doc_contrato, doc_pgr, doc_pcmso')
+      .select('id, empresa, nome, funcao, doc_ficha_registro, doc_nr12_18, doc_ordem_servico, doc_contrato, doc_pgr, doc_pcmso, aso_data_ultimo_exame, aso_data_proximo_periodico')
       .eq('tipo', 'permanente')
       .eq('ativo', true);
     if (error) throw error;
@@ -313,10 +382,16 @@ function renderDocChecklist() {
 
   // resumo geral (sobre todo mundo, não só o filtro de busca)
   const total = docChecklistData.length;
-  resumoEl.innerHTML = DOC_CAMPOS.map(dc => {
+  const resumoDocs = DOC_CAMPOS.map(dc => {
     const completos = docChecklistData.filter(f => f[dc.campo]).length;
     return `<span><b>${dc.label}:</b> ${completos}/${total}</span>`;
   }).join('');
+  const contagemAso = { 'em-dia': 0, vencendo: 0, vencido: 0, 'sem-registro': 0 };
+  docChecklistData.forEach(f => { contagemAso[statusAso(f).cls]++; });
+  const resumoAso = `<span><b>ASO em dia:</b> ${contagemAso['em-dia']}/${total}</span>` +
+    (contagemAso.vencendo ? `<span class="resumo-aviso-vencendo"><b>Vencendo:</b> ${contagemAso.vencendo}</span>` : '') +
+    (contagemAso.vencido ? `<span class="resumo-aviso-vencido"><b>Vencido:</b> ${contagemAso.vencido}</span>` : '');
+  resumoEl.innerHTML = resumoDocs + resumoAso;
 
   const filtrados = docChecklistData.filter(f => !q || normalizarBusca(f.nome).includes(q));
   if (!filtrados.length) {
@@ -354,6 +429,7 @@ function renderDocChecklist() {
                 </label>
               `).join('')}
             </div>
+            ${renderAsoBloco(f)}
           </div>
         `).join('')}
       </div>
