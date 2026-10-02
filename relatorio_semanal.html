@@ -72,6 +72,17 @@
   .doc-bar-track{background:var(--gray-light);border-radius:6px;height:10px;overflow:hidden;}
   .doc-bar-fill{height:100%;background:var(--blue);border-radius:6px;}
 
+  /* ---------- ASO (exame médico) — status + vencendo/vencido, 2026-10-02 ---------- */
+  .aso-resumo{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;font-size:12px;}
+  .aso-resumo span{background:var(--gray-light);border-radius:20px;padding:5px 10px;}
+  .aso-resumo .em-dia{background:#DFF3E3;color:#1e6b30;font-weight:600;}
+  .aso-resumo .vencendo{background:#FFF3D6;color:#8a6700;font-weight:600;}
+  .aso-resumo .vencido{background:#FBE1DD;color:#b3261e;font-weight:600;}
+  .aso-lista-titulo{font-size:12px;font-weight:700;margin:10px 0 4px;}
+  .aso-lista-titulo.vencendo{color:#8a6700;}
+  .aso-lista-titulo.vencido{color:#b3261e;}
+  .aso-lista{font-size:12px;line-height:1.6;margin:0;padding-left:18px;}
+
   .footer-note{text-align:center;font-size:11px;color:var(--gray);margin-top:30px;}
 
   .assinaturas{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:50px;padding:0 20px;}
@@ -356,12 +367,34 @@ function renderChartEmpresas(rows) {
   });
 }
 
+// ASO (exame médico) saiu da lista genérica de barras de % abaixo em
+// 2026-10-02 — pedido do usuário: "quero que essa informação de vencendo
+// apareça no relatorio". Mesmo cálculo de status (em dia/vencendo/vencido)
+// já usado no checklist de documentação do rh.html (DIAS_AVISO_VENCENDO_ASO).
+const DIAS_AVISO_VENCENDO_ASO = 30;
+
+function statusAsoRelatorio(f) {
+  if (!f.aso_data_proximo_periodico) return 'sem-registro';
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  const proximo = new Date(f.aso_data_proximo_periodico + 'T00:00:00');
+  const diffDias = Math.round((proximo - hoje) / 86400000);
+  if (diffDias < 0) return 'vencido';
+  if (diffDias <= DIAS_AVISO_VENCENDO_ASO) return 'vencendo';
+  return 'em-dia';
+}
+
+function diasParaTexto(f) {
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  const proximo = new Date(f.aso_data_proximo_periodico + 'T00:00:00');
+  const diffDias = Math.round((proximo - hoje) / 86400000);
+  return diffDias < 0 ? `vencido há ${Math.abs(diffDias)}d` : `vence em ${diffDias}d`;
+}
+
 async function renderDocumentacao() {
   const panel = document.getElementById('docPanel');
   const campos = [
     { campo: 'doc_ficha_registro', label: 'Ficha de Registro' },
     { campo: 'doc_nr12_18', label: 'NR 12 e NR 18' },
-    { campo: 'doc_aso', label: 'ASO' },
     { campo: 'doc_ordem_servico', label: 'Ordem de Serviço' },
     { campo: 'doc_contrato', label: 'Contrato' },
     { campo: 'doc_pgr', label: 'PGR' },
@@ -370,7 +403,7 @@ async function renderDocumentacao() {
   try {
     const { data, error } = await sb
       .from('funcionarios')
-      .select(campos.map(c => c.campo).join(','))
+      .select(['nome', 'aso_data_ultimo_exame', 'aso_data_proximo_periodico', ...campos.map(c => c.campo)].join(','))
       .eq('tipo', 'permanente')
       .eq('ativo', true);
     if (error) throw error;
@@ -378,7 +411,7 @@ async function renderDocumentacao() {
     const total = (data || []).length;
     if (!total) { panel.innerHTML = '<div class="empty">Nenhum funcionário ativo cadastrado.</div>'; return; }
 
-    panel.innerHTML = campos.map(c => {
+    const barrasDoc = campos.map(c => {
       const completos = data.filter(f => f[c.campo]).length;
       const pct = Math.round((completos / total) * 100);
       return `
@@ -388,6 +421,35 @@ async function renderDocumentacao() {
         </div>
       `;
     }).join('');
+
+    const porStatus = { 'em-dia': [], vencendo: [], vencido: [], 'sem-registro': [] };
+    data.forEach(f => { porStatus[statusAsoRelatorio(f)].push(f); });
+
+    const resumoAso = `
+      <div class="doc-bar-row">
+        <div class="doc-bar-label"><span>ASO (exame médico)</span></div>
+        <div class="aso-resumo">
+          <span class="em-dia">Em dia: ${porStatus['em-dia'].length}/${total}</span>
+          ${porStatus.vencendo.length ? `<span class="vencendo">Vencendo: ${porStatus.vencendo.length}</span>` : ''}
+          ${porStatus.vencido.length ? `<span class="vencido">Vencido: ${porStatus.vencido.length}</span>` : ''}
+          ${porStatus['sem-registro'].length ? `<span>Sem registro: ${porStatus['sem-registro'].length}</span>` : ''}
+        </div>
+        ${porStatus.vencendo.length ? `
+          <div class="aso-lista-titulo vencendo">⚠️ Vencendo nos próximos ${DIAS_AVISO_VENCENDO_ASO} dias</div>
+          <ul class="aso-lista">${porStatus.vencendo
+            .sort((a, b) => a.aso_data_proximo_periodico.localeCompare(b.aso_data_proximo_periodico))
+            .map(f => `<li>${escapeHtml(f.nome)} — ${diasParaTexto(f)}</li>`).join('')}</ul>
+        ` : ''}
+        ${porStatus.vencido.length ? `
+          <div class="aso-lista-titulo vencido">🔴 Vencidos</div>
+          <ul class="aso-lista">${porStatus.vencido
+            .sort((a, b) => a.aso_data_proximo_periodico.localeCompare(b.aso_data_proximo_periodico))
+            .map(f => `<li>${escapeHtml(f.nome)} — ${diasParaTexto(f)}</li>`).join('')}</ul>
+        ` : ''}
+      </div>
+    `;
+
+    panel.innerHTML = resumoAso + barrasDoc;
   } catch (e) {
     panel.innerHTML = '<div class="empty">Erro ao carregar documentação.</div>';
     console.error(e);
