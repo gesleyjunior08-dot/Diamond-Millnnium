@@ -54,8 +54,8 @@
   .section-title{font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--blue-dark);margin:30px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--blue-dark);}
   .section-title:first-of-type{margin-top:0;}
 
-  .cards{display:grid;grid-template-columns:repeat(6, 1fr);gap:14px;}
-  @media (max-width:900px){.cards{grid-template-columns:repeat(3,1fr);}}
+  .cards{display:grid;grid-template-columns:repeat(4, 1fr);gap:14px;}
+  @media (max-width:900px){.cards{grid-template-columns:repeat(2,1fr);}}
   @media (max-width:500px){.cards{grid-template-columns:repeat(2,1fr);}}
   .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 16px;text-align:center;}
   .card .n{font-size:24px;font-weight:700;color:var(--navy);}
@@ -293,9 +293,7 @@ async function gerarRelatorio() {
     const allRows = (data || []).filter(r => r.funcionarios);
     const rows = allRows.filter(r => r.funcionarios.tipo !== 'visitante');
 
-    const { count: totalAtivos } = await sb.from('funcionarios').select('id', { count: 'exact', head: true }).eq('tipo', 'permanente').eq('ativo', true);
-
-    renderCards(rows, ini, fim, totalAtivos || 0);
+    renderCards(rows, ini, fim);
     renderChartDias(rows, segunda);
     renderChartEmpresas(rows);
     await renderDocumentacao();
@@ -306,21 +304,16 @@ async function gerarRelatorio() {
   }
 }
 
-function renderCards(rows, ini, fim, totalAtivos) {
+function renderCards(rows, ini, fim) {
   const presentes = rows.filter(r => r.status === 'presente');
-  const faltas = rows.filter(r => r.status === 'falta');
   const saidasAntecipadas = rows.filter(r => r.saida_antecipada);
   const dias = new Set(rows.map(r => r.data));
   const diasComRegistro = dias.size;
   const mediaDiaria = diasComRegistro ? Math.round(presentes.length / diasComRegistro) : 0;
-  const esperado = diasComRegistro * totalAtivos;
-  const taxa = esperado ? Math.round((presentes.length / esperado) * 100) : 0;
 
   document.getElementById('cards').innerHTML = `
     <div class="card"><div class="n">${presentes.length}</div><div class="l">Total de presenças</div></div>
-    <div class="card"><div class="n" style="color:var(--red);">${faltas.length}</div><div class="l">Total de faltas</div></div>
     <div class="card"><div class="n">${mediaDiaria}</div><div class="l">Média diária</div></div>
-    <div class="card"><div class="n">${taxa}%</div><div class="l">Taxa de presença</div></div>
     <div class="card"><div class="n">${diasComRegistro}</div><div class="l">Dias com registro</div></div>
     <div class="card"><div class="n" style="color:#C9A227;">${saidasAntecipadas.length}</div><div class="l">Saídas antecipadas</div></div>
   `;
