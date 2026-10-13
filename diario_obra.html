@@ -199,6 +199,7 @@
   .medicao-periodo-ate{flex:0 0 auto;font-size:12.5px;color:var(--brand-graymid);}
   .medicao-periodo-box .link-btn{flex:0 0 auto;padding-top:0;}
   .medicao-periodo-sub{font-size:11px;color:var(--brand-graymid);margin:-6px 2px 14px;line-height:1.35;}
+  .medicao-ou-divider{text-align:center;font-size:11px;font-weight:700;color:var(--brand-graymid);margin:-6px 0 10px;text-transform:uppercase;letter-spacing:0.5px;}
   .rdo-card.selecionado{border-left-color:var(--yellow);background:#FFFBEF;}
   .medicao-check-row{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px dashed #e3e3e3;font-size:13px;font-weight:700;color:var(--charcoal);cursor:pointer;}
   .medicao-check-row input{width:auto;margin:0;transform:scale(1.2);}
@@ -554,6 +555,16 @@ window.addEventListener('unhandledrejection', function(e) {
           </select>
         </div>
 
+        <div class="medicao-ou-divider">— ou —</div>
+
+        <div class="busca-box">
+          <select id="selMedicaoServico" onchange="buscarPorServicoMedicao()">
+            <option value="">🔍 Buscar por tipo de serviço (todas as pessoas)...</option>
+          </select>
+          <button type="button" class="link-btn" id="btnLimparMedicaoServico" onclick="limparBuscaServicoMedicao()" style="display:none;">Limpar</button>
+        </div>
+        <div class="medicao-periodo-sub">Busca os registros desse serviço de QUALQUER pessoa, sem precisar escolher ninguém ali em cima (as duas buscas — por pessoa e por serviço — são independentes, uma substitui a outra).</div>
+
         <div class="busca-box medicao-periodo-box" id="medicaoPeriodoPessoaBox">
           <label class="medicao-periodo-label">Período</label>
           <input type="date" id="inpMedicaoDataDe" onchange="renderListaMedicao(); renderHistoricoMedicao();">
@@ -561,7 +572,7 @@ window.addEventListener('unhandledrejection', function(e) {
           <input type="date" id="inpMedicaoDataAte" onchange="renderListaMedicao(); renderHistoricoMedicao();">
           <button type="button" class="link-btn" onclick="limparPeriodoMedicao()">Limpar</button>
         </div>
-        <div class="medicao-periodo-sub">Filtra os serviços (pela data de início) e as medições já feitas (pela data em que foram finalizadas) dessa pessoa.</div>
+        <div class="medicao-periodo-sub">Filtra os serviços mostrados acima (pela data de início) — e, quando tem uma pessoa escolhida (não quando é busca por serviço), o histórico de medições dela também (pela data em que foram finalizadas).</div>
 
         <div class="medicao-toolbar" id="medicaoToolbar" style="display:none;">
           <span class="contagem" id="medicaoContagem">0 selecionados</span>
@@ -571,7 +582,7 @@ window.addEventListener('unhandledrejection', function(e) {
           </div>
         </div>
 
-        <div id="listaMedicao"><div class="empty">Escolha uma pessoa pra ver os serviços dela.</div></div>
+        <div id="listaMedicao"><div class="empty">Escolha uma pessoa ou um tipo de serviço pra ver os registros.</div></div>
 
         <button class="medicao-finalizar" id="btnFinalizarMedicao" onclick="finalizarMedicao()" disabled style="display:none;">Gerar relatório e finalizar medição</button>
 
@@ -1278,6 +1289,16 @@ function renderOpcoesServico() {
       tiposServico.map(t => `<option value="${t.id}">${escapeHtml(t.nome)}</option>`).join('');
     if (atualMapa) selMapa.value = atualMapa;
   }
+
+  // mesma lista, pro filtro "buscar por tipo de serviço" da aba Medição
+  // (2026-10-13) — mantém a opção de placeholder fixa, em vez de "— Escolher —"
+  const selMedServico = document.getElementById('selMedicaoServico');
+  if (selMedServico) {
+    const atualMedServico = selMedServico.value;
+    selMedServico.innerHTML = '<option value="">🔍 Buscar por tipo de serviço (todas as pessoas)...</option>' +
+      tiposServico.map(t => `<option value="${t.id}">${escapeHtml(t.nome)}</option>`).join('');
+    if (atualMedServico) selMedServico.value = atualMedServico;
+  }
 }
 
 function toggleNovoServico() {
@@ -1955,10 +1976,16 @@ function atualizarRegistroEmListas(id, patch) {
 // reabrir o relatório de uma medição antiga a qualquer momento).
 // ============================================================
 let medicaoDesbloqueada = false;
-let resultadosMedicao = []; // último resultado bruto (sem filtro) da pessoa escolhida na aba Medição
+let resultadosMedicao = []; // último resultado bruto (sem filtro) da busca atual (por pessoa OU por serviço)
 let selecaoMedicao = new Set(); // ids de rdo_registros marcados "incluir nessa medição" (seleção só visual, até finalizar)
 let medicoesDaPessoaAtual = []; // histórico de lotes já finalizados pra essa pessoa
 let todasMedicoes = []; // TODOS os lotes já finalizados, de qualquer pessoa — pro filtro geral por período (2026-10-13)
+// Modo da busca atual na aba Medição (2026-10-13): 'pessoa' (busca por nome,
+// já existia) ou 'servico' (busca por tipo de serviço, pedido novo: "podia
+// ter um filtro tmb de serviços igual o de nome" — ver buscarPorServicoMedicao).
+// As duas buscas são excludentes: escolher uma limpa a outra (ver
+// limparMedicaoServicoSilencioso / limparMedicaoFuncComboSilencioso).
+let medicaoModoBusca = null;
 
 function abrirAbaMedicao() {
   if (medicaoDesbloqueada) {
@@ -2003,6 +2030,15 @@ function onBlurMedicaoFuncTexto() {
     sincronizarTextoCombo('selMedicaoFunc', 'inpMedicaoFuncTexto', 'btnLimparMedicaoFunc');
   }, 150);
 }
+// limpa a busca por nome SEM disparar buscarParaMedicao() de novo — usada
+// quando quem acabou de rodar foi a busca por serviço (as duas são
+// excludentes, ver medicaoModoBusca)
+function limparMedicaoFuncComboSilencioso() {
+  document.getElementById('selMedicaoFunc').value = '';
+  document.getElementById('inpMedicaoFuncTexto').value = '';
+  document.getElementById('btnLimparMedicaoFunc').classList.remove('show');
+  document.getElementById('medicaoComboLista').classList.remove('show');
+}
 
 async function buscarParaMedicao() {
   const fid = document.getElementById('selMedicaoFunc').value;
@@ -2012,10 +2048,13 @@ async function buscarParaMedicao() {
   document.getElementById('btnFinalizarMedicao').style.display = 'none';
   document.getElementById('medicaoHistoricoWrap').style.display = 'none';
   if (!fid) {
+    medicaoModoBusca = null;
     resultadosMedicao = [];
-    cont.innerHTML = '<div class="empty">Escolha uma pessoa pra ver os serviços dela.</div>';
+    cont.innerHTML = '<div class="empty">Escolha uma pessoa ou um tipo de serviço pra ver os registros.</div>';
     return;
   }
+  limparMedicaoServicoSilencioso(); // busca por pessoa e por serviço são excludentes
+  medicaoModoBusca = 'pessoa';
   if (!sb) { cont.innerHTML = '<div class="empty">Sem conexão com o banco.</div>'; return; }
   cont.innerHTML = '<div class="loading">Carregando...</div>';
   const { data, error } = await sb.from('rdo_registros')
@@ -2029,6 +2068,51 @@ async function buscarParaMedicao() {
   document.getElementById('btnFinalizarMedicao').style.display = 'block';
   renderListaMedicao();
   carregarHistoricoMedicao(fid);
+}
+
+// -------- busca por tipo de serviço (2026-10-13) — "podia ter um filtro
+// tmb de serviços igual o de nome": em vez de escolher uma pessoa, escolhe
+// um serviço e vê os registros desse serviço de QUALQUER pessoa, sem
+// precisar buscar ninguém antes. Reaproveita a mesma lista (resultadosMedicao),
+// os mesmos filtros de status/período e o mesmo cartão (que já mostra o
+// nome da pessoa de cada registro) — só muda de onde vêm os dados e como o
+// "Finalizar" agrupa na hora de criar os lotes (ver finalizarMedicaoPorServico).
+function limparMedicaoServicoSilencioso() {
+  document.getElementById('selMedicaoServico').value = '';
+  document.getElementById('btnLimparMedicaoServico').style.display = 'none';
+}
+function limparBuscaServicoMedicao() {
+  document.getElementById('selMedicaoServico').value = '';
+  buscarPorServicoMedicao();
+}
+async function buscarPorServicoMedicao() {
+  const servicoId = document.getElementById('selMedicaoServico').value;
+  const cont = document.getElementById('listaMedicao');
+  selecaoMedicao.clear();
+  document.getElementById('medicaoToolbar').style.display = 'none';
+  document.getElementById('btnFinalizarMedicao').style.display = 'none';
+  document.getElementById('medicaoHistoricoWrap').style.display = 'none'; // histórico "por pessoa" não se aplica aqui
+  document.getElementById('btnLimparMedicaoServico').style.display = servicoId ? 'inline-block' : 'none';
+  if (!servicoId) {
+    medicaoModoBusca = null;
+    resultadosMedicao = [];
+    cont.innerHTML = '<div class="empty">Escolha uma pessoa ou um tipo de serviço pra ver os registros.</div>';
+    return;
+  }
+  limparMedicaoFuncComboSilencioso(); // busca por pessoa e por serviço são excludentes
+  medicaoModoBusca = 'servico';
+  if (!sb) { cont.innerHTML = '<div class="empty">Sem conexão com o banco.</div>'; return; }
+  cont.innerHTML = '<div class="loading">Carregando...</div>';
+  const { data, error } = await sb.from('rdo_registros')
+    .select('*')
+    .eq('tipo_servico_id', servicoId)
+    .order('data_inicio', { ascending: false });
+  if (error) { resultadosMedicao = []; cont.innerHTML = '<div class="empty">Erro ao buscar: ' + escapeHtml(error.message) + '</div>'; return; }
+  resultadosMedicao = data || [];
+  indexarRegistros(resultadosMedicao);
+  document.getElementById('medicaoToolbar').style.display = 'flex';
+  document.getElementById('btnFinalizarMedicao').style.display = 'block';
+  renderListaMedicao();
 }
 
 // Período (2026-10-13) — filtro opcional de data que vale pra duas listas
@@ -2064,9 +2148,13 @@ function listaServicosFiltradaMedicao() {
 
 function renderListaMedicao() {
   const cont = document.getElementById('listaMedicao');
-  const fid = document.getElementById('selMedicaoFunc').value;
-  if (!fid) return;
-  if (!resultadosMedicao.length) { cont.innerHTML = '<div class="empty">Nenhum registro encontrado pra essa pessoa ainda.</div>'; return; }
+  if (!medicaoModoBusca) return;
+  if (!resultadosMedicao.length) {
+    cont.innerHTML = medicaoModoBusca === 'servico'
+      ? '<div class="empty">Nenhum registro encontrado com esse serviço ainda.</div>'
+      : '<div class="empty">Nenhum registro encontrado pra essa pessoa ainda.</div>';
+    return;
+  }
   const filtrado = listaServicosFiltradaMedicao();
   // tira da seleção quem não está mais visível (ex.: acabou de ser marcado
   // como medido por outra aba, ou ficou fora do período escolhido)
@@ -2152,7 +2240,19 @@ function atualizarContagemMedicao() {
   document.getElementById('btnFinalizarMedicao').disabled = n === 0;
 }
 
+// Dispatcher (2026-10-13): o botão "Gerar relatório e finalizar medição" é
+// um só, mas o que ele faz depende do modo de busca atual — ver
+// medicaoModoBusca. Busca "por pessoa" (como sempre foi): 1 lote só, de 1
+// pessoa, com relatório na hora. Busca "por serviço" (novo, pode misturar
+// gente diferente na seleção): 1 lote POR PESSOA, sem abrir relatório na
+// hora (tem gente demais pra um relatório só) — os lotes novos aparecem
+// prontos pra abrir em "📋 Todas as medições", logo abaixo.
 async function finalizarMedicao() {
+  if (medicaoModoBusca === 'servico') { await finalizarMedicaoPorServico(); return; }
+  await finalizarMedicaoPorPessoa();
+}
+
+async function finalizarMedicaoPorPessoa() {
   const fid = document.getElementById('selMedicaoFunc').value;
   const f = funcionariosPorId[fid];
   if (!fid || !f || !selecaoMedicao.size) return;
@@ -2180,6 +2280,68 @@ async function finalizarMedicao() {
     mostrarRelatorioMedicao(f, atualizados, lote);
     await buscarParaMedicao(); // recarrega a lista (os marcados agora somem do filtro "não medidos")
     await carregarTodasMedicoes(); // o lote novo já aparece no filtro geral, sem precisar trocar de aba
+  } catch (e) {
+    showToast('⚠️ Erro ao finalizar medição: ' + (e.message || e));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Gerar relatório e finalizar medição';
+  }
+}
+
+// -------- finalizar a partir da busca "por serviço" (2026-10-13) --------
+// A seleção pode ter registros de pessoas diferentes (ex.: buscou "Reboco" e
+// marcou serviços do Carlos e do Marcos juntos). Cada medição (`medicoes`)
+// só se liga a UMA pessoa (`funcionario_id`), então aqui agrupamos a
+// seleção por pessoa — usando sempre o funcionário responsável
+// (`funcionario_id_1`) de cada registro, o mesmo "dono" que já aparece
+// primeiro no cartão — e criamos um lote por grupo. Como pode sair mais de
+// um relatório de uma vez, não abre nenhum na hora: depois de finalizar, dá
+// pra abrir cada um pela lista "📋 Todas as medições" (ela recarrega
+// sozinha logo em seguida).
+async function finalizarMedicaoPorServico() {
+  const servicoId = document.getElementById('selMedicaoServico').value;
+  const servico = tiposServicoPorId[servicoId];
+  if (!servicoId || !selecaoMedicao.size) return;
+  const ids = [...selecaoMedicao];
+
+  const porPessoa = new Map(); // funcionario_id_1 -> [ids]
+  ids.forEach(id => {
+    const r = registrosPorId[id];
+    if (!r) return;
+    const fid = r.funcionario_id_1;
+    if (!porPessoa.has(fid)) porPessoa.set(fid, []);
+    porPessoa.get(fid).push(id);
+  });
+  const resumoPorPessoa = [...porPessoa.entries()]
+    .map(([fid, lista]) => `${(funcionariosPorId[fid] || {}).nome || '(?)'} (${lista.length})`)
+    .join('\n');
+
+  if (!confirm(`Finalizar a medição de "${servico ? servico.nome : '(serviço)'}" com ${ids.length} serviço(s), de ${porPessoa.size} pessoa(s)?\n\n${resumoPorPessoa}\n\nIsso marca todos como medidos e gera 1 medição pra cada pessoa (os relatórios ficam prontos pra abrir na lista "Todas as medições", logo abaixo). Não precisa ter pressa — dá pra desmarcar um serviço individual depois, aqui mesmo nesta aba.`)) return;
+  if (!sb) { showToast('⚠️ Sem conexão com o banco.'); return; }
+  const btn = document.getElementById('btnFinalizarMedicao');
+  btn.disabled = true;
+  btn.textContent = 'Gerando...';
+  try {
+    for (const [fid, listaIds] of porPessoa) {
+      const { data: lote, error: errLote } = await sb.from('medicoes')
+        .insert({ funcionario_id: fid, medido_por: 'Junior', quantidade_servicos: listaIds.length })
+        .select().single();
+      if (errLote) throw errLote;
+
+      const { data: atualizados, error: errUpdate } = await sb.from('rdo_registros')
+        .update({ medido: true, medicao_id: lote.id })
+        .in('id', listaIds)
+        .select();
+      if (errUpdate) throw errUpdate;
+
+      atualizados.forEach(r => atualizarRegistroEmListas(r.id, { medido: true, medicao_id: lote.id }));
+    }
+    selecaoMedicao.clear();
+    registrarEdicao('criar', `Finalizou medição por serviço ("${servico ? servico.nome : '(serviço)'}") com ${ids.length} serviço(s), em ${porPessoa.size} pessoa(s)`);
+    showToast(`✅ Medição finalizada: ${ids.length} serviço(s) em ${porPessoa.size} pessoa(s). Os relatórios estão em "Todas as medições", aqui embaixo.`);
+    await buscarPorServicoMedicao(); // recarrega a lista (os marcados agora somem do filtro "não medidos")
+    await carregarTodasMedicoes(); // os lotes novos já aparecem na lista geral, prontos pra abrir
+    document.getElementById('medicaoHistoricoGeralWrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (e) {
     showToast('⚠️ Erro ao finalizar medição: ' + (e.message || e));
   } finally {
