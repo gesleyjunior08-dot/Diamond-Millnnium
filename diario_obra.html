@@ -554,7 +554,7 @@ window.addEventListener('unhandledrejection', function(e) {
           </select>
         </div>
 
-        <div class="busca-box medicao-periodo-box">
+        <div class="busca-box medicao-periodo-box" id="medicaoPeriodoPessoaBox">
           <label class="medicao-periodo-label">Período</label>
           <input type="date" id="inpMedicaoDataDe" onchange="renderListaMedicao(); renderHistoricoMedicao();">
           <span class="medicao-periodo-ate">até</span>
@@ -578,6 +578,19 @@ window.addEventListener('unhandledrejection', function(e) {
         <div class="medicao-historico" id="medicaoHistoricoWrap" style="display:none;">
           <h2 class="block-title">Medições anteriores dessa pessoa</h2>
           <div id="medicaoHistorico"></div>
+        </div>
+
+        <div class="medicao-historico" id="medicaoHistoricoGeralWrap">
+          <h2 class="block-title">📋 Todas as medições</h2>
+          <div class="busca-box medicao-periodo-box">
+            <label class="medicao-periodo-label">Período</label>
+            <input type="date" id="inpMedicaoGeralDataDe" onchange="renderHistoricoGeralMedicao()">
+            <span class="medicao-periodo-ate">até</span>
+            <input type="date" id="inpMedicaoGeralDataAte" onchange="renderHistoricoGeralMedicao()">
+            <button type="button" class="link-btn" onclick="limparPeriodoGeralMedicao()">Limpar</button>
+          </div>
+          <div class="medicao-periodo-sub">Mostra as medições já finalizadas de TODAS as pessoas nesse período — não precisa escolher ninguém ali em cima, é um filtro geral pra ver tudo que foi medido numa época.</div>
+          <div id="medicaoHistoricoGeral"><div class="loading">Carregando...</div></div>
         </div>
       </div>
     </div>
@@ -1945,11 +1958,13 @@ let medicaoDesbloqueada = false;
 let resultadosMedicao = []; // último resultado bruto (sem filtro) da pessoa escolhida na aba Medição
 let selecaoMedicao = new Set(); // ids de rdo_registros marcados "incluir nessa medição" (seleção só visual, até finalizar)
 let medicoesDaPessoaAtual = []; // histórico de lotes já finalizados pra essa pessoa
+let todasMedicoes = []; // TODOS os lotes já finalizados, de qualquer pessoa — pro filtro geral por período (2026-10-13)
 
 function abrirAbaMedicao() {
   if (medicaoDesbloqueada) {
     document.getElementById('medicaoLock').style.display = 'none';
     document.getElementById('medicaoConteudo').style.display = 'block';
+    carregarTodasMedicoes();
   }
 }
 
@@ -2164,6 +2179,7 @@ async function finalizarMedicao() {
     registrarEdicao('criar', `Finalizou medição de "${f.nome}" com ${ids.length} serviço(s)`);
     mostrarRelatorioMedicao(f, atualizados, lote);
     await buscarParaMedicao(); // recarrega a lista (os marcados agora somem do filtro "não medidos")
+    await carregarTodasMedicoes(); // o lote novo já aparece no filtro geral, sem precisar trocar de aba
   } catch (e) {
     showToast('⚠️ Erro ao finalizar medição: ' + (e.message || e));
   } finally {
@@ -2199,6 +2215,54 @@ function renderHistoricoMedicao() {
       <button type="button" class="btn-secondary" onclick="reabrirRelatorioMedicao(${m.id})">Ver relatório</button>
     </div>
   `).join('');
+}
+
+// -------- filtro GERAL de período (2026-10-13) — TODAS as medições já
+// finalizadas, de qualquer pessoa, sem precisar buscar ninguém ali em cima.
+// Pedido do usuário: "o fitro da medição eu quero um filtro geral. que
+// filtra todas as medições que fiz nessa epoca". Usa o mesmo helper
+// dataDentroDoPeriodo (mas com os próprios campos de data, independentes
+// do filtro de período "por pessoa" acima).
+async function carregarTodasMedicoes() {
+  if (!sb) return;
+  const { data, error } = await sb.from('medicoes').select('*').order('criado_em', { ascending: false });
+  if (error) { document.getElementById('medicaoHistoricoGeral').innerHTML = '<div class="empty">Erro ao carregar: ' + escapeHtml(error.message) + '</div>'; return; }
+  todasMedicoes = data || [];
+  renderHistoricoGeralMedicao();
+}
+function periodoGeralMedicaoAtivo() {
+  const de = document.getElementById('inpMedicaoGeralDataDe').value || null;
+  const ate = document.getElementById('inpMedicaoGeralDataAte').value || null;
+  return { de, ate };
+}
+function limparPeriodoGeralMedicao() {
+  document.getElementById('inpMedicaoGeralDataDe').value = '';
+  document.getElementById('inpMedicaoGeralDataAte').value = '';
+  renderHistoricoGeralMedicao();
+}
+function renderHistoricoGeralMedicao() {
+  const cont = document.getElementById('medicaoHistoricoGeral');
+  if (!todasMedicoes.length) { cont.innerHTML = '<div class="empty">Nenhuma medição finalizada ainda.</div>'; return; }
+  const { de, ate } = periodoGeralMedicaoAtivo();
+  const filtradas = todasMedicoes.filter(m => dataDentroDoPeriodo((m.criado_em || '').slice(0, 10), de, ate));
+  if (!filtradas.length) { cont.innerHTML = '<div class="empty">Nenhuma medição nesse período.</div>'; return; }
+  cont.innerHTML = filtradas.map(m => {
+    const f = funcionariosPorId[m.funcionario_id];
+    return `
+    <div class="medicao-historico-item">
+      <span class="info"><b>${fmtData((m.criado_em || '').slice(0,10))}</b> · ${escapeHtml(f ? f.nome : '(pessoa não encontrada)')} · ${m.quantidade_servicos} serviço(s) · medido por ${escapeHtml(m.medido_por)}</span>
+      <button type="button" class="btn-secondary" onclick="reabrirRelatorioMedicaoGeral(${m.id})">Ver relatório</button>
+    </div>
+  `;
+  }).join('');
+}
+async function reabrirRelatorioMedicaoGeral(medicaoId) {
+  const m = todasMedicoes.find(x => x.id === medicaoId);
+  const f = m ? funcionariosPorId[m.funcionario_id] : null;
+  if (!m || !f || !sb) { showToast('⚠️ Não achei essa medição (ou a pessoa não está mais na lista de funcionários).'); return; }
+  const { data, error } = await sb.from('rdo_registros').select('*').eq('medicao_id', medicaoId).order('data_inicio', { ascending: false });
+  if (error) { showToast('⚠️ Erro ao abrir relatório: ' + error.message); return; }
+  mostrarRelatorioMedicao(f, data || [], m);
 }
 
 async function reabrirRelatorioMedicao(medicaoId) {
