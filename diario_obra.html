@@ -121,6 +121,7 @@
   .rdo-pessoas{font-size:13px;margin-bottom:2px;}
   .rdo-obs{font-size:12.5px;color:var(--brand-graymid);background:var(--concrete);padding:8px 10px;border-radius:8px;margin-top:6px;white-space:pre-wrap;}
   .rdo-retrabalho{font-size:12px;font-weight:600;color:#8a4b00;background:#fff2df;padding:3px 8px;border-radius:6px;display:inline-block;margin-top:3px;}
+  .medicao-atraso{font-size:12px;font-weight:700;color:#A33E00;background:#FFEAD1;border:1px solid #F3C98C;padding:4px 9px;border-radius:6px;display:inline-block;margin-top:5px;}
   .rdo-foto-wrap{position:relative;display:inline-block;margin-top:8px;}
   .rdo-foto{width:96px;height:96px;object-fit:cover;border-radius:8px;display:block;cursor:pointer;background:var(--concrete);}
   .rdo-foto-zoom{position:absolute;bottom:-3px;right:-3px;width:24px;height:24px;border-radius:50%;background:rgba(28,28,30,0.75);border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1;color:#fff;cursor:pointer;}
@@ -227,6 +228,9 @@
   .relatorio-tabela th, .relatorio-tabela td{border:1px solid #ddd;padding:7px 9px;font-size:12.5px;text-align:left;vertical-align:top;}
   .relatorio-tabela th{background:var(--charcoal);color:#fff;font-size:11px;text-transform:uppercase;}
   .relatorio-total{text-align:right;font-size:13.5px;font-weight:700;color:var(--charcoal);margin-bottom:34px;}
+  .relatorio-consolidado-pessoa{margin-bottom:22px;}
+  .relatorio-consolidado-pessoa h3{font-size:14px;color:var(--charcoal);border-bottom:2px solid var(--charcoal);padding-bottom:4px;margin-bottom:10px;}
+  .relatorio-subtotal{text-align:right;font-size:12px;font-weight:700;color:var(--brand-graymid);margin-top:-12px;margin-bottom:4px;}
   .relatorio-assinatura{display:flex;justify-content:space-between;gap:20px;margin-top:50px;}
   .relatorio-assinatura .linha{flex:1;text-align:center;font-size:11.5px;color:var(--brand-graymid);}
   .relatorio-assinatura .linha .traco{border-top:1px solid #999;margin-bottom:6px;padding-top:36px;}
@@ -601,6 +605,7 @@ window.addEventListener('unhandledrejection', function(e) {
             <button type="button" class="link-btn" onclick="limparPeriodoGeralMedicao()">Limpar</button>
           </div>
           <div class="medicao-periodo-sub">Mostra as medições já finalizadas de TODAS as pessoas nesse período — não precisa escolher ninguém ali em cima, é um filtro geral pra ver tudo que foi medido numa época.</div>
+          <button type="button" class="btn-secondary" id="btnRelatorioConsolidadoMedicao" onclick="gerarRelatorioConsolidadoMedicao()" style="width:100%;margin-bottom:12px;">🖨️ Relatório consolidado deste período (todas as pessoas juntas)</button>
           <div id="medicaoHistoricoGeral"><div class="loading">Carregando...</div></div>
         </div>
       </div>
@@ -1986,6 +1991,17 @@ let todasMedicoes = []; // TODOS os lotes já finalizados, de qualquer pessoa �
 // As duas buscas são excludentes: escolher uma limpa a outra (ver
 // limparMedicaoServicoSilencioso / limparMedicaoFuncComboSilencioso).
 let medicaoModoBusca = null;
+// Quantos dias sem medir um serviço já pendente precisa ter pra ganhar o
+// aviso "⚠️ X dias sem medir" no cartão (2026-10-13, sugestão aceita pelo
+// usuário). Ajustável aqui, sem precisar mexer em mais nada.
+const DIAS_SERVICO_ANTIGO = 15;
+function diasSemMedir(r) {
+  const dataRef = r.data_fim || r.data_inicio;
+  if (!dataRef) return 0;
+  const hoje = new Date(hojeStr() + 'T00:00:00');
+  const ref = new Date(dataRef + 'T00:00:00');
+  return Math.round((hoje - ref) / 86400000);
+}
 
 function abrirAbaMedicao() {
   if (medicaoDesbloqueada) {
@@ -2182,6 +2198,9 @@ function renderCardMedicao(r) {
   const pessoas = montarPessoasRegistro(r, f1, f2);
   const localLabel = labelLocalRegistro(r);
   const badgeTipoApto = r.tipo_apto ? `<span class="badge-tipo badge-${r.tipo_apto}">${r.tipo_apto}</span>` : '';
+  const diasAtraso = !r.medido ? diasSemMedir(r) : 0;
+  const avisoAtraso = (!r.medido && diasAtraso >= DIAS_SERVICO_ANTIGO)
+    ? `<div class="medicao-atraso">⚠️ ${diasAtraso} dias sem medir</div>` : '';
   return `
     <div class="rdo-card${r.medido ? ' medido' : ''}${marcado ? ' selecionado' : ''}">
       <div class="rdo-card-top">
@@ -2189,6 +2208,7 @@ function renderCardMedicao(r) {
         <span class="rdo-periodo">${periodo}</span>
       </div>
       <div class="rdo-servico">${escapeHtml(servico ? servico.nome : '(serviço não encontrado)')}</div>
+      ${avisoAtraso}
       ${r.retrabalho ? `<div class="rdo-retrabalho">🔁 Retrabalho: ${escapeHtml(r.retrabalho)}</div>` : ''}
       <div class="rdo-pessoas">${escapeHtml(pessoas || '—')}</div>
       ${r.observacao ? `<div class="rdo-obs">${escapeHtml(r.observacao)}</div>` : ''}
@@ -2425,6 +2445,105 @@ async function reabrirRelatorioMedicaoGeral(medicaoId) {
   const { data, error } = await sb.from('rdo_registros').select('*').eq('medicao_id', medicaoId).order('data_inicio', { ascending: false });
   if (error) { showToast('⚠️ Erro ao abrir relatório: ' + error.message); return; }
   mostrarRelatorioMedicao(f, data || [], m);
+}
+
+// -------- relatório CONSOLIDADO (2026-10-13) — junta todos os lotes do
+// período filtrado em "📋 Todas as medições" num único relatório pra
+// imprimir/baixar, agrupado por pessoa, com subtotal de cada uma e total
+// geral no fim. Pensado pra levar pra quem cuida do pagamento/financeiro
+// sem precisar abrir relatório lote por lote.
+async function gerarRelatorioConsolidadoMedicao() {
+  const { de, ate } = periodoGeralMedicaoAtivo();
+  const filtradas = todasMedicoes.filter(m => dataDentroDoPeriodo((m.criado_em || '').slice(0, 10), de, ate));
+  if (!filtradas.length) { showToast('⚠️ Nenhuma medição nesse período pra gerar relatório.'); return; }
+  if (!sb) { showToast('⚠️ Sem conexão com o banco.'); return; }
+  const btn = document.getElementById('btnRelatorioConsolidadoMedicao');
+  btn.disabled = true;
+  btn.textContent = 'Gerando...';
+  try {
+    const loteIds = filtradas.map(m => m.id);
+    const { data, error } = await sb.from('rdo_registros').select('*').in('medicao_id', loteIds);
+    if (error) throw error;
+    mostrarRelatorioConsolidadoMedicao(filtradas, data || [], { de, ate });
+  } catch (e) {
+    showToast('⚠️ Erro ao gerar relatório consolidado: ' + (e.message || e));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🖨️ Relatório consolidado deste período (todas as pessoas juntas)';
+  }
+}
+
+function mostrarRelatorioConsolidadoMedicao(lotes, registros, periodo) {
+  const porLote = {};
+  registros.forEach(r => { (porLote[r.medicao_id] = porLote[r.medicao_id] || []).push(r); });
+
+  // agrupa os lotes por pessoa (um lote só pertence a 1 pessoa, mas o
+  // período pode ter vários lotes da mesma pessoa, em datas diferentes)
+  const porPessoa = new Map(); // funcionario_id -> { f, lotes: [...] }
+  lotes.forEach(lote => {
+    const fid = lote.funcionario_id;
+    if (!porPessoa.has(fid)) porPessoa.set(fid, { f: funcionariosPorId[fid], lotes: [] });
+    porPessoa.get(fid).lotes.push(lote);
+  });
+  const porPessoaOrdenado = [...porPessoa.entries()].sort((a, b) => {
+    const na = (a[1].f || {}).nome || '';
+    const nb = (b[1].f || {}).nome || '';
+    return na.localeCompare(nb, 'pt-BR');
+  });
+
+  let totalGeral = 0;
+  const blocosPessoas = porPessoaOrdenado.map(([, grupo]) => {
+    const f = grupo.f;
+    let totalPessoa = 0;
+    const linhas = grupo.lotes
+      .slice()
+      .sort((a, b) => (a.criado_em || '').localeCompare(b.criado_em || ''))
+      .map(lote => {
+        const regs = (porLote[lote.id] || []).slice().sort((a, b) => (a.data_inicio || '').localeCompare(b.data_inicio || ''));
+        totalPessoa += regs.length;
+        return regs.map(r => {
+          const servico = tiposServicoPorId[r.tipo_servico_id];
+          const periodoServico = r.data_fim ? `${fmtData(r.data_inicio)} – ${fmtData(r.data_fim)}` : fmtData(r.data_inicio);
+          return `<tr>
+            <td>${fmtData((lote.criado_em || '').slice(0, 10))}</td>
+            <td>${escapeHtml(labelLocalRegistro(r))}</td>
+            <td>${escapeHtml(servico ? servico.nome : '—')}</td>
+            <td>${periodoServico}</td>
+          </tr>`;
+        }).join('');
+      }).join('');
+    totalGeral += totalPessoa;
+    return `
+      <div class="relatorio-consolidado-pessoa">
+        <h3>${escapeHtml(f ? f.nome : '(pessoa não encontrada)')}${f && f.empresa ? ' — ' + escapeHtml(f.empresa) : ''}</h3>
+        <table class="relatorio-tabela">
+          <thead><tr><th>Medido em</th><th>Local</th><th>Serviço</th><th>Período</th></tr></thead>
+          <tbody>${linhas || '<tr><td colspan="4">Nenhum serviço.</td></tr>'}</tbody>
+        </table>
+        <div class="relatorio-subtotal">Subtotal de ${escapeHtml(f ? f.nome : '(pessoa)')}: ${totalPessoa} serviço(s)</div>
+      </div>
+    `;
+  }).join('');
+
+  const periodoLabel = (periodo.de || periodo.ate)
+    ? `${periodo.de ? fmtData(periodo.de) : '—'} a ${periodo.ate ? fmtData(periodo.ate) : '—'}`
+    : 'Todos os períodos (sem filtro)';
+
+  document.getElementById('relatorioMedicaoDoc').innerHTML = `
+    <h1>Relatório Consolidado de Medições</h1>
+    <div class="relatorio-sub">Diamond Millennium</div>
+    <div class="relatorio-info">
+      <div class="campo"><b>Período</b>${periodoLabel}</div>
+      <div class="campo"><b>Pessoas</b>${porPessoa.size}</div>
+      <div class="campo"><b>Lotes de medição</b>${lotes.length}</div>
+    </div>
+    ${blocosPessoas}
+    <div class="relatorio-total">Total geral do período: ${totalGeral} serviço(s), ${porPessoa.size} pessoa(s), ${lotes.length} lote(s)</div>
+    <div class="relatorio-assinatura">
+      <div class="linha"><div class="traco"></div>Gerado por: Junior</div>
+    </div>
+  `;
+  document.getElementById('relatorioMedicaoOverlay').classList.add('show');
 }
 
 async function reabrirRelatorioMedicao(medicaoId) {
