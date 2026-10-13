@@ -193,9 +193,16 @@
   .medicao-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:#fff;border:1px solid #ddd;border-radius:10px;padding:10px 12px;margin-bottom:12px;}
   .medicao-toolbar .contagem{font-size:13px;font-weight:700;color:var(--charcoal);}
   .medicao-toolbar .links{display:flex;gap:12px;}
+  .medicao-periodo-box{align-items:center;flex-wrap:wrap;margin-bottom:4px;}
+  .medicao-periodo-label{flex:0 0 auto;font-size:12.5px;font-weight:700;color:var(--brand-graymid);}
+  .medicao-periodo-box input[type=date]{flex:1;min-width:128px;padding:10px 8px;}
+  .medicao-periodo-ate{flex:0 0 auto;font-size:12.5px;color:var(--brand-graymid);}
+  .medicao-periodo-box .link-btn{flex:0 0 auto;padding-top:0;}
+  .medicao-periodo-sub{font-size:11px;color:var(--brand-graymid);margin:-6px 2px 14px;line-height:1.35;}
   .rdo-card.selecionado{border-left-color:var(--yellow);background:#FFFBEF;}
   .medicao-check-row{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px dashed #e3e3e3;font-size:13px;font-weight:700;color:var(--charcoal);cursor:pointer;}
   .medicao-check-row input{width:auto;margin:0;transform:scale(1.2);}
+  .medicao-desmarcar-btn{width:100%;margin-top:8px;padding:9px;border:1px solid #F3C6C6;border-radius:8px;background:#FFF5F5;color:#C0392B;font-size:12px;font-weight:700;cursor:pointer;}
   .medicao-finalizar{width:100%;padding:14px;border:none;border-radius:10px;background:var(--green);color:#fff;font-size:15px;font-weight:700;cursor:pointer;min-height:48px;margin-top:4px;}
   .medicao-finalizar:disabled{background:var(--brand-graylight);cursor:not-allowed;}
   .medicao-historico{margin-top:26px;}
@@ -376,6 +383,12 @@ window.addEventListener('unhandledrejection', function(e) {
           <select id="selFunc2" style="display:none"></select>
         </div>
 
+        <div class="form-group">
+          <label>Outros nomes (opcional)</label>
+          <input type="text" id="inpNomesExtras" placeholder="Ex.: Zé da obra, ajudante avulso...">
+          <div class="unidade-hint">Pra gente que ajudou mas não tem cadastro no sistema — fica só escrito aqui no Diário de Obra, não entra na Presença nem em nenhuma busca por funcionário.</div>
+        </div>
+
         <div class="form-row">
           <div class="form-group">
             <label>Data de início</label>
@@ -539,6 +552,15 @@ window.addEventListener('unhandledrejection', function(e) {
             <option value="sim">Já medidos</option>
           </select>
         </div>
+
+        <div class="busca-box medicao-periodo-box">
+          <label class="medicao-periodo-label">Período</label>
+          <input type="date" id="inpMedicaoDataDe" onchange="renderListaMedicao(); renderHistoricoMedicao();">
+          <span class="medicao-periodo-ate">até</span>
+          <input type="date" id="inpMedicaoDataAte" onchange="renderListaMedicao(); renderHistoricoMedicao();">
+          <button type="button" class="link-btn" onclick="limparPeriodoMedicao()">Limpar</button>
+        </div>
+        <div class="medicao-periodo-sub">Filtra os serviços (pela data de início) e as medições já feitas (pela data em que foram finalizadas) dessa pessoa.</div>
 
         <div class="medicao-toolbar" id="medicaoToolbar" style="display:none;">
           <span class="contagem" id="medicaoContagem">0 selecionados</span>
@@ -970,6 +992,19 @@ function labelLocalRegistro(r) {
   if (tipo === 'corredor') return `Corredor do ${r.andar}º andar`;
   if (tipo === 'balancinho') return `Balancinho ${String(r.numero_balancinho).padStart(2, '0')}`;
   return `${r.andar}º andar, apto ${String(r.apartamento).padStart(2, '0')}`;
+}
+
+// Monta o texto de "quem fez" um registro: funcionários cadastrados (f1/f2,
+// já resolvidos pelo chamador) + nomes avulsos digitados em "Outros nomes"
+// (2026-10-13 — texto livre, sem cadastro, só pra constar no Diário de
+// Obra; nunca vira linha em funcionarios nem entra em busca por
+// funcionário/presença). Aceita vários nomes separados por vírgula.
+function montarPessoasRegistro(r, f1, f2) {
+  const cadastrados = [f1, f2].filter(Boolean).map(f => f.nome);
+  const extras = (r.nomes_extras || '')
+    .split(',').map(s => s.trim()).filter(Boolean)
+    .map(nome => `${nome} (sem cadastro)`);
+  return [...cadastrados, ...extras].join(' e ');
 }
 
 // ============================================================
@@ -1561,6 +1596,7 @@ function limparFormulario() {
   document.getElementById('selFunc2').value = '';
   sincronizarTextoCombo('selFunc1', 'inpFunc1Texto', 'btnLimparFunc1');
   sincronizarTextoCombo('selFunc2', 'inpFunc2Texto', 'btnLimparFunc2');
+  document.getElementById('inpNomesExtras').value = '';
   document.getElementById('inpDataFim').value = '';
   document.getElementById('inpObs').value = '';
   document.getElementById('inpFoto').value = '';
@@ -1604,6 +1640,7 @@ function editarRegistro(id) {
   document.getElementById('selFunc2').value = r.funcionario_id_2 || '';
   sincronizarTextoCombo('selFunc1', 'inpFunc1Texto', 'btnLimparFunc1');
   sincronizarTextoCombo('selFunc2', 'inpFunc2Texto', 'btnLimparFunc2');
+  document.getElementById('inpNomesExtras').value = r.nomes_extras || '';
   document.getElementById('inpDataInicio').value = r.data_inicio || '';
   document.getElementById('inpDataFim').value = r.data_fim || '';
   document.getElementById('inpObs').value = r.observacao || '';
@@ -1681,6 +1718,7 @@ async function salvarRegistro() {
 
   const observacao = document.getElementById('inpObs').value.trim() || null;
   const retrabalho = document.getElementById('inpRetrabalho').value.trim() || null;
+  const nomesExtras = document.getElementById('inpNomesExtras').value.trim() || null;
   const fotoFile = document.getElementById('inpFoto').files[0] || null;
   const removerFoto = document.getElementById('chkRemoverFoto').checked;
   const idEmEdicao = registroEditandoId;
@@ -1713,6 +1751,7 @@ async function salvarRegistro() {
       tipo_servico_id: servicoId,
       funcionario_id_1: f1,
       funcionario_id_2: f2,
+      nomes_extras: nomesExtras,
       data_inicio: dataInicio,
       data_fim: dataFim,
       observacao,
@@ -1762,7 +1801,7 @@ function renderCardRegistro(r) {
   const f1 = funcionariosPorId[r.funcionario_id_1];
   const f2 = r.funcionario_id_2 ? funcionariosPorId[r.funcionario_id_2] : null;
   const periodo = r.data_fim ? `${fmtData(r.data_inicio)} – ${fmtData(r.data_fim)}` : `${fmtData(r.data_inicio)} – em andamento`;
-  const pessoas = [f1, f2].filter(Boolean).map(f => f.nome).join(' e ');
+  const pessoas = montarPessoasRegistro(r, f1, f2);
   const fotoUrl = urlFotoRdo(r.foto_path);
   const localLabel = labelLocalRegistro(r);
   const legendaFoto = `${localLabel} — ${servico ? servico.nome : ''}`;
@@ -1942,19 +1981,49 @@ async function buscarParaMedicao() {
   carregarHistoricoMedicao(fid);
 }
 
+// Período (2026-10-13) — filtro opcional de data que vale pra duas listas
+// desta aba ao mesmo tempo: os SERVIÇOS (pela data_inicio de cada um) e o
+// HISTÓRICO de medições já feitas (pela data em que cada lote foi
+// finalizado, criado_em) — ver renderListaMedicao() e
+// renderHistoricoMedicao(). Um "De" sem "Até" (ou vice-versa) já filtra
+// normalmente, em aberto de um dos lados.
+function periodoMedicaoAtivo() {
+  const de = document.getElementById('inpMedicaoDataDe').value || null;
+  const ate = document.getElementById('inpMedicaoDataAte').value || null;
+  return { de, ate };
+}
+function dataDentroDoPeriodo(dataStr, de, ate) {
+  if (!dataStr) return !de && !ate; // registro sem data só passa se não tem filtro de período
+  if (de && dataStr < de) return false;
+  if (ate && dataStr > ate) return false;
+  return true;
+}
+function limparPeriodoMedicao() {
+  document.getElementById('inpMedicaoDataDe').value = '';
+  document.getElementById('inpMedicaoDataAte').value = '';
+  renderListaMedicao();
+  renderHistoricoMedicao();
+}
+
+function listaServicosFiltradaMedicao() {
+  const filtro = document.getElementById('selFiltroMedicaoStatus').value;
+  const { de, ate } = periodoMedicaoAtivo();
+  return filtrarPorMedido(resultadosMedicao, filtro)
+    .filter(r => dataDentroDoPeriodo(r.data_inicio, de, ate));
+}
+
 function renderListaMedicao() {
   const cont = document.getElementById('listaMedicao');
   const fid = document.getElementById('selMedicaoFunc').value;
   if (!fid) return;
   if (!resultadosMedicao.length) { cont.innerHTML = '<div class="empty">Nenhum registro encontrado pra essa pessoa ainda.</div>'; return; }
-  const filtro = document.getElementById('selFiltroMedicaoStatus').value;
-  const filtrado = filtrarPorMedido(resultadosMedicao, filtro);
+  const filtrado = listaServicosFiltradaMedicao();
   // tira da seleção quem não está mais visível (ex.: acabou de ser marcado
-  // como medido por outra aba e sumiu do filtro "não medidos")
+  // como medido por outra aba, ou ficou fora do período escolhido)
   const idsVisiveis = new Set(filtrado.map(r => r.id));
   [...selecaoMedicao].forEach(id => { if (!idsVisiveis.has(id)) selecaoMedicao.delete(id); });
   if (!filtrado.length) {
-    cont.innerHTML = '<div class="empty">Nenhum registro ' + (filtro === 'sim' ? 'medido' : filtro === 'nao' ? 'não medido' : '') + ' pra essa pessoa.</div>';
+    cont.innerHTML = '<div class="empty">Nenhum registro encontrado com esse filtro/período.</div>';
   } else {
     cont.innerHTML = filtrado.map(renderCardMedicao).join('');
   }
@@ -1963,16 +2032,16 @@ function renderListaMedicao() {
 
 // cartão de serviço pra aba Medição — mesmo visual do card já usado em
 // "Por funcionário" (renderCardRegistro), mas sem os botões de editar/
-// excluir (aqui é só consulta) e com a linha de "incluir nesta medição"
-// no lugar do check "Marcar como medido" (esse continua existindo lá na
-// outra aba, pra correção pontual de um registro só).
+// excluir (aqui é só consulta), com a linha de "incluir nesta medição" no
+// lugar do check "Marcar como medido" (removido do resto do Diário de
+// Obra), e com o botão "Desmarcar" quando já está medido.
 function renderCardMedicao(r) {
   const marcado = selecaoMedicao.has(r.id);
   const servico = tiposServicoPorId[r.tipo_servico_id];
   const f1 = funcionariosPorId[r.funcionario_id_1];
   const f2 = r.funcionario_id_2 ? funcionariosPorId[r.funcionario_id_2] : null;
   const periodo = r.data_fim ? `${fmtData(r.data_inicio)} – ${fmtData(r.data_fim)}` : `${fmtData(r.data_inicio)} – em andamento`;
-  const pessoas = [f1, f2].filter(Boolean).map(f => f.nome).join(' e ');
+  const pessoas = montarPessoasRegistro(r, f1, f2);
   const localLabel = labelLocalRegistro(r);
   const badgeTipoApto = r.tipo_apto ? `<span class="badge-tipo badge-${r.tipo_apto}">${r.tipo_apto}</span>` : '';
   return `
@@ -1989,8 +2058,30 @@ function renderCardMedicao(r) {
         <input type="checkbox" ${marcado ? 'checked' : ''} onchange="toggleSelecaoMedicao(${r.id}, this.checked)">
         <span>${marcado ? '✅ Incluída nesta medição' : (r.medido ? 'Já medida antes — incluir de novo' : 'Incluir nesta medição')}</span>
       </label>
+      ${r.medido ? `<button type="button" class="medicao-desmarcar-btn" onclick="desmarcarServicoMedicao(${r.id})">↩️ Desmarcar essa medição (corrigir engano)</button>` : ''}
     </div>
   `;
+}
+
+// -------- desfazer a medição de UM serviço só, direto (sem criar lote novo) --------
+// Pensado pra corrigir engano (ex.: incluiu o serviço errado numa medição
+// antiga) sem precisar mexer em SQL. Só existe aqui dentro, com a aba já
+// destrancada pela senha — tirado do Diário de Obra normal em 2026-10-13
+// (ver comentário mais acima, perto de filtrarPorMedido) justamente pra
+// não ficar solto pra qualquer pessoa logada mexer.
+async function desmarcarServicoMedicao(id) {
+  const r = registrosPorId[id];
+  if (!r) return;
+  const servico = tiposServicoPorId[r.tipo_servico_id];
+  const descricao = `${labelLocalRegistro(r)} — ${servico ? servico.nome : '(serviço)'}`;
+  if (!confirm(`Desmarcar esse serviço como medido?\n\n${descricao}\n\nEle volta a aparecer como "não medido" e some do relatório da medição em que estava (o relatório antigo continua existindo, só não bate mais 100% com o que está marcado hoje).`)) return;
+  if (!sb) { showToast('⚠️ Sem conexão com o banco.'); return; }
+  const { data, error } = await sb.from('rdo_registros')
+    .update({ medido: false, medicao_id: null }).eq('id', id).select().single();
+  if (error) { showToast('⚠️ Erro ao desmarcar: ' + error.message); return; }
+  atualizarRegistroEmListas(id, { medido: false, medicao_id: null });
+  showToast('↩️ Desmarcado — volta a aparecer como não medido.');
+  registrarEdicao('editar', `Desmarcou como medido (correção manual) o registro de ${descricao}`);
 }
 
 function toggleSelecaoMedicao(id, checked) {
@@ -1998,8 +2089,7 @@ function toggleSelecaoMedicao(id, checked) {
   renderListaMedicao();
 }
 function selecionarTodosMedicao() {
-  const filtro = document.getElementById('selFiltroMedicaoStatus').value;
-  filtrarPorMedido(resultadosMedicao, filtro).forEach(r => selecaoMedicao.add(r.id));
+  listaServicosFiltradaMedicao().forEach(r => selecaoMedicao.add(r.id));
   renderListaMedicao();
 }
 function limparSelecaoMedicao() {
@@ -2017,7 +2107,7 @@ async function finalizarMedicao() {
   const f = funcionariosPorId[fid];
   if (!fid || !f || !selecaoMedicao.size) return;
   const ids = [...selecaoMedicao];
-  if (!confirm(`Finalizar a medição de "${f.nome}" com ${ids.length} serviço(s)?\n\nIsso marca todos como medidos e gera o relatório. Não precisa ter pressa — dá pra marcar/desmarcar um registro individual depois, na aba "Por funcionário".`)) return;
+  if (!confirm(`Finalizar a medição de "${f.nome}" com ${ids.length} serviço(s)?\n\nIsso marca todos como medidos e gera o relatório. Não precisa ter pressa — dá pra desmarcar um serviço individual depois, aqui mesmo nesta aba, com o botão "Desmarcar essa medição".`)) return;
   if (!sb) { showToast('⚠️ Sem conexão com o banco.'); return; }
   const btn = document.getElementById('btnFinalizarMedicao');
   btn.disabled = true;
@@ -2049,16 +2139,26 @@ async function finalizarMedicao() {
 
 // -------- histórico de medições já feitas pra uma pessoa --------
 async function carregarHistoricoMedicao(fid) {
-  const wrap = document.getElementById('medicaoHistoricoWrap');
-  const cont = document.getElementById('medicaoHistorico');
-  if (!sb) { wrap.style.display = 'none'; return; }
+  if (!sb) { document.getElementById('medicaoHistoricoWrap').style.display = 'none'; return; }
   const { data, error } = await sb.from('medicoes')
     .select('*').eq('funcionario_id', fid).order('criado_em', { ascending: false });
-  if (error) { wrap.style.display = 'none'; return; }
+  if (error) { document.getElementById('medicaoHistoricoWrap').style.display = 'none'; return; }
   medicoesDaPessoaAtual = data || [];
+  renderHistoricoMedicao();
+}
+function renderHistoricoMedicao() {
+  const wrap = document.getElementById('medicaoHistoricoWrap');
+  const cont = document.getElementById('medicaoHistorico');
   if (!medicoesDaPessoaAtual.length) { wrap.style.display = 'none'; return; }
+  const { de, ate } = periodoMedicaoAtivo();
+  const filtradas = medicoesDaPessoaAtual.filter(m => dataDentroDoPeriodo((m.criado_em || '').slice(0, 10), de, ate));
+  if (!filtradas.length) {
+    wrap.style.display = 'block';
+    cont.innerHTML = '<div class="empty">Nenhuma medição nesse período.</div>';
+    return;
+  }
   wrap.style.display = 'block';
-  cont.innerHTML = medicoesDaPessoaAtual.map(m => `
+  cont.innerHTML = filtradas.map(m => `
     <div class="medicao-historico-item">
       <span class="info"><b>${fmtData((m.criado_em || '').slice(0,10))}</b> · ${m.quantidade_servicos} serviço(s) · medido por ${escapeHtml(m.medido_por)}</span>
       <button type="button" class="btn-secondary" onclick="reabrirRelatorioMedicao(${m.id})">Ver relatório</button>
