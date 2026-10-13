@@ -143,8 +143,7 @@
   .checkbox-row input{width:auto;margin:0;}
 
   .rdo-card.medido{border-left-color:var(--green);}
-  .rdo-medido-row{display:flex;align-items:center;gap:6px;font-size:12.5px;margin-top:8px;padding-top:8px;border-top:1px dashed #e3e3e3;cursor:pointer;color:var(--brand-graymid);font-weight:600;}
-  .rdo-medido-row input{width:auto;margin:0;}
+  .rdo-medido-row{display:flex;align-items:center;gap:6px;font-size:12.5px;margin-top:8px;padding-top:8px;border-top:1px dashed #e3e3e3;color:var(--brand-graymid);font-weight:600;}
   .rdo-medido-row.is-medido{color:var(--green);}
 
   .busca-box{display:flex;gap:8px;margin-bottom:14px;}
@@ -1789,10 +1788,9 @@ function renderCardRegistro(r) {
         <img class="rdo-foto" src="${fotoUrl}" alt="" onclick='openLightboxRdo(${JSON.stringify(fotoUrl)}, ${JSON.stringify(legendaFoto)})'>
         <div class="rdo-foto-zoom" onclick='openLightboxRdo(${JSON.stringify(fotoUrl)}, ${JSON.stringify(legendaFoto)})' title="Ver foto ampliada">🔍</div>
       </div>` : ''}
-      <label class="rdo-medido-row${r.medido ? ' is-medido' : ''}">
-        <input type="checkbox" ${r.medido ? 'checked' : ''} onchange="toggleMedido(${r.id}, this.checked)">
-        <span>${r.medido ? '✅ Medido' : 'Marcar como medido'}</span>
-      </label>
+      <div class="rdo-medido-row${r.medido ? ' is-medido' : ''}">
+        <span>${r.medido ? '✅ Medido' : 'Não medido'}</span>
+      </div>
     </div>
   `;
 }
@@ -1828,37 +1826,21 @@ function renderFeedRecente() {
 }
 
 // ============================================================
-// MEDIÇÃO (2026-09-19) — marcação simples, manual, de que um registro de
-// serviço já entrou numa medição (cálculo de quantidade pra pagamento de
-// empreiteiro). Não calcula nada sozinho, só separa visualmente o que já
-// foi contabilizado do que ainda falta — inclusive em registros antigos,
-// que nascem como "não medido" (coluna nova, default false) e podem ser
-// marcados a qualquer momento pela caixinha no card.
+// MEDIÇÃO (2026-09-19, ajustado em 2026-10-13) — cada registro de serviço
+// tem um booleano "medido" (já entrou numa medição — cálculo de
+// quantidade pra pagamento de empreiteiro). Até 2026-10-13 dava pra
+// marcar/desmarcar direto aqui, um por um, pela caixinha do card — agora
+// isso é só um status de LEITURA nos cards do Diário de Obra normal
+// (feed, "Por funcionário", "Por unidade"): mostra "✅ Medido" ou "⬜ Não
+// medido", sem poder clicar. A única forma de mudar esse status passou a
+// ser a aba "🔒 Medição" (senha própria, só o Junior acessa) — ela marca
+// em lote, ligada a um relatório, em vez de um toggle solto que qualquer
+// pessoa logada no Diário de Obra podia mexer sem registro nenhum.
 // ============================================================
 function filtrarPorMedido(lista, filtro) {
   if (filtro === 'nao') return lista.filter(r => !r.medido);
   if (filtro === 'sim') return lista.filter(r => r.medido);
   return lista;
-}
-
-async function toggleMedido(id, novoValor) {
-  if (!sb) {
-    showToast('⚠️ Sem conexão com o banco.');
-    renderFeedRecente(); renderListaPorFuncionario(); renderListaPorUnidade();
-    return;
-  }
-  const { data, error } = await sb.from('rdo_registros')
-    .update({ medido: novoValor }).eq('id', id).select().single();
-  if (error) {
-    showToast('⚠️ Erro ao marcar como medido: ' + error.message);
-    // desfaz visualmente a marcação (não chegou a mudar no banco), re-renderizando
-    // com o valor que ainda está guardado localmente
-    renderFeedRecente(); renderListaPorFuncionario(); renderListaPorUnidade();
-    return;
-  }
-  atualizarRegistroEmListas(id, { medido: data.medido });
-  showToast(data.medido ? '✅ Marcado como medido.' : 'Desmarcado como medido.');
-  registrarEdicao('editar', `${data.medido ? 'Marcou' : 'Desmarcou'} como medido o registro de ${labelLocalRegistro(data)}`);
 }
 
 function atualizarRegistroEmListas(id, patch) {
