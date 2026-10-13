@@ -385,8 +385,9 @@ window.addEventListener('unhandledrejection', function(e) {
 
         <div class="form-group">
           <label>Outros nomes (opcional)</label>
-          <input type="text" id="inpNomesExtras" placeholder="Ex.: Zé da obra, ajudante avulso...">
-          <div class="unidade-hint">Pra gente que ajudou mas não tem cadastro no sistema — fica só escrito aqui no Diário de Obra, não entra na Presença nem em nenhuma busca por funcionário.</div>
+          <input type="text" id="inpNomesExtras" list="listaNomesExtras" placeholder="Ex.: Zé da obra, ajudante avulso...">
+          <datalist id="listaNomesExtras"></datalist>
+          <div class="unidade-hint">Pra gente que ajudou mas não tem cadastro no sistema — fica só escrito aqui no Diário de Obra, não entra na Presença nem em nenhuma busca por funcionário. Salva sempre em MAIÚSCULA, e os nomes já usados antes aparecem sugeridos enquanto você digita.</div>
         </div>
 
         <div class="form-row">
@@ -1020,9 +1021,42 @@ let registrosPorId = {};
 let registroEditandoId = null; // id do registro em edição, ou null se for um registro novo
 let resultadosPorFuncionario = []; // último resultado bruto (sem filtro) da busca por funcionário
 let resultadosPorUnidade = []; // último resultado bruto (sem filtro) da busca por unidade
+let nomesExtrasConhecidos = new Set(); // nomes avulsos (sem cadastro) já usados antes, pro autocompletar do campo "Outros nomes"
 
 function indexarRegistros(lista) {
   (lista || []).forEach(r => { registrosPorId[r.id] = r; });
+}
+
+// ------------------------------------------------------------
+// "Outros nomes" (2026-10-13) — autocompletar com os nomes avulsos (sem
+// cadastro em funcionarios) já digitados antes em qualquer registro, pra
+// não ter que redigitar "ZÉ DA OBRA" toda vez. Busca uma vez no banco
+// (todos os rdo_registros com nomes_extras preenchido) e guarda em memória;
+// atualiza de novo, na hora, quando um registro novo usa um nome inédito —
+// sem precisar recarregar a página pra esse nome aparecer sugerido depois.
+// ------------------------------------------------------------
+async function carregarNomesExtrasConhecidos() {
+  if (!sb) return;
+  const { data, error } = await sb.from('rdo_registros').select('nomes_extras').not('nomes_extras', 'is', null);
+  if (error) return;
+  nomesExtrasConhecidos = new Set();
+  (data || []).forEach(r => {
+    (r.nomes_extras || '').split(',').map(s => s.trim()).filter(Boolean).forEach(n => nomesExtrasConhecidos.add(n));
+  });
+  renderDatalistNomesExtras();
+}
+function renderDatalistNomesExtras() {
+  const dl = document.getElementById('listaNomesExtras');
+  if (!dl) return;
+  dl.innerHTML = Array.from(nomesExtrasConhecidos).sort().map(n => `<option value="${escapeHtml(n)}"></option>`).join('');
+}
+// normaliza o que foi digitado: cada nome em MAIÚSCULA, sem espaço sobrando
+// nas pontas, juntos de novo com ", " — e também aprende os nomes novos no
+// Set em memória (pro autocompletar já sugerir da próxima vez, sem reload)
+function normalizarNomesExtras(valor) {
+  const nomes = (valor || '').split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+  nomes.forEach(n => nomesExtrasConhecidos.add(n));
+  return nomes.length ? nomes.join(', ') : null;
 }
 
 async function carregarFuncionarios() {
@@ -1718,7 +1752,7 @@ async function salvarRegistro() {
 
   const observacao = document.getElementById('inpObs').value.trim() || null;
   const retrabalho = document.getElementById('inpRetrabalho').value.trim() || null;
-  const nomesExtras = document.getElementById('inpNomesExtras').value.trim() || null;
+  const nomesExtras = normalizarNomesExtras(document.getElementById('inpNomesExtras').value);
   const fotoFile = document.getElementById('inpFoto').files[0] || null;
   const removerFoto = document.getElementById('chkRemoverFoto').checked;
   const idEmEdicao = registroEditandoId;
@@ -1785,6 +1819,7 @@ async function salvarRegistro() {
       renderFeedRecente();
       registrarEdicao('criar', `Registrou serviço: ${descricaoRegistro}`);
     }
+    renderDatalistNomesExtras(); // nomes novos digitados em "Outros nomes" já aparecem sugeridos na próxima vez
   } catch (e) {
     showToast('⚠️ Erro ao salvar: ' + (e.message || e));
   } finally {
@@ -2608,7 +2643,7 @@ async function recarregarTudo() {
   // buscas dos dicionários são aguardadas primeiro, e só depois o feed de
   // registros/tarefas é buscado — sem essa corrida.
   await Promise.all([carregarFuncionarios(), carregarTiposServico()]);
-  await Promise.all([carregarFeedRecente(), carregarTarefasRecentes()]);
+  await Promise.all([carregarFeedRecente(), carregarTarefasRecentes(), carregarNomesExtrasConhecidos()]);
 }
 
 checkExistingSession();
