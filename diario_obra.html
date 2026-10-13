@@ -185,6 +185,51 @@
 
   .loading, .empty{text-align:center;padding:26px 12px;opacity:0.6;font-size:13px;}
 
+  /* ---------- aba Medição (2026-10-13) — só o Junior acessa ---------- */
+  .medicao-lock{max-width:340px;margin:40px auto;text-align:center;}
+  .medicao-lock .cadeado{font-size:40px;margin-bottom:10px;}
+  .medicao-lock .sub{font-size:13px;color:var(--brand-graymid);margin-bottom:18px;}
+  .medicao-lock input{width:100%;padding:13px 14px;border:1px solid #ddd;border-radius:9px;margin-bottom:10px;font-size:16px;text-align:center;}
+  .medicao-lock .error{color:var(--orange,#C0392B);font-size:12px;margin-bottom:10px;font-weight:600;min-height:16px;}
+  .medicao-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:#fff;border:1px solid #ddd;border-radius:10px;padding:10px 12px;margin-bottom:12px;}
+  .medicao-toolbar .contagem{font-size:13px;font-weight:700;color:var(--charcoal);}
+  .medicao-toolbar .links{display:flex;gap:12px;}
+  .rdo-card.selecionado{border-left-color:var(--yellow);background:#FFFBEF;}
+  .medicao-check-row{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px dashed #e3e3e3;font-size:13px;font-weight:700;color:var(--charcoal);cursor:pointer;}
+  .medicao-check-row input{width:auto;margin:0;transform:scale(1.2);}
+  .medicao-finalizar{width:100%;padding:14px;border:none;border-radius:10px;background:var(--green);color:#fff;font-size:15px;font-weight:700;cursor:pointer;min-height:48px;margin-top:4px;}
+  .medicao-finalizar:disabled{background:var(--brand-graylight);cursor:not-allowed;}
+  .medicao-historico{margin-top:26px;}
+  .medicao-historico-item{background:#fff;border:1px solid #ddd;border-radius:10px;padding:10px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+  .medicao-historico-item .info{font-size:12.5px;color:var(--brand-graymid);}
+  .medicao-historico-item .info b{color:var(--brand-black);}
+
+  /* ---------- relatório de medição (tela cheia, imprimível) ---------- */
+  .relatorio-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#fff;z-index:250;overflow-y:auto;}
+  .relatorio-overlay.show{display:block;}
+  .relatorio-acoes{position:sticky;top:0;background:var(--charcoal);padding:10px calc(14px + var(--safe-r)) 10px calc(14px + var(--safe-l));display:flex;justify-content:space-between;gap:10px;z-index:2;}
+  .relatorio-acoes button{padding:10px 16px;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px;}
+  .relatorio-acoes .btn-fechar{background:#fff;color:var(--charcoal);}
+  .relatorio-acoes .btn-imprimir{background:var(--yellow);color:#fff;}
+  .relatorio-doc{max-width:720px;margin:0 auto;padding:24px 18px 60px;}
+  .relatorio-doc h1{font-size:20px;color:var(--charcoal);text-align:center;margin-bottom:4px;}
+  .relatorio-doc .relatorio-sub{text-align:center;font-size:12.5px;color:var(--brand-graymid);margin-bottom:20px;}
+  .relatorio-info{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px;background:var(--concrete);border-radius:10px;padding:14px 16px;margin-bottom:20px;font-size:13px;}
+  .relatorio-info .campo b{display:block;font-size:10.5px;text-transform:uppercase;color:var(--brand-graymid);letter-spacing:0.3px;margin-bottom:2px;}
+  .relatorio-tabela{width:100%;border-collapse:collapse;margin-bottom:18px;}
+  .relatorio-tabela th, .relatorio-tabela td{border:1px solid #ddd;padding:7px 9px;font-size:12.5px;text-align:left;vertical-align:top;}
+  .relatorio-tabela th{background:var(--charcoal);color:#fff;font-size:11px;text-transform:uppercase;}
+  .relatorio-total{text-align:right;font-size:13.5px;font-weight:700;color:var(--charcoal);margin-bottom:34px;}
+  .relatorio-assinatura{display:flex;justify-content:space-between;gap:20px;margin-top:50px;}
+  .relatorio-assinatura .linha{flex:1;text-align:center;font-size:11.5px;color:var(--brand-graymid);}
+  .relatorio-assinatura .linha .traco{border-top:1px solid #999;margin-bottom:6px;padding-top:36px;}
+  @media print{
+    body *{visibility:hidden;}
+    .relatorio-overlay, .relatorio-overlay *{visibility:visible;}
+    .relatorio-overlay{position:absolute;}
+    .relatorio-acoes{display:none;}
+  }
+
   .toast{position:fixed;bottom:calc(20px + var(--safe-b));left:50%;transform:translateX(-50%);background:var(--brand-black);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;opacity:0;z-index:200;transition:opacity 0.3s;max-width:90%;text-align:center;}
   .toast.show{opacity:1;}
 </style>
@@ -239,6 +284,7 @@ window.addEventListener('unhandledrejection', function(e) {
     <button class="tab-btn" id="btn-aba-unidade" onclick="mostrarAba('unidade')">Por unidade</button>
     <button class="tab-btn" id="btn-aba-tarefas" onclick="mostrarAba('tarefas')">Tarefas</button>
     <button class="tab-btn" id="btn-aba-mapa" onclick="mostrarAba('mapa'); renderMapaServicos();">Mapa de serviços</button>
+    <button class="tab-btn" id="btn-aba-medicao" onclick="mostrarAba('medicao'); abrirAbaMedicao();">🔒 Medição</button>
   </div>
 
   <div class="content">
@@ -465,7 +511,65 @@ window.addEventListener('unhandledrejection', function(e) {
       <div id="mapaServicosWrap"><div class="empty">Escolha um serviço acima pra ver o mapa do prédio (5º ao 28º andar).</div></div>
     </div>
 
+    <!-- ================= ABA: MEDIÇÃO (só o Junior) ================= -->
+    <div class="aba-conteudo" id="aba-medicao">
+
+      <!-- tela de senha -->
+      <div class="medicao-lock" id="medicaoLock">
+        <div class="cadeado">🔒</div>
+        <h2>Área restrita — Medição</h2>
+        <div class="sub">Só o Junior entra aqui. Digite a senha da aba Medição (diferente do seu login normal do Diário de Obra).</div>
+        <input type="password" id="inpSenhaMedicao" placeholder="Senha da Medição" autocomplete="off" onkeydown="if(event.key==='Enter') verificarSenhaMedicao();">
+        <div class="error" id="erroSenhaMedicao"></div>
+        <button class="btn-primary" onclick="verificarSenhaMedicao()">Entrar</button>
+      </div>
+
+      <!-- conteúdo real, só aparece depois da senha certa -->
+      <div id="medicaoConteudo" style="display:none;">
+        <div class="busca-box">
+          <div class="func-combo">
+            <input type="text" id="inpMedicaoFuncTexto" placeholder="Digite o nome da pessoa..." autocomplete="off"
+                   oninput="filtrarComboMedicao()" onfocus="filtrarComboMedicao()" onblur="onBlurMedicaoFuncTexto()">
+            <button type="button" class="func-combo-clear" id="btnLimparMedicaoFunc" onclick="limparMedicaoFuncCombo()" aria-label="Limpar busca">✕</button>
+            <div class="func-combo-lista" id="medicaoComboLista"></div>
+          </div>
+          <select id="selMedicaoFunc" onchange="buscarParaMedicao()" style="display:none"></select>
+          <select id="selFiltroMedicaoStatus" class="sel-filtro-medido" onchange="renderListaMedicao()">
+            <option value="nao">Não medidos</option>
+            <option value="todos">Todos</option>
+            <option value="sim">Já medidos</option>
+          </select>
+        </div>
+
+        <div class="medicao-toolbar" id="medicaoToolbar" style="display:none;">
+          <span class="contagem" id="medicaoContagem">0 selecionados</span>
+          <div class="links">
+            <button type="button" class="link-btn" onclick="selecionarTodosMedicao()">Selecionar tudo</button>
+            <button type="button" class="link-btn" onclick="limparSelecaoMedicao()">Limpar seleção</button>
+          </div>
+        </div>
+
+        <div id="listaMedicao"><div class="empty">Escolha uma pessoa pra ver os serviços dela.</div></div>
+
+        <button class="medicao-finalizar" id="btnFinalizarMedicao" onclick="finalizarMedicao()" disabled style="display:none;">Gerar relatório e finalizar medição</button>
+
+        <div class="medicao-historico" id="medicaoHistoricoWrap" style="display:none;">
+          <h2 class="block-title">Medições anteriores dessa pessoa</h2>
+          <div id="medicaoHistorico"></div>
+        </div>
+      </div>
+    </div>
+
   </div>
+</div>
+
+<!-- ================= RELATÓRIO DE MEDIÇÃO (tela cheia, imprimível) ================= -->
+<div class="relatorio-overlay" id="relatorioMedicaoOverlay">
+  <div class="relatorio-acoes">
+    <button type="button" class="btn-fechar" onclick="fecharRelatorioMedicao()">✕ Fechar</button>
+    <button type="button" class="btn-imprimir" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+  </div>
+  <div class="relatorio-doc" id="relatorioMedicaoDoc"></div>
 </div>
 
 <div class="photo-lightbox" id="photoLightboxRdo" onclick="closeLightboxRdo(event)">
@@ -631,6 +735,14 @@ async function cadastrarUsuario() {
 function doLogout() {
   safeRemove('usuario_atual');
   usuarioAtual = null;
+  // tranca a Medição de novo — sem isso, se outra pessoa entrar com o
+  // próprio login logo em seguida, no mesmo navegador, a aba continuaria
+  // destravada de quando o Junior saiu (sem precisar recarregar a página)
+  medicaoDesbloqueada = false;
+  const lock = document.getElementById('medicaoLock');
+  const conteudo = document.getElementById('medicaoConteudo');
+  if (lock) lock.style.display = 'block';
+  if (conteudo) conteudo.style.display = 'none';
   document.getElementById('loginScreen').classList.remove('hidden');
   document.getElementById('app').style.display = 'none';
 }
@@ -914,16 +1026,20 @@ function renderOpcoesFuncionarios() {
   const selFunc1 = document.getElementById('selFunc1');
   const selFunc2 = document.getElementById('selFunc2');
   const selBusca = document.getElementById('selBuscaFunc');
-  const v1 = selFunc1.value, v2 = selFunc2.value, vb = selBusca.value;
+  const selMedicao = document.getElementById('selMedicaoFunc');
+  const v1 = selFunc1.value, v2 = selFunc2.value, vb = selBusca.value, vm = selMedicao.value;
   selFunc1.innerHTML = '<option value="">— Escolher —</option>' + opts;
   selFunc2.innerHTML = '<option value="">— Nenhum —</option>' + opts;
   selBusca.innerHTML = '<option value="">— Escolher um funcionário —</option>' + opts;
+  selMedicao.innerHTML = '<option value="">— Escolher uma pessoa —</option>' + opts;
   if (v1) selFunc1.value = v1;
   if (v2) selFunc2.value = v2;
   if (vb) selBusca.value = vb;
+  if (vm) selMedicao.value = vm;
   sincronizarTextoCombo('selFunc1', 'inpFunc1Texto', 'btnLimparFunc1');
   sincronizarTextoCombo('selFunc2', 'inpFunc2Texto', 'btnLimparFunc2');
   sincronizarTextoCombo('selBuscaFunc', 'inpBuscaFuncTexto', 'btnLimparBuscaFunc');
+  sincronizarTextoCombo('selMedicaoFunc', 'inpMedicaoFuncTexto', 'btnLimparMedicaoFunc');
   renderChecklistFuncionariosTarefa();
 }
 
@@ -1747,13 +1863,275 @@ async function toggleMedido(id, novoValor) {
 
 function atualizarRegistroEmListas(id, patch) {
   if (registrosPorId[id]) Object.assign(registrosPorId[id], patch);
-  [registrosRecentes, resultadosPorFuncionario, resultadosPorUnidade].forEach(lista => {
+  [registrosRecentes, resultadosPorFuncionario, resultadosPorUnidade, resultadosMedicao].forEach(lista => {
     const item = lista.find(r => r.id === id);
     if (item) Object.assign(item, patch);
   });
   renderFeedRecente();
   renderListaPorFuncionario();
   renderListaPorUnidade();
+  if (typeof renderListaMedicao === 'function') renderListaMedicao();
+}
+
+// ============================================================
+// ABA: MEDIÇÃO (2026-10-13) — só o Junior acessa (senha própria, guardada
+// em medicao_config, diferente do login normal do Diário de Obra). Busca
+// TODOS os serviços de uma pessoa (reaproveitando o mesmo rdo_registros e
+// o mesmo cartão visual da aba "Por funcionário"), deixa escolher vários
+// pra incluir numa medição (seleção só na tela, não mexe no banco ainda),
+// e ao finalizar: cria uma linha em "medicoes" (o lote), liga cada
+// rdo_registros escolhido a esse lote (medicao_id) e marca medido=true em
+// todos de uma vez — aí mostra o relatório pronto pra imprimir/salvar
+// como PDF. O histórico de medições de cada pessoa fica guardado (dá pra
+// reabrir o relatório de uma medição antiga a qualquer momento).
+// ============================================================
+let medicaoDesbloqueada = false;
+let resultadosMedicao = []; // último resultado bruto (sem filtro) da pessoa escolhida na aba Medição
+let selecaoMedicao = new Set(); // ids de rdo_registros marcados "incluir nessa medição" (seleção só visual, até finalizar)
+let medicoesDaPessoaAtual = []; // histórico de lotes já finalizados pra essa pessoa
+
+function abrirAbaMedicao() {
+  if (medicaoDesbloqueada) {
+    document.getElementById('medicaoLock').style.display = 'none';
+    document.getElementById('medicaoConteudo').style.display = 'block';
+  }
+}
+
+async function verificarSenhaMedicao() {
+  const senha = document.getElementById('inpSenhaMedicao').value;
+  const erroEl = document.getElementById('erroSenhaMedicao');
+  erroEl.textContent = '';
+  if (!senha) { erroEl.textContent = '❌ Digite a senha.'; return; }
+  if (!sb) { erroEl.textContent = '⚠️ Sem conexão com o banco.'; return; }
+  const { data, error } = await sb.from('medicao_config').select('senha').eq('id', true).maybeSingle();
+  if (error) { erroEl.textContent = '⚠️ Erro ao verificar senha: ' + error.message; return; }
+  if (!data || data.senha !== senha) { erroEl.textContent = '❌ Senha incorreta.'; return; }
+  medicaoDesbloqueada = true;
+  document.getElementById('inpSenhaMedicao').value = '';
+  abrirAbaMedicao();
+}
+
+// -------- combo de busca por nome (mesmo padrão das outras abas) --------
+function filtrarComboMedicao() { filtrarComboLista('inpMedicaoFuncTexto', 'medicaoComboLista', 'escolherFuncMedicao'); }
+function escolherFuncMedicao(id) {
+  document.getElementById('selMedicaoFunc').value = id;
+  document.getElementById('medicaoComboLista').classList.remove('show');
+  sincronizarTextoCombo('selMedicaoFunc', 'inpMedicaoFuncTexto', 'btnLimparMedicaoFunc');
+  buscarParaMedicao();
+}
+function limparMedicaoFuncCombo() {
+  document.getElementById('selMedicaoFunc').value = '';
+  document.getElementById('inpMedicaoFuncTexto').value = '';
+  document.getElementById('btnLimparMedicaoFunc').classList.remove('show');
+  document.getElementById('medicaoComboLista').classList.remove('show');
+  buscarParaMedicao();
+}
+function onBlurMedicaoFuncTexto() {
+  setTimeout(() => {
+    document.getElementById('medicaoComboLista').classList.remove('show');
+    sincronizarTextoCombo('selMedicaoFunc', 'inpMedicaoFuncTexto', 'btnLimparMedicaoFunc');
+  }, 150);
+}
+
+async function buscarParaMedicao() {
+  const fid = document.getElementById('selMedicaoFunc').value;
+  const cont = document.getElementById('listaMedicao');
+  selecaoMedicao.clear();
+  document.getElementById('medicaoToolbar').style.display = 'none';
+  document.getElementById('btnFinalizarMedicao').style.display = 'none';
+  document.getElementById('medicaoHistoricoWrap').style.display = 'none';
+  if (!fid) {
+    resultadosMedicao = [];
+    cont.innerHTML = '<div class="empty">Escolha uma pessoa pra ver os serviços dela.</div>';
+    return;
+  }
+  if (!sb) { cont.innerHTML = '<div class="empty">Sem conexão com o banco.</div>'; return; }
+  cont.innerHTML = '<div class="loading">Carregando...</div>';
+  const { data, error } = await sb.from('rdo_registros')
+    .select('*')
+    .or(`funcionario_id_1.eq.${fid},funcionario_id_2.eq.${fid}`)
+    .order('data_inicio', { ascending: false });
+  if (error) { resultadosMedicao = []; cont.innerHTML = '<div class="empty">Erro ao buscar: ' + escapeHtml(error.message) + '</div>'; return; }
+  resultadosMedicao = data || [];
+  indexarRegistros(resultadosMedicao);
+  document.getElementById('medicaoToolbar').style.display = 'flex';
+  document.getElementById('btnFinalizarMedicao').style.display = 'block';
+  renderListaMedicao();
+  carregarHistoricoMedicao(fid);
+}
+
+function renderListaMedicao() {
+  const cont = document.getElementById('listaMedicao');
+  const fid = document.getElementById('selMedicaoFunc').value;
+  if (!fid) return;
+  if (!resultadosMedicao.length) { cont.innerHTML = '<div class="empty">Nenhum registro encontrado pra essa pessoa ainda.</div>'; return; }
+  const filtro = document.getElementById('selFiltroMedicaoStatus').value;
+  const filtrado = filtrarPorMedido(resultadosMedicao, filtro);
+  // tira da seleção quem não está mais visível (ex.: acabou de ser marcado
+  // como medido por outra aba e sumiu do filtro "não medidos")
+  const idsVisiveis = new Set(filtrado.map(r => r.id));
+  [...selecaoMedicao].forEach(id => { if (!idsVisiveis.has(id)) selecaoMedicao.delete(id); });
+  if (!filtrado.length) {
+    cont.innerHTML = '<div class="empty">Nenhum registro ' + (filtro === 'sim' ? 'medido' : filtro === 'nao' ? 'não medido' : '') + ' pra essa pessoa.</div>';
+  } else {
+    cont.innerHTML = filtrado.map(renderCardMedicao).join('');
+  }
+  atualizarContagemMedicao();
+}
+
+// cartão de serviço pra aba Medição — mesmo visual do card já usado em
+// "Por funcionário" (renderCardRegistro), mas sem os botões de editar/
+// excluir (aqui é só consulta) e com a linha de "incluir nesta medição"
+// no lugar do check "Marcar como medido" (esse continua existindo lá na
+// outra aba, pra correção pontual de um registro só).
+function renderCardMedicao(r) {
+  const marcado = selecaoMedicao.has(r.id);
+  const servico = tiposServicoPorId[r.tipo_servico_id];
+  const f1 = funcionariosPorId[r.funcionario_id_1];
+  const f2 = r.funcionario_id_2 ? funcionariosPorId[r.funcionario_id_2] : null;
+  const periodo = r.data_fim ? `${fmtData(r.data_inicio)} – ${fmtData(r.data_fim)}` : `${fmtData(r.data_inicio)} – em andamento`;
+  const pessoas = [f1, f2].filter(Boolean).map(f => f.nome).join(' e ');
+  const localLabel = labelLocalRegistro(r);
+  const badgeTipoApto = r.tipo_apto ? `<span class="badge-tipo badge-${r.tipo_apto}">${r.tipo_apto}</span>` : '';
+  return `
+    <div class="rdo-card${r.medido ? ' medido' : ''}${marcado ? ' selecionado' : ''}">
+      <div class="rdo-card-top">
+        <span class="rdo-unidade">${escapeHtml(localLabel)}${badgeTipoApto}</span>
+        <span class="rdo-periodo">${periodo}</span>
+      </div>
+      <div class="rdo-servico">${escapeHtml(servico ? servico.nome : '(serviço não encontrado)')}</div>
+      ${r.retrabalho ? `<div class="rdo-retrabalho">🔁 Retrabalho: ${escapeHtml(r.retrabalho)}</div>` : ''}
+      <div class="rdo-pessoas">${escapeHtml(pessoas || '—')}</div>
+      ${r.observacao ? `<div class="rdo-obs">${escapeHtml(r.observacao)}</div>` : ''}
+      <label class="medicao-check-row">
+        <input type="checkbox" ${marcado ? 'checked' : ''} onchange="toggleSelecaoMedicao(${r.id}, this.checked)">
+        <span>${marcado ? '✅ Incluída nesta medição' : (r.medido ? 'Já medida antes — incluir de novo' : 'Incluir nesta medição')}</span>
+      </label>
+    </div>
+  `;
+}
+
+function toggleSelecaoMedicao(id, checked) {
+  if (checked) selecaoMedicao.add(id); else selecaoMedicao.delete(id);
+  renderListaMedicao();
+}
+function selecionarTodosMedicao() {
+  const filtro = document.getElementById('selFiltroMedicaoStatus').value;
+  filtrarPorMedido(resultadosMedicao, filtro).forEach(r => selecaoMedicao.add(r.id));
+  renderListaMedicao();
+}
+function limparSelecaoMedicao() {
+  selecaoMedicao.clear();
+  renderListaMedicao();
+}
+function atualizarContagemMedicao() {
+  const n = selecaoMedicao.size;
+  document.getElementById('medicaoContagem').textContent = n === 1 ? '1 selecionado' : `${n} selecionados`;
+  document.getElementById('btnFinalizarMedicao').disabled = n === 0;
+}
+
+async function finalizarMedicao() {
+  const fid = document.getElementById('selMedicaoFunc').value;
+  const f = funcionariosPorId[fid];
+  if (!fid || !f || !selecaoMedicao.size) return;
+  const ids = [...selecaoMedicao];
+  if (!confirm(`Finalizar a medição de "${f.nome}" com ${ids.length} serviço(s)?\n\nIsso marca todos como medidos e gera o relatório. Não precisa ter pressa — dá pra marcar/desmarcar um registro individual depois, na aba "Por funcionário".`)) return;
+  if (!sb) { showToast('⚠️ Sem conexão com o banco.'); return; }
+  const btn = document.getElementById('btnFinalizarMedicao');
+  btn.disabled = true;
+  btn.textContent = 'Gerando...';
+  try {
+    const { data: lote, error: errLote } = await sb.from('medicoes')
+      .insert({ funcionario_id: fid, medido_por: 'Junior', quantidade_servicos: ids.length })
+      .select().single();
+    if (errLote) throw errLote;
+
+    const { data: atualizados, error: errUpdate } = await sb.from('rdo_registros')
+      .update({ medido: true, medicao_id: lote.id })
+      .in('id', ids)
+      .select();
+    if (errUpdate) throw errUpdate;
+
+    atualizados.forEach(r => atualizarRegistroEmListas(r.id, { medido: true, medicao_id: lote.id }));
+    selecaoMedicao.clear();
+    registrarEdicao('criar', `Finalizou medição de "${f.nome}" com ${ids.length} serviço(s)`);
+    mostrarRelatorioMedicao(f, atualizados, lote);
+    await buscarParaMedicao(); // recarrega a lista (os marcados agora somem do filtro "não medidos")
+  } catch (e) {
+    showToast('⚠️ Erro ao finalizar medição: ' + (e.message || e));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Gerar relatório e finalizar medição';
+  }
+}
+
+// -------- histórico de medições já feitas pra uma pessoa --------
+async function carregarHistoricoMedicao(fid) {
+  const wrap = document.getElementById('medicaoHistoricoWrap');
+  const cont = document.getElementById('medicaoHistorico');
+  if (!sb) { wrap.style.display = 'none'; return; }
+  const { data, error } = await sb.from('medicoes')
+    .select('*').eq('funcionario_id', fid).order('criado_em', { ascending: false });
+  if (error) { wrap.style.display = 'none'; return; }
+  medicoesDaPessoaAtual = data || [];
+  if (!medicoesDaPessoaAtual.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  cont.innerHTML = medicoesDaPessoaAtual.map(m => `
+    <div class="medicao-historico-item">
+      <span class="info"><b>${fmtData((m.criado_em || '').slice(0,10))}</b> · ${m.quantidade_servicos} serviço(s) · medido por ${escapeHtml(m.medido_por)}</span>
+      <button type="button" class="btn-secondary" onclick="reabrirRelatorioMedicao(${m.id})">Ver relatório</button>
+    </div>
+  `).join('');
+}
+
+async function reabrirRelatorioMedicao(medicaoId) {
+  const m = medicoesDaPessoaAtual.find(x => x.id === medicaoId);
+  const f = funcionariosPorId[document.getElementById('selMedicaoFunc').value];
+  if (!m || !f || !sb) return;
+  const { data, error } = await sb.from('rdo_registros').select('*').eq('medicao_id', medicaoId).order('data_inicio', { ascending: false });
+  if (error) { showToast('⚠️ Erro ao abrir relatório: ' + error.message); return; }
+  mostrarRelatorioMedicao(f, data || [], m);
+}
+
+// -------- monta e abre o relatório (tela cheia, pronta pra imprimir) --------
+function mostrarRelatorioMedicao(funcionario, registros, lote) {
+  const datas = registros.map(r => r.data_inicio).filter(Boolean).sort();
+  const periodoInicio = datas.length ? fmtData(datas[0]) : '—';
+  const periodoFim = datas.length ? fmtData(datas[datas.length - 1]) : '—';
+  const linhas = registros.slice().sort((a, b) => (a.data_inicio || '').localeCompare(b.data_inicio || '')).map(r => {
+    const servico = tiposServicoPorId[r.tipo_servico_id];
+    const periodo = r.data_fim ? `${fmtData(r.data_inicio)} – ${fmtData(r.data_fim)}` : fmtData(r.data_inicio);
+    return `<tr>
+      <td>${escapeHtml(labelLocalRegistro(r))}</td>
+      <td>${escapeHtml(servico ? servico.nome : '—')}</td>
+      <td>${periodo}</td>
+      <td>${escapeHtml(r.retrabalho || '—')}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('relatorioMedicaoDoc').innerHTML = `
+    <h1>Relatório de Medição</h1>
+    <div class="relatorio-sub">Diamond Millennium</div>
+    <div class="relatorio-info">
+      <div class="campo"><b>Pessoa</b>${escapeHtml(funcionario.nome)}</div>
+      <div class="campo"><b>Empresa</b>${escapeHtml(funcionario.empresa || '—')}</div>
+      <div class="campo"><b>Período dos serviços</b>${periodoInicio} a ${periodoFim}</div>
+      <div class="campo"><b>Data da medição</b>${fmtData((lote.criado_em || '').slice(0,10))}</div>
+    </div>
+    <table class="relatorio-tabela">
+      <thead><tr><th>Local</th><th>Serviço</th><th>Período</th><th>Retrabalho</th></tr></thead>
+      <tbody>${linhas || '<tr><td colspan="4">Nenhum serviço.</td></tr>'}</tbody>
+    </table>
+    <div class="relatorio-total">Total de serviços medidos: ${registros.length}</div>
+    <div class="relatorio-assinatura">
+      <div class="linha"><div class="traco"></div>Medido por: ${escapeHtml(lote.medido_por || 'Junior')}</div>
+      <div class="linha"><div class="traco"></div>${escapeHtml(funcionario.nome)}</div>
+    </div>
+  `;
+  document.getElementById('relatorioMedicaoOverlay').classList.add('show');
+}
+function fecharRelatorioMedicao() {
+  document.getElementById('relatorioMedicaoOverlay').classList.remove('show');
 }
 
 // ============================================================
