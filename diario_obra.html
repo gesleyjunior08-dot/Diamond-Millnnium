@@ -2478,18 +2478,21 @@ function mostrarRelatorioConsolidadoMedicao(lotes, registros, periodo) {
   registros.forEach(r => { (porLote[r.medicao_id] = porLote[r.medicao_id] || []).push(r); });
 
   // agrupa os lotes por pessoa (um lote só pertence a 1 pessoa, mas o
-  // período pode ter vários lotes da mesma pessoa, em datas diferentes)
+  // período pode ter vários lotes da mesma pessoa, em datas diferentes).
+  // A ordem das pessoas no relatório (2026-10-14, pedido do usuário: "no
+  // agromerado de medições seja por ordem de colocadas e não por ordem
+  // alfabetica") segue a ordem de `lotes` — que já chega aqui ordenada por
+  // `criado_em` (mesma ordem da lista "Todas as medições" logo acima do
+  // botão) — e NÃO é reordenada por nome. Um Map em JS preserva a ordem de
+  // inserção das chaves, então a 1ª pessoa do relatório é a dona do lote
+  // mais recente do período (e assim por diante).
   const porPessoa = new Map(); // funcionario_id -> { f, lotes: [...] }
   lotes.forEach(lote => {
     const fid = lote.funcionario_id;
     if (!porPessoa.has(fid)) porPessoa.set(fid, { f: funcionariosPorId[fid], lotes: [] });
     porPessoa.get(fid).lotes.push(lote);
   });
-  const porPessoaOrdenado = [...porPessoa.entries()].sort((a, b) => {
-    const na = (a[1].f || {}).nome || '';
-    const nb = (b[1].f || {}).nome || '';
-    return na.localeCompare(nb, 'pt-BR');
-  });
+  const porPessoaOrdenado = [...porPessoa.entries()];
 
   let totalGeral = 0;
   const blocosPessoas = porPessoaOrdenado.map(([, grupo]) => {
@@ -2509,6 +2512,7 @@ function mostrarRelatorioConsolidadoMedicao(lotes, registros, periodo) {
             <td>${escapeHtml(labelLocalRegistro(r))}</td>
             <td>${escapeHtml(servico ? servico.nome : '—')}</td>
             <td>${periodoServico}</td>
+            <td>${escapeHtml(r.observacao || '—')}</td>
           </tr>`;
         }).join('');
       }).join('');
@@ -2517,8 +2521,8 @@ function mostrarRelatorioConsolidadoMedicao(lotes, registros, periodo) {
       <div class="relatorio-consolidado-pessoa">
         <h3>${escapeHtml(f ? f.nome : '(pessoa não encontrada)')}${f && f.empresa ? ' — ' + escapeHtml(f.empresa) : ''}</h3>
         <table class="relatorio-tabela">
-          <thead><tr><th>Medido em</th><th>Local</th><th>Serviço</th><th>Período</th></tr></thead>
-          <tbody>${linhas || '<tr><td colspan="4">Nenhum serviço.</td></tr>'}</tbody>
+          <thead><tr><th>Medido em</th><th>Local</th><th>Serviço</th><th>Período</th><th>Descrição</th></tr></thead>
+          <tbody>${linhas || '<tr><td colspan="5">Nenhum serviço.</td></tr>'}</tbody>
         </table>
         <div class="relatorio-subtotal">Subtotal de ${escapeHtml(f ? f.nome : '(pessoa)')}: ${totalPessoa} serviço(s)</div>
       </div>
@@ -2568,6 +2572,7 @@ function mostrarRelatorioMedicao(funcionario, registros, lote) {
       <td>${escapeHtml(servico ? servico.nome : '—')}</td>
       <td>${periodo}</td>
       <td>${escapeHtml(r.retrabalho || '—')}</td>
+      <td>${escapeHtml(r.observacao || '—')}</td>
     </tr>`;
   }).join('');
 
@@ -2581,8 +2586,8 @@ function mostrarRelatorioMedicao(funcionario, registros, lote) {
       <div class="campo"><b>Data da medição</b>${fmtData((lote.criado_em || '').slice(0,10))}</div>
     </div>
     <table class="relatorio-tabela">
-      <thead><tr><th>Local</th><th>Serviço</th><th>Período</th><th>Retrabalho</th></tr></thead>
-      <tbody>${linhas || '<tr><td colspan="4">Nenhum serviço.</td></tr>'}</tbody>
+      <thead><tr><th>Local</th><th>Serviço</th><th>Período</th><th>Retrabalho</th><th>Descrição</th></tr></thead>
+      <tbody>${linhas || '<tr><td colspan="5">Nenhum serviço.</td></tr>'}</tbody>
     </table>
     <div class="relatorio-total">Total de serviços medidos: ${registros.length}</div>
     <div class="relatorio-assinatura">
