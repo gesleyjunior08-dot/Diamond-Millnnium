@@ -205,6 +205,7 @@
   .medicao-check-row{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px dashed #e3e3e3;font-size:13px;font-weight:700;color:var(--charcoal);cursor:pointer;}
   .medicao-check-row input{width:auto;margin:0;transform:scale(1.2);}
   .medicao-desmarcar-btn{width:100%;margin-top:8px;padding:9px;border:1px solid #F3C6C6;border-radius:8px;background:#FFF5F5;color:#C0392B;font-size:12px;font-weight:700;cursor:pointer;}
+  .medicao-corrigir-btn{width:100%;margin-top:6px;padding:9px;border:1px solid #CFE0F3;border-radius:8px;background:#F2F8FF;color:#1C5FA8;font-size:12px;font-weight:700;cursor:pointer;}
   .medicao-finalizar{width:100%;padding:14px;border:none;border-radius:10px;background:var(--green);color:#fff;font-size:15px;font-weight:700;cursor:pointer;min-height:48px;margin-top:4px;}
   .medicao-finalizar:disabled{background:var(--brand-graylight);cursor:not-allowed;}
   .medicao-historico{margin-top:26px;}
@@ -644,6 +645,24 @@ window.addEventListener('unhandledrejection', function(e) {
       <input type="password" id="inpNovoUsuarioSenha" placeholder="Senha" autocomplete="new-password">
       <button type="button" class="btn-secondary" style="width:100%;margin-top:2px;" onclick="salvarNovoUsuario()">Salvar</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="corrigirPessoaOverlay">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2>🔄 Corrigir pessoa desta medição</h2>
+      <button type="button" class="btn-icon" title="Fechar" onclick="fecharCorrecaoPessoaMedicao()">✖️</button>
+    </div>
+    <div class="sub" style="margin-bottom:10px;">Esse serviço já foi medido com o nome errado. Escolha abaixo quem é a pessoa certa — isso corrige o registro do diário <b>e</b> a medição ao mesmo tempo.</div>
+    <div id="corrigirPessoaDescricao" style="font-size:13px;color:var(--brand-graymid);margin-bottom:10px;"></div>
+    <div class="func-combo">
+      <input type="text" id="inpCorrigirPessoaTexto" placeholder="Digite o nome da pessoa certa..." autocomplete="off" oninput="filtrarComboCorrecaoPessoa()" onblur="onBlurCorrigirPessoaTexto()">
+      <button type="button" class="func-combo-clear" id="btnLimparCorrigirPessoa" onclick="limparCorrecaoPessoaCombo()" aria-label="Limpar">✕</button>
+      <div class="func-combo-lista" id="corrigirPessoaComboLista"></div>
+    </div>
+    <select id="selCorrigirPessoa" style="display:none;"></select>
+    <button type="button" class="btn-secondary" style="width:100%;margin-top:14px;" onclick="confirmarCorrecaoPessoaMedicao()">Confirmar correção</button>
   </div>
 </div>
 
@@ -1124,15 +1143,18 @@ function renderOpcoesFuncionarios() {
   const selFunc2 = document.getElementById('selFunc2');
   const selBusca = document.getElementById('selBuscaFunc');
   const selMedicao = document.getElementById('selMedicaoFunc');
-  const v1 = selFunc1.value, v2 = selFunc2.value, vb = selBusca.value, vm = selMedicao.value;
+  const selCorrigir = document.getElementById('selCorrigirPessoa');
+  const v1 = selFunc1.value, v2 = selFunc2.value, vb = selBusca.value, vm = selMedicao.value, vc = selCorrigir ? selCorrigir.value : '';
   selFunc1.innerHTML = '<option value="">— Escolher —</option>' + opts;
   selFunc2.innerHTML = '<option value="">— Nenhum —</option>' + opts;
   selBusca.innerHTML = '<option value="">— Escolher um funcionário —</option>' + opts;
   selMedicao.innerHTML = '<option value="">— Escolher uma pessoa —</option>' + opts;
+  if (selCorrigir) selCorrigir.innerHTML = '<option value="">— Escolher —</option>' + opts;
   if (v1) selFunc1.value = v1;
   if (v2) selFunc2.value = v2;
   if (vb) selBusca.value = vb;
   if (vm) selMedicao.value = vm;
+  if (vc && selCorrigir) selCorrigir.value = vc;
   sincronizarTextoCombo('selFunc1', 'inpFunc1Texto', 'btnLimparFunc1');
   sincronizarTextoCombo('selFunc2', 'inpFunc2Texto', 'btnLimparFunc2');
   sincronizarTextoCombo('selBuscaFunc', 'inpBuscaFuncTexto', 'btnLimparBuscaFunc');
@@ -2216,6 +2238,7 @@ function renderCardMedicao(r) {
         <input type="checkbox" ${marcado ? 'checked' : ''} onchange="toggleSelecaoMedicao(${r.id}, this.checked)">
         <span>${marcado ? '✅ Incluída nesta medição' : (r.medido ? 'Já medida antes — incluir de novo' : 'Incluir nesta medição')}</span>
       </label>
+      ${r.medido ? `<button type="button" class="medicao-corrigir-btn" onclick="abrirCorrecaoPessoaMedicao(${r.id})">🔄 Corrigir pessoa desta medição</button>` : ''}
       ${r.medido ? `<button type="button" class="medicao-desmarcar-btn" onclick="desmarcarServicoMedicao(${r.id})">↩️ Desmarcar essa medição (corrigir engano)</button>` : ''}
     </div>
   `;
@@ -2240,6 +2263,111 @@ async function desmarcarServicoMedicao(id) {
   atualizarRegistroEmListas(id, { medido: false, medicao_id: null });
   showToast('↩️ Desmarcado — volta a aparecer como não medido.');
   registrarEdicao('editar', `Desmarcou como medido (correção manual) o registro de ${descricao}`);
+}
+
+// -------- corrigir a PESSOA de um serviço que já foi medido --------
+// Pensado pro caso de editar o funcionário responsável de um registro DEPOIS
+// que ele já tinha sido incluído numa medição: o rdo_registros fica certo,
+// mas o lote em "medicoes" continua apontando pro nome antigo. Esse fluxo
+// corrige os dois juntos — ver pedido do Junior em 2026-10-14.
+let corrigirPessoaRegistroId = null;
+
+function abrirCorrecaoPessoaMedicao(id) {
+  const r = registrosPorId[id];
+  if (!r) return;
+  corrigirPessoaRegistroId = id;
+  const servico = tiposServicoPorId[r.tipo_servico_id];
+  const f1 = funcionariosPorId[r.funcionario_id_1];
+  document.getElementById('corrigirPessoaDescricao').innerHTML =
+    `<b>${escapeHtml(labelLocalRegistro(r))}</b> — ${escapeHtml(servico ? servico.nome : '(serviço)')}<br>Hoje está em nome de: <b>${escapeHtml(f1 ? f1.nome : '—')}</b>`;
+  document.getElementById('selCorrigirPessoa').value = '';
+  document.getElementById('inpCorrigirPessoaTexto').value = '';
+  document.getElementById('btnLimparCorrigirPessoa').classList.remove('show');
+  document.getElementById('corrigirPessoaComboLista').classList.remove('show');
+  document.getElementById('corrigirPessoaOverlay').classList.add('show');
+}
+
+function fecharCorrecaoPessoaMedicao() {
+  document.getElementById('corrigirPessoaOverlay').classList.remove('show');
+  corrigirPessoaRegistroId = null;
+}
+
+function filtrarComboCorrecaoPessoa() { filtrarComboLista('inpCorrigirPessoaTexto', 'corrigirPessoaComboLista', 'escolherFuncCorrecao'); }
+
+function escolherFuncCorrecao(id) {
+  document.getElementById('selCorrigirPessoa').value = id;
+  document.getElementById('corrigirPessoaComboLista').classList.remove('show');
+  sincronizarTextoCombo('selCorrigirPessoa', 'inpCorrigirPessoaTexto', 'btnLimparCorrigirPessoa');
+}
+
+function limparCorrecaoPessoaCombo() {
+  document.getElementById('selCorrigirPessoa').value = '';
+  document.getElementById('inpCorrigirPessoaTexto').value = '';
+  document.getElementById('btnLimparCorrigirPessoa').classList.remove('show');
+  document.getElementById('inpCorrigirPessoaTexto').focus();
+}
+
+function onBlurCorrigirPessoaTexto() {
+  setTimeout(() => document.getElementById('corrigirPessoaComboLista').classList.remove('show'), 150);
+}
+
+async function confirmarCorrecaoPessoaMedicao() {
+  const id = corrigirPessoaRegistroId;
+  const r = registrosPorId[id];
+  if (!r) return;
+  const novoId = document.getElementById('selCorrigirPessoa').value;
+  if (!novoId) { showToast('⚠️ Escolha quem é a pessoa certa.'); return; }
+  if (String(novoId) === String(r.funcionario_id_1)) { showToast('⚠️ Essa já é a pessoa marcada nesse registro.'); return; }
+  const novoFunc = funcionariosPorId[novoId];
+  const velhoFunc = funcionariosPorId[r.funcionario_id_1];
+  const servico = tiposServicoPorId[r.tipo_servico_id];
+  const descricao = `${labelLocalRegistro(r)} — ${servico ? servico.nome : '(serviço)'}`;
+  if (!sb) { showToast('⚠️ Sem conexão com o banco.'); return; }
+
+  if (!r.medido || !r.medicao_id) {
+    // ainda não foi medido — só corrige o registro do diário mesmo
+    if (!confirm(`Trocar a pessoa desse registro de ${velhoFunc ? velhoFunc.nome : '?'} para ${novoFunc.nome}?\n\n${descricao}`)) return;
+    const { error } = await sb.from('rdo_registros').update({ funcionario_id_1: novoId }).eq('id', id);
+    if (error) { showToast('⚠️ Erro ao corrigir: ' + error.message); return; }
+    atualizarRegistroEmListas(id, { funcionario_id_1: novoId });
+    fecharCorrecaoPessoaMedicao();
+    showToast(`✅ Corrigido para ${novoFunc.nome}.`);
+    registrarEdicao('editar', `Corrigiu a pessoa do registro de ${descricao}: de ${velhoFunc ? velhoFunc.nome : '?'} para ${novoFunc.nome}`);
+    return;
+  }
+
+  // já foi medido — precisa checar se o lote tem só esse registro ou mais
+  const { data: doLote, error: errLote } = await sb.from('rdo_registros').select('id').eq('medicao_id', r.medicao_id);
+  if (errLote) { showToast('⚠️ Erro ao verificar a medição: ' + errLote.message); return; }
+  const outrosNoLote = (doLote || []).filter(x => x.id !== id);
+
+  if (outrosNoLote.length === 0) {
+    // único registro do lote — pode corrigir a medição direto, sem mexer em mais nada
+    if (!confirm(`Esse é o único serviço dessa medição. Trocar de ${velhoFunc ? velhoFunc.nome : '?'} para ${novoFunc.nome} (corrige o registro E a medição)?\n\n${descricao}`)) return;
+    const { error: errReg } = await sb.from('rdo_registros').update({ funcionario_id_1: novoId }).eq('id', id);
+    if (errReg) { showToast('⚠️ Erro ao corrigir o registro: ' + errReg.message); return; }
+    const { error: errMed } = await sb.from('medicoes').update({ funcionario_id: novoId }).eq('id', r.medicao_id);
+    if (errMed) { showToast('⚠️ Erro ao corrigir a medição: ' + errMed.message); return; }
+    atualizarRegistroEmListas(id, { funcionario_id_1: novoId });
+    await carregarTodasMedicoes();
+    fecharCorrecaoPessoaMedicao();
+    showToast(`✅ Corrigido para ${novoFunc.nome} — registro e medição ajustados.`);
+    registrarEdicao('editar', `Corrigiu a pessoa do registro já medido de ${descricao}: de ${velhoFunc ? velhoFunc.nome : '?'} para ${novoFunc.nome} (medição ${r.medicao_id} corrigida)`);
+  } else {
+    // lote tem outros serviços junto — não dá pra repontar o lote inteiro
+    // (misattribuiria os outros registros dele). Em vez disso, só tira ESSE
+    // registro do lote (igual "desmarcar") e já corrige o nome certo, pra ele
+    // reaparecer como "não medido" da pessoa certa e poder entrar numa
+    // medição nova depois.
+    if (!confirm(`Essa medição tem outros serviços junto (de ${velhoFunc ? velhoFunc.nome : '?'}) — não dá pra trocar só esse sem mexer nos outros.\n\nVou tirar ESSE serviço dessa medição (ele volta a aparecer como "não medido") e já corrigir para ${novoFunc.nome}. Você pode incluir ele numa medição nova depois.\n\n${descricao}\n\nConfirma?`)) return;
+    const { error } = await sb.from('rdo_registros')
+      .update({ funcionario_id_1: novoId, medido: false, medicao_id: null }).eq('id', id);
+    if (error) { showToast('⚠️ Erro ao corrigir: ' + error.message); return; }
+    atualizarRegistroEmListas(id, { funcionario_id_1: novoId, medido: false, medicao_id: null });
+    fecharCorrecaoPessoaMedicao();
+    showToast(`✅ Corrigido para ${novoFunc.nome} — esse serviço saiu da medição antiga e volta como "não medido" (pode medir de novo).`);
+    registrarEdicao('editar', `Corrigiu a pessoa do registro de ${descricao}: de ${velhoFunc ? velhoFunc.nome : '?'} para ${novoFunc.nome} (tirou do lote de medição ${r.medicao_id} por ter outros serviços junto)`);
+  }
 }
 
 function toggleSelecaoMedicao(id, checked) {
