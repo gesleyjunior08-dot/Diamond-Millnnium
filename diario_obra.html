@@ -212,6 +212,12 @@
   .medicao-historico-item{background:#fff;border:1px solid #ddd;border-radius:10px;padding:10px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
   .medicao-historico-item .info{font-size:12.5px;color:var(--brand-graymid);}
   .medicao-historico-item .info b{color:var(--brand-black);}
+  .medicao-pago-linha{flex-basis:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;padding-top:8px;border-top:1px dashed #eee;}
+  .medicao-pago-badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;}
+  .medicao-pago-badge.pago{background:#E3F5E6;color:#1E7A34;border:1px solid #BEE6C5;}
+  .medicao-pago-badge.nao-pago{background:#FFF1E0;color:#A35A00;border:1px solid #F3D8AE;}
+  .medicao-pago-btn{padding:6px 10px;border-radius:7px;border:1px solid #ddd;background:#fff;font-size:11.5px;font-weight:700;cursor:pointer;color:var(--charcoal);white-space:nowrap;}
+  .medicao-resumo-pago{font-size:12px;font-weight:700;color:var(--brand-graymid);margin:-4px 2px 12px;}
 
   /* ---------- relatório de medição (tela cheia, imprimível) ---------- */
   .relatorio-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#fff;z-index:250;overflow-y:auto;}
@@ -605,7 +611,16 @@ window.addEventListener('unhandledrejection', function(e) {
             <input type="date" id="inpMedicaoGeralDataAte" onchange="renderHistoricoGeralMedicao()">
             <button type="button" class="link-btn" onclick="limparPeriodoGeralMedicao()">Limpar</button>
           </div>
-          <div class="medicao-periodo-sub">Mostra as medições já finalizadas de TODAS as pessoas nesse período — não precisa escolher ninguém ali em cima, é um filtro geral pra ver tudo que foi medido numa época.</div>
+          <div class="busca-box medicao-periodo-box">
+            <label class="medicao-periodo-label">Pagamento</label>
+            <select id="selFiltroPagoGeral" onchange="renderHistoricoGeralMedicao()">
+              <option value="todos">Todos</option>
+              <option value="nao">Só não pagos</option>
+              <option value="sim">Só pagos</option>
+            </select>
+          </div>
+          <div class="medicao-periodo-sub">Mostra as medições já finalizadas de TODAS as pessoas nesse período — não precisa escolher ninguém ali em cima, é um filtro geral pra ver tudo que foi medido numa época. Cada lote tem um controle simples de "pago"/"não pago" — só pra você não perder de vista o que ainda falta acertar.</div>
+          <div class="medicao-resumo-pago" id="medicaoResumoPago"></div>
           <button type="button" class="btn-secondary" id="btnRelatorioConsolidadoMedicao" onclick="gerarRelatorioConsolidadoMedicao()" style="width:100%;margin-bottom:12px;">🖨️ Relatório consolidado deste período (todas as pessoas juntas)</button>
           <div id="medicaoHistoricoGeral"><div class="loading">Carregando...</div></div>
         </div>
@@ -2523,6 +2538,7 @@ function renderHistoricoMedicao() {
     <div class="medicao-historico-item">
       <span class="info"><b>${fmtData((m.criado_em || '').slice(0,10))}</b> · ${m.quantidade_servicos} serviço(s) · medido por ${escapeHtml(m.medido_por)}</span>
       <button type="button" class="btn-secondary" onclick="reabrirRelatorioMedicao(${m.id})">Ver relatório</button>
+      ${linhaPagoMedicao(m)}
     </div>
   `).join('');
 }
@@ -2550,21 +2566,81 @@ function limparPeriodoGeralMedicao() {
   document.getElementById('inpMedicaoGeralDataAte').value = '';
   renderHistoricoGeralMedicao();
 }
+// -------- filtro de PAGAMENTO (2026-10-14) — junto do filtro geral de
+// período, pra ver só o que falta pagar (ou só o que já foi pago) --------
+function filtroPagoGeralAtivo() {
+  const el = document.getElementById('selFiltroPagoGeral');
+  return el ? el.value : 'todos';
+}
 function renderHistoricoGeralMedicao() {
   const cont = document.getElementById('medicaoHistoricoGeral');
-  if (!todasMedicoes.length) { cont.innerHTML = '<div class="empty">Nenhuma medição finalizada ainda.</div>'; return; }
+  const resumo = document.getElementById('medicaoResumoPago');
+  if (!todasMedicoes.length) {
+    cont.innerHTML = '<div class="empty">Nenhuma medição finalizada ainda.</div>';
+    if (resumo) resumo.textContent = '';
+    return;
+  }
   const { de, ate } = periodoGeralMedicaoAtivo();
-  const filtradas = todasMedicoes.filter(m => dataDentroDoPeriodo((m.criado_em || '').slice(0, 10), de, ate));
-  if (!filtradas.length) { cont.innerHTML = '<div class="empty">Nenhuma medição nesse período.</div>'; return; }
+  const doPeriodo = todasMedicoes.filter(m => dataDentroDoPeriodo((m.criado_em || '').slice(0, 10), de, ate));
+  if (!doPeriodo.length) {
+    cont.innerHTML = '<div class="empty">Nenhuma medição nesse período.</div>';
+    if (resumo) resumo.textContent = '';
+    return;
+  }
+  const pagosCount = doPeriodo.filter(m => m.pago).length;
+  if (resumo) resumo.textContent = `💰 ${pagosCount} pago(s) · ⏳ ${doPeriodo.length - pagosCount} não pago(s) nesse período`;
+
+  const filtroPago = filtroPagoGeralAtivo();
+  const filtradas = doPeriodo.filter(m => filtroPago === 'todos' ? true : (filtroPago === 'sim' ? !!m.pago : !m.pago));
+  if (!filtradas.length) { cont.innerHTML = '<div class="empty">Nenhuma medição com esse filtro de pagamento nesse período.</div>'; return; }
   cont.innerHTML = filtradas.map(m => {
     const f = funcionariosPorId[m.funcionario_id];
     return `
     <div class="medicao-historico-item">
       <span class="info"><b>${fmtData((m.criado_em || '').slice(0,10))}</b> · ${escapeHtml(f ? f.nome : '(pessoa não encontrada)')} · ${m.quantidade_servicos} serviço(s) · medido por ${escapeHtml(m.medido_por)}</span>
       <button type="button" class="btn-secondary" onclick="reabrirRelatorioMedicaoGeral(${m.id})">Ver relatório</button>
+      ${linhaPagoMedicao(m)}
     </div>
   `;
   }).join('');
+}
+
+// -------- marcar uma medição (lote) como PAGA (2026-10-14) — "dentro de
+// medição coloca um campo simples pra marcar quando já foi pago, só pra ter
+// um controle". Guardado por LOTE (medicoes.pago + pago_em), não por
+// serviço individual — o pagamento normalmente é feito pro lote inteiro de
+// uma vez, e assim fica igual tanto no histórico "por pessoa" quanto em
+// "Todas as medições". Clicar de novo desfaz (pago -> não pago), pra
+// corrigir engano sem precisar mexer no banco na mão.
+function linhaPagoMedicao(m) {
+  const pago = !!m.pago;
+  const badge = pago
+    ? `💰 Pago${m.pago_em ? ' em ' + fmtData((m.pago_em || '').slice(0, 10)) : ''}`
+    : '⏳ Não pago';
+  return `
+    <div class="medicao-pago-linha">
+      <span class="medicao-pago-badge ${pago ? 'pago' : 'nao-pago'}">${badge}</span>
+      <button type="button" class="medicao-pago-btn" onclick="togglePagoMedicao(${m.id})">${pago ? 'Desmarcar pago' : 'Marcar como pago'}</button>
+    </div>
+  `;
+}
+async function togglePagoMedicao(id) {
+  const lote = todasMedicoes.find(m => m.id === id) || medicoesDaPessoaAtual.find(m => m.id === id);
+  if (!lote) return;
+  if (!sb) { showToast('⚠️ Sem conexão com o banco.'); return; }
+  const novoPago = !lote.pago;
+  const patch = { pago: novoPago, pago_em: novoPago ? new Date().toISOString() : null };
+  const { error } = await sb.from('medicoes').update(patch).eq('id', id);
+  if (error) { showToast('⚠️ Erro ao atualizar o pagamento: ' + error.message); return; }
+  [todasMedicoes, medicoesDaPessoaAtual].forEach(lista => {
+    const m = lista.find(x => x.id === id);
+    if (m) Object.assign(m, patch);
+  });
+  renderHistoricoGeralMedicao();
+  renderHistoricoMedicao();
+  const f = funcionariosPorId[lote.funcionario_id];
+  showToast(novoPago ? `💰 Marcado como pago${f ? ' — ' + f.nome : ''}.` : `↩️ Marcado como não pago${f ? ' — ' + f.nome : ''}.`);
+  registrarEdicao('editar', `Marcou a medição #${id}${f ? ' de ' + f.nome : ''} como ${novoPago ? 'PAGA' : 'NÃO paga'}`);
 }
 async function reabrirRelatorioMedicaoGeral(medicaoId) {
   const m = todasMedicoes.find(x => x.id === medicaoId);
@@ -2646,6 +2722,15 @@ function mostrarRelatorioConsolidadoMedicao(lotes, registros, periodo) {
         }).join('');
       }).join('');
     totalGeral += totalPessoa;
+    // status de pagamento do bloco (2026-10-14) — o pagamento é por LOTE, e
+    // uma pessoa pode ter mais de um lote no mesmo período, então resume:
+    // se é só 1 lote, mostra o status dele direto; se são vários, conta
+    // quantos já estão pagos.
+    const lotesPagos = grupo.lotes.filter(l => l.pago).length;
+    const totalLotesPessoa = grupo.lotes.length;
+    const statusPagamento = totalLotesPessoa === 1
+      ? (grupo.lotes[0].pago ? `✅ Pago${grupo.lotes[0].pago_em ? ' em ' + fmtData((grupo.lotes[0].pago_em || '').slice(0, 10)) : ''}` : '⏳ Ainda não pago')
+      : (lotesPagos === totalLotesPessoa ? '✅ Todos os lotes pagos' : lotesPagos === 0 ? '⏳ Nenhum lote pago ainda' : `⚠️ ${lotesPagos} de ${totalLotesPessoa} lote(s) pago(s)`);
     return `
       <div class="relatorio-consolidado-pessoa">
         <h3>${escapeHtml(f ? f.nome : '(pessoa não encontrada)')}${f && f.empresa ? ' — ' + escapeHtml(f.empresa) : ''}</h3>
@@ -2653,7 +2738,7 @@ function mostrarRelatorioConsolidadoMedicao(lotes, registros, periodo) {
           <thead><tr><th>Medido em</th><th>Local</th><th>Serviço</th><th>Período</th><th>Retrabalho</th><th>Descrição</th></tr></thead>
           <tbody>${linhas || '<tr><td colspan="6">Nenhum serviço.</td></tr>'}</tbody>
         </table>
-        <div class="relatorio-subtotal">Subtotal de ${escapeHtml(f ? f.nome : '(pessoa)')}: ${totalPessoa} serviço(s)</div>
+        <div class="relatorio-subtotal">Subtotal de ${escapeHtml(f ? f.nome : '(pessoa)')}: ${totalPessoa} serviço(s) · Pagamento: ${statusPagamento}</div>
       </div>
     `;
   }).join('');
@@ -2713,6 +2798,7 @@ function mostrarRelatorioMedicao(funcionario, registros, lote) {
       <div class="campo"><b>Empresa</b>${escapeHtml(funcionario.empresa || '—')}</div>
       <div class="campo"><b>Período dos serviços</b>${periodoInicio} a ${periodoFim}</div>
       <div class="campo"><b>Data da medição</b>${fmtData((lote.criado_em || '').slice(0,10))}</div>
+      <div class="campo"><b>Pagamento</b>${lote.pago ? `✅ Pago${lote.pago_em ? ' em ' + fmtData((lote.pago_em || '').slice(0,10)) : ''}` : '⏳ Ainda não pago'}</div>
     </div>
     <table class="relatorio-tabela">
       <thead><tr><th>Local</th><th>Serviço</th><th>Período</th><th>Retrabalho</th><th>Descrição</th></tr></thead>
