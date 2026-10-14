@@ -2640,6 +2640,7 @@ function mostrarRelatorioConsolidadoMedicao(lotes, registros, periodo) {
             <td>${escapeHtml(labelLocalRegistro(r))}</td>
             <td>${escapeHtml(servico ? servico.nome : '—')}</td>
             <td>${periodoServico}</td>
+            <td>${escapeHtml(r.retrabalho || '—')}</td>
             <td>${escapeHtml(r.observacao || '—')}</td>
           </tr>`;
         }).join('');
@@ -2649,8 +2650,8 @@ function mostrarRelatorioConsolidadoMedicao(lotes, registros, periodo) {
       <div class="relatorio-consolidado-pessoa">
         <h3>${escapeHtml(f ? f.nome : '(pessoa não encontrada)')}${f && f.empresa ? ' — ' + escapeHtml(f.empresa) : ''}</h3>
         <table class="relatorio-tabela">
-          <thead><tr><th>Medido em</th><th>Local</th><th>Serviço</th><th>Período</th><th>Descrição</th></tr></thead>
-          <tbody>${linhas || '<tr><td colspan="5">Nenhum serviço.</td></tr>'}</tbody>
+          <thead><tr><th>Medido em</th><th>Local</th><th>Serviço</th><th>Período</th><th>Retrabalho</th><th>Descrição</th></tr></thead>
+          <tbody>${linhas || '<tr><td colspan="6">Nenhum serviço.</td></tr>'}</tbody>
         </table>
         <div class="relatorio-subtotal">Subtotal de ${escapeHtml(f ? f.nome : '(pessoa)')}: ${totalPessoa} serviço(s)</div>
       </div>
