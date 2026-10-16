@@ -1,60 +1,129 @@
-// Service Worker do app Diamond Millennium.
-// Só cuida da "casca" do app (o arquivo app.html, o manifest e os ícones)
-// pra abrir rápido e instalar como app de verdade. NÃO mexe em nada que
-// venha do Supabase — cada aba continua sempre buscando dado novo na
-// hora, isso aqui só deixa a abertura do app mais rápida/instalável.
+// Service worker do app GSJ Marcenaria.
+// Guarda o "esqueleto" do app (as páginas + manifest + ícones) pra abrir
+// mesmo offline. CDNs externos (fontes, Supabase, html2canvas/jsPDF) e
+// chamadas de rede pra nuvem NÃO passam por aqui — seguem direto, porque
+// precisam de internet de verdade (salvar/abrir da nuvem exige conexão).
+//
+// Pra publicar uma atualização: troque o número da versão abaixo
+// (CACHE_VERSION) sempre que mudar algum arquivo. Sem isso, quem já
+// instalou o app pode continuar vendo a versão antiga por um tempo.
+const CACHE_VERSION = "v10";
+const CACHE_NAME = "gsj-app-" + CACHE_VERSION;
 
-const CACHE_NOME = 'diamond-app-shell-v1';
-const ARQUIVOS_DA_CASCA = [
-  './app.html',
-  './manifest.json',
-  './icon-192.png',
-  './icon-512.png',
-  './icon-maskable-192.png',
-  './icon-maskable-512.png'
+const PRECACHE_URLS = [
+  "./",
+  "./index.html",
+  "./orcamento.html",
+  "./contrato.html",
+  "./recibo.html",
+  "./termo-entrega.html",
+  "./plano-de-cortes.html",
+  "./admin.html",
+  "./obras.html",
+  "./cliente.html",
+  "./licitacoes.html",
+  "./manifest.webmanifest",
+  "./shell.css",
+  "./auth.js",
+  "./wpp.js",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png",
+  "./icons/icon-maskable-512.png"
 ];
 
-self.addEventListener('install', (event) => {
+self.addEventListener("install", function (event) {
   event.waitUntil(
-    caches.open(CACHE_NOME).then((cache) => cache.addAll(ARQUIVOS_DA_CASCA))
+    caches.open(CACHE_NAME)
+      .then(function (cache) { return cache.addAll(PRECACHE_URLS); })
+      .then(function () { return self.skipWaiting(); })
   );
-  self.skipWaiting();
 });
 
-self.addEventListener('activate', (event) => {
+self.addEventListener("activate", function (event) {
   event.waitUntil(
-    caches.keys().then((nomes) =>
-      Promise.all(
-        nomes.filter((n) => n !== CACHE_NOME).map((n) => caches.delete(n))
-      )
-    )
+    caches.keys().then(function (keys) {
+      return Promise.all(
+        keys.filter(function (key) { return key !== CACHE_NAME; })
+            .map(function (key) { return caches.delete(key); })
+      );
+    }).then(function () { return self.clients.claim(); })
   );
-  self.clients.claim();
 });
 
-self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
+self.addEventListener("fetch", function (event) {
+  const req = event.request;
 
-  // Só intercepta pedidos da casca do app (mesmo domínio, arquivos
-  // listados acima). Tudo mais (Supabase, as telas de dentro de cada
-  // aba, etc.) passa direto pra rede, sem cache nenhum — evita mostrar
-  // dado velho de presença/equipe por engano.
-  const ehArquivoDaCasca = ARQUIVOS_DA_CASCA.some((a) =>
-    url.pathname.endsWith(a.replace('./', '/'))
-  );
-  if (!ehArquivoDaCasca) return;
+  const url = new URL(req.url);
+
+  // bibliotecas de CDN (Supabase e as de PDF do WhatsApp): guarda em cache pra a página não esperar a internet
+  // a cada troca de tela. Só ela — o resto dos CDNs e a nuvem seguem direto.
+  const ehLibPdf = url.hostname === "cdnjs.cloudflare.com" &&
+    (url.pathname.indexOf("/html2canvas/") !== -1 || url.pathname.indexOf("/jspdf/") !== -1);
+  if (req.method === "GET" && ((url.hostname === "cdn.jsdelivr.net" && url.pathname.indexOf("/npm/@supabase/supabase-js") === 0) || ehLibPdf)) {
+    event.respondWith(
+      caches.match(req).then(function (cached) {
+        const network = fetch(req).then(function (response) {
+          if (response && (response.ok || response.type === "opaque")) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then(function (cache) { cache.put(req, copy); });
+          }
+          return response;
+        }).catch(function () { return cached; });
+        return cached || network;
+      })
+    );
+    return;
+  }
+
+  // o resto: só GET e só do mesmo site (nunca intercepta Supabase/nuvem)
+  if (req.method !== "GET" || url.origin !== self.location.origin) {
+    return;
+  }
 
   event.respondWith(
-    caches.match(event.request).then((respostaCache) => {
-      const buscaRede = fetch(event.request)
-        .then((respostaRede) => {
-          caches.open(CACHE_NOME).then((cache) => cache.put(event.request, respostaRede.clone()));
-          return respostaRede;
-        })
-        .catch(() => respostaCache);
-      // Mostra o que já tem em cache na hora (abertura rápida/offline),
-      // e atualiza o cache em segundo plano pra próxima vez.
-      return respostaCache || buscaRede;
+    caches.match(req).then(function (cached) {
+      const network = fetch(req).then(function (response) {
+        if (response && response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then(function (cache) { cache.put(req, copy); });
+        }
+        return response;
+      }).catch(function () { return cached; });
+
+      // stale-while-revalidate: mostra o que já tem em cache na hora
+      // (rápido, funciona offline) e atualiza o cache em segundo plano
+      return cached || network;
+    })
+  );
+});
+
+// ---- avisos (web push): licitações novas ----
+self.addEventListener("push", function (event) {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (e) { data = { title: "GSJ", body: event.data ? event.data.text() : "" }; }
+  const title = data.title || "GSJ Marcenaria";
+  event.waitUntil(self.registration.showNotification(title, {
+    body: data.body || "",
+    icon: "./icons/icon-192.png",
+    badge: "./icons/icon-192.png",
+    tag: data.tag || "gsj",
+    renotify: true,
+    data: { url: data.url || "./licitacoes.html" }
+  }));
+});
+
+self.addEventListener("notificationclick", function (event) {
+  event.notification.close();
+  const alvo = new URL((event.notification.data && event.notification.data.url) || "./licitacoes.html", self.registration.scope).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(function (lista) {
+      for (const c of lista) {
+        if (c.url.indexOf(self.registration.scope) === 0 && "focus" in c) {
+          if ("navigate" in c) { c.navigate(alvo); }
+          return c.focus();
+        }
+      }
+      return self.clients.openWindow(alvo);
     })
   );
 });

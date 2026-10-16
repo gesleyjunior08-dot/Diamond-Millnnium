@@ -1,0 +1,1125 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Plano de Cortes GSJ</title>
+<style>
+  html { color-scheme: light dark; }
+  body { margin: 0; }
+  html, body { overflow-x: hidden; }
+
+  @import url("https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&family=Source+Sans+3:wght@400;500;600;700&display=swap");
+
+  :root {
+    --bg: #faf6ef;
+    --surface: #ffffff;
+    --surface-2: #fffdf9;
+    --text: #2b2118;
+    --text-muted: #6b5d4f;
+    --accent: #954f14;
+    --accent-2: #c9832e;
+    --accent-soft: #f4e9da;
+    --line: #e3d9c8;
+    --danger: #a6402f;
+    --danger-soft: #f4e1dc;
+    --shadow: 0 1px 2px rgba(43, 33, 24, 0.05), 0 12px 32px rgba(43, 33, 24, 0.08);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1c1712;
+      --surface: #241d17;
+      --surface-2: #2b2319;
+      --text: #efe7da;
+      --text-muted: #b3a591;
+      --accent: #dd9752;
+      --accent-2: #e8a866;
+      --accent-soft: #3a2c1e;
+      --line: #3c3226;
+      --danger: #d97d68;
+      --danger-soft: #3a241f;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 12px 32px rgba(0, 0, 0, 0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1c1712;
+    --surface: #241d17;
+    --surface-2: #2b2319;
+    --text: #efe7da;
+    --text-muted: #b3a591;
+    --accent: #dd9752;
+    --accent-2: #e8a866;
+    --accent-soft: #3a2c1e;
+    --line: #3c3226;
+    --danger: #d97d68;
+    --danger-soft: #3a241f;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 12px 32px rgba(0, 0, 0, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  /* ---- correcao de overflow horizontal no mobile ---- */
+  .layout > * { min-width: 0; }
+  .field-row > *, .field-row-3 > *, .field-row-4 > * { min-width: 0; }
+  .cond-grid > *, .info-grid > * { min-width: 0; }
+  .item-row > * { min-width: 0; }
+  .peca-block, .peca-block * { min-width: 0; }
+  .field input, .field textarea, .field select { min-width: 0; }
+
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.5;
+    padding: 32px 20px 64px;
+  }
+
+  .app { max-width: 1180px; margin: 0 auto; }
+
+  .app-header { margin-bottom: 24px; max-width: 68ch; }
+  .app-header .eyebrow {
+    font-size: 12.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 8px;
+  }
+  .app-header h1 {
+    font-family: "Newsreader", ui-serif, Georgia, serif; font-weight: 600;
+    font-size: clamp(24px, 3.6vw, 30px); margin: 0 0 8px;
+  }
+  .app-header p { color: var(--text-muted); font-size: 15px; margin: 0; }
+
+  .layout { display: grid; grid-template-columns: minmax(300px, 390px) 1fr; gap: 26px; align-items: start; }
+  @media (max-width: 880px) { .layout { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    padding: 22px; box-shadow: var(--shadow);
+  }
+
+  .panel h2 {
+    font-family: "Newsreader", ui-serif, Georgia, serif; font-weight: 600; font-size: 16px;
+    margin: 0 0 14px;
+  }
+  .panel h2.with-gap { margin-top: 22px; }
+
+  .field { margin-bottom: 12px; }
+  .field label {
+    display: block; font-size: 12px; font-weight: 600; color: var(--text-muted);
+    margin-bottom: 5px; letter-spacing: 0.01em;
+  }
+  .field input, .field textarea, .field select {
+    width: 100%; font-family: inherit; font-size: 14.5px; color: var(--text);
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px;
+    padding: 8px 10px;
+  }
+  .field textarea { resize: vertical; min-height: 52px; line-height: 1.4; }
+  .field input:focus-visible, .field textarea:focus-visible, .field select:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 1px;
+  }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .field-hint { font-size: 11.5px; color: var(--text-muted); margin: -8px 0 14px; line-height: 1.5; }
+
+  .peca-block {
+    border: 1px solid var(--line); border-radius: 10px; padding: 12px;
+    margin-bottom: 10px; background: var(--surface-2);
+  }
+  .peca-block .field { margin-bottom: 8px; }
+  .peca-block .field:last-of-type { margin-bottom: 0; }
+  .block-remove {
+    width: 100%; margin-top: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+    border-radius: 8px; padding: 7px 10px; border: 1px solid var(--line);
+    background: transparent; color: var(--text-muted); font-family: inherit;
+  }
+  .block-remove:hover { background: var(--danger-soft); color: var(--danger); border-color: var(--danger-soft); }
+
+  .preco-row {
+    display: grid; grid-template-columns: 1fr 130px; gap: 10px; align-items: center;
+    margin-bottom: 8px;
+  }
+  .preco-row .mat-label { font-size: 13px; color: var(--text); }
+  .preco-row input { font-variant-numeric: tabular-nums; }
+
+  .peca-check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text); margin: 4px 0 0; }
+  .peca-check input[type="checkbox"] { width: auto; flex: none; }
+
+  .btn {
+    font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+    border-radius: 9px; padding: 9px 14px; border: 1px solid var(--line);
+    background: var(--surface-2); color: var(--text);
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn-add { width: 100%; margin-top: 2px; }
+  .btn-primary {
+    background: var(--accent); border-color: var(--accent); color: #fff8ef; width: 100%;
+    font-size: 15px; padding: 12px 14px; margin-top: 18px;
+  }
+  .btn-primary:hover { background: var(--accent-2); border-color: var(--accent-2); }
+  .btn-ghost { background: transparent; border-color: transparent; color: var(--text-muted); font-size: 13px; padding: 6px 4px; }
+  .btn-ghost:hover { color: var(--accent); }
+
+  .toolbar-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+
+  .print-note {
+    font-size: 12.5px; color: var(--text-muted); margin-top: 10px; line-height: 1.5;
+  }
+
+  /* ---- nuvem: barra de ações + status ---- */
+  .cloud-bar { display: flex; gap: 8px; margin: 10px 0 4px; }
+  .btn-cloud { flex: 1; font-size: 13px; padding: 8px 10px; }
+  .btn-cloud-save { background: var(--accent-soft); border-color: var(--accent-2); color: var(--accent); font-weight: 700; }
+  .btn-cloud-save:hover { background: var(--accent); color: #fff8ef; }
+  .cloud-status {
+    font-size: 11.5px; color: var(--text-muted); margin: 0 0 14px; padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .cloud-status-error { color: var(--danger); }
+
+  /* ---- gate de acesso único compartilhado ---- */
+  .auth-gate {
+    position: fixed; inset: 0; z-index: 1000; background: var(--bg);
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .auth-gate[hidden], .cloud-modal[hidden] { display: none !important; }
+  .auth-box {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: var(--shadow); padding: 28px; max-width: 360px; width: 100%; text-align: center;
+  }
+  .auth-box h2 {
+    font-family: "Newsreader", ui-serif, Georgia, serif; font-weight: 600; font-size: 19px; margin: 0 0 8px;
+  }
+  .auth-box p { font-size: 13.5px; color: var(--text-muted); margin: 0 0 16px; line-height: 1.5; }
+  .auth-box input {
+    width: 100%; font-family: inherit; font-size: 15px; color: var(--text); text-align: center;
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
+  }
+  .auth-box input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .auth-error { color: var(--danger); font-size: 12.5px; margin: 8px 0 0 !important; }
+
+  /* ---- modal "abrir da nuvem" ---- */
+  .cloud-modal {
+    position: fixed; inset: 0; z-index: 900; background: rgba(43, 33, 24, 0.45);
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .cloud-modal-box {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: var(--shadow); padding: 20px; max-width: 480px; width: 100%;
+    max-height: 80vh; display: flex; flex-direction: column;
+  }
+  .cloud-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .cloud-modal-header h2 { font-family: "Newsreader", ui-serif, Georgia, serif; font-weight: 600; font-size: 17px; }
+  .cloud-list { overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+  .cloud-list-item {
+    display: flex; flex-direction: column; gap: 2px; text-align: left; font-family: inherit;
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 9px;
+    padding: 9px 12px; cursor: pointer; color: var(--text);
+  }
+  .cloud-list-item:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .cloud-list-item strong { font-size: 14px; }
+  .cloud-list-item span { font-size: 11.5px; color: var(--text-muted); }
+
+  /* ---- preview sheet, styled to match the emitted PDF ---- */
+  .preview-wrap { display: flex; justify-content: center; }
+  .sheet {
+    background: #fffefb; color: #2b2118; width: 100%; max-width: 210mm;
+    padding: 14mm 16mm; border-radius: 4px; box-shadow: var(--shadow);
+    border: 1px solid var(--line); overflow-x: auto;
+  }
+  .sheet-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+  .sheet-company { display: flex; align-items: flex-start; gap: 10px; }
+  .sheet-company .name {
+    font-family: "Newsreader", ui-serif, Georgia, serif; font-weight: 700; font-size: 27px; margin: 0;
+  }
+  .sheet-company .tag { font-size: 12px; color: #6b5d4f; margin-top: 2px; }
+  .sheet-company .cnpj { font-size: 11px; color: #6b5d4f; margin-top: 1px; }
+  .sheet-meta { text-align: right; font-size: 12px; color: #6b5d4f; line-height: 1.6; }
+  .sheet-meta .doc-title {
+    font-weight: 700; font-size: 15px; color: #954f14; letter-spacing: 0.03em;
+    margin-bottom: 4px;
+  }
+  .sheet-rule { height: 2px; background: #954f14; margin: 8px 0 10px; border: none; }
+  .sheet-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+    color: #954f14; margin: 0 0 4px;
+  }
+  .sheet-client-block { margin: 0 0 10px; }
+  .sheet-client { font-family: "Newsreader", ui-serif, Georgia, serif; font-weight: 700; font-size: 17px; margin: 0 0 3px; }
+  .sheet-client-meta { font-size: 11.5px; color: #6b5d4f; margin: 0 0 2px; }
+  .sheet-signature { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 10px; }
+  .sig-line { border-top: 1px solid #2b2118; margin-top: 10px; }
+  .sig-label { font-size: 10.5px; color: #6b5d4f; margin: 6px 0 0; line-height: 1.4; }
+
+  table.sheet-items { width: 100%; border-collapse: collapse; margin-bottom: 6px; font-size: 12px; }
+  table.sheet-items thead th {
+    text-align: left; background: #f4e9da; color: #954f14; font-weight: 700;
+    padding: 5px 9px; border-bottom: 1.5px solid #954f14;
+  }
+  table.sheet-items thead th.num { text-align: right; }
+  table.sheet-items tbody td { padding: 5px 9px; border-bottom: 1px solid #e3d9c8; }
+  table.sheet-items tbody td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  .corte-group { margin: 0 0 14px; }
+  .corte-group-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin: 0 0 4px; gap: 10px;
+  }
+  .corte-group-head .mat {
+    font-family: "Newsreader", ui-serif, Georgia, serif; font-weight: 700; font-size: 13.5px; color: #954f14;
+  }
+  .corte-group-head .badge {
+    font-size: 11px; font-weight: 700; color: #954f14; background: #f4e9da;
+    border-radius: 999px; padding: 2px 10px; white-space: nowrap;
+  }
+  .corte-stats {
+    background: #f4e9da; border: 1px solid #e3d9c8; border-left: 3px solid #954f14;
+    border-radius: 7px; padding: 7px 10px; margin: 0 0 10px; font-size: 11.5px;
+    color: #2b2118; line-height: 1.55;
+  }
+  .corte-stats b { color: #954f14; }
+  .corte-warn { color: #a6402f; font-weight: 700; }
+
+  .corte-total {
+    background: #fbf3e7; border: 1px dashed #c9a876; border-radius: 8px;
+    padding: 9px 12px; margin: 4px 0 12px; font-size: 12.5px; line-height: 1.5;
+  }
+  .corte-total .num { font-weight: 700; color: #954f14; font-size: 14.5px; }
+
+  .corte-sheet { margin: 0 0 12px; page-break-inside: avoid; }
+  .corte-sheet-title { font-size: 11px; font-weight: 700; color: #2b2118; margin: 0 0 4px; }
+  .corte-sheet-title .pct { font-weight: 400; color: #6b5d4f; }
+  table.corte-legend { font-size: 10px; margin: 4px 0 10px; }
+  table.corte-legend th, table.corte-legend td { padding: 3px 7px; }
+
+  .sheet-note { font-size: 11px; color: #6b5d4f; line-height: 1.5; margin: 0 0 12px; }
+
+  .cond-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid #e3d9c8;
+    border-radius: 6px; overflow: hidden; margin-top: 8px;
+  }
+  .cond-cell { padding: 7px 10px; border-left: 1px solid #e3d9c8; }
+  .cond-cell:first-child { border-left: none; }
+  .cond-cell .lbl { font-size: 9px; font-weight: 700; letter-spacing: 0.06em; color: #6b5d4f; text-transform: uppercase; }
+  .cond-cell .val { font-size: 12px; margin-top: 3px; line-height: 1.35; }
+
+  .sheet-footer {
+    text-align: center; font-size: 10.5px; color: #6b5d4f; margin-top: 10px;
+    border-top: 1px solid #e3d9c8; padding-top: 4px;
+  }
+
+  @media print {
+    body { padding: 0; background: #fff; }
+    .app-header, .panel:first-of-type, .toolbar-row, .print-note { display: none; }
+    .layout { display: block; }
+    .preview-wrap { display: block; }
+    .sheet { box-shadow: none; border: none; border-radius: 0; max-width: none; width: 100%; padding: 0; overflow: visible; }
+    @page { size: A4; margin: 13mm 15mm; }
+    .auth-gate, .cloud-modal { display: none !important; }
+  }
+
+  .toolbar-lockup { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .toolbar-lockup svg { width: 22px; height: 22px; color: var(--accent); }
+  .toolbar-lockup span {
+    font-family: "Newsreader", ui-serif, Georgia, serif; font-weight: 700; font-size: 15px; color: var(--text);
+  }
+
+  .btn-mobile-preview {
+    display: none; position: fixed; bottom: 20px; right: 20px; z-index: 500;
+    background: var(--accent); color: #fff8ef; border: none; border-radius: 999px;
+    padding: 12px 20px; font-family: inherit; font-weight: 600; font-size: 14px;
+    box-shadow: var(--shadow); cursor: pointer; align-items: center; gap: 6px;
+  }
+  @media (max-width: 880px) { .btn-mobile-preview { display: inline-flex; } }
+  .btn-close-preview {
+    display: none; position: sticky; top: 0; margin: 0 0 14px auto;
+    background: var(--surface); color: var(--text); border: 1px solid var(--line);
+    border-radius: 999px; padding: 8px 16px; font-family: inherit; font-weight: 600;
+    font-size: 13px; cursor: pointer; box-shadow: var(--shadow); align-items: center; gap: 6px;
+  }
+  .preview-wrap.mobile-fullscreen {
+    position: fixed; inset: 0; z-index: 600; background: var(--bg);
+    overflow-y: auto; padding: 16px; margin: 0;
+    display: flex !important; flex-direction: column; align-items: center;
+  }
+  .preview-wrap.mobile-fullscreen .btn-close-preview { display: flex; }
+  @media print { .btn-mobile-preview, .btn-close-preview { display: none !important; } }
+
+  .preview-wrap.mobile-fullscreen .sheet { padding: 28px 18px; }
+</style>
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#954f14">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GSJ">
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("./sw.js").catch(function () {});
+    });
+  }
+</script>
+<link rel="stylesheet" href="./shell.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./auth.js"></script>
+<script src="./wpp.js"></script>
+<script>window.GSJ && window.GSJ.boot({ page: "plano" });</script>
+</head>
+<body>
+
+<div id="gsjCloudModal" class="cloud-modal" hidden>
+  <div class="cloud-modal-box">
+    <div class="cloud-modal-header">
+      <h2 style="margin:0">Planos salvos na nuvem</h2>
+      <button class="btn btn-ghost" id="btnCloudClose" type="button">Fechar</button>
+    </div>
+    <div id="cloudList" class="cloud-list"><span class="gsj-skel"></span><span class="gsj-skel"></span></div>
+  </div>
+</div>
+
+<div class="app" id="gsjPageRoot">
+  <div class="app-header">
+    <div class="toolbar-lockup"><span>GSJ</span></div>
+    <p class="eyebrow">GSJ · ferramenta interna</p>
+    <h1>Plano de cortes</h1>
+    <p>Liste as peças do projeto (a lista de corte de cada módulo, não o módulo inteiro) e veja o desenho de como encaixar cada peça nas chapas, quantas chapas você precisa e o aproveitamento real.</p>
+  </div>
+
+  <div class="layout">
+    <div class="panel" id="formPanel">
+      <div class="toolbar-row">
+        <h2 style="margin:0">Dados do plano</h2>
+        <button class="btn btn-ghost" id="btnReset" type="button">Novo plano</button>
+      </div>
+
+      <div class="cloud-bar">
+        <button class="btn btn-cloud" id="btnCloudOpen" type="button">☁ Abrir da nuvem</button>
+        <button class="btn btn-cloud btn-cloud-save" id="btnCloudSave" type="button">☁ Salvar na nuvem</button>
+      </div>
+      <p class="cloud-status" id="cloudStatus">Ainda não salvo na nuvem.</p>
+
+      <div class="field">
+        <label for="fPlanoId">Código do plano</label>
+        <input id="fPlanoId" type="text" placeholder="Ex: PC-20260909-561" />
+      </div>
+      <div class="field">
+        <label for="fRefId">Nº do orçamento/contrato de referência</label>
+        <input id="fRefId" type="text" placeholder="Ex: GSJ-20260907-561" />
+      </div>
+      <div class="field">
+        <label for="fCliente">Cliente / projeto</label>
+        <input id="fCliente" type="text" placeholder="Ex: João e Maria — armário de cozinha" />
+      </div>
+
+      <h2 class="with-gap">Chapa</h2>
+      <div class="field-row">
+        <div class="field">
+          <label for="fChapaComp">Comprimento da chapa (cm)</label>
+          <input id="fChapaComp" type="number" min="1" step="0.1" />
+        </div>
+        <div class="field">
+          <label for="fChapaLarg">Largura da chapa (cm)</label>
+          <input id="fChapaLarg" type="number" min="1" step="0.1" />
+        </div>
+      </div>
+      <p class="field-hint" style="margin:-4px 0 12px;">Padrão pré-preenchido: 275×185cm (tamanho mais comum de chapa de MDF no Brasil). Ajuste se o seu fornecedor vender em outro tamanho.</p>
+      <div class="field">
+        <label for="fKerf">Espessura da serra / kerf (mm)</label>
+        <input id="fKerf" type="number" min="0" max="20" step="0.5" />
+        <p class="field-hint" style="margin:6px 0 0;">O quanto a serra "come" de material a cada corte — reservado como espaço real entre as peças no desenho do encaixe. 4mm é um valor comum pra serra circular; ajuste pro valor real da sua.</p>
+      </div>
+
+      <h2 class="with-gap">Peças a cortar</h2>
+      <p class="field-hint">Uma linha por peça plana (não por módulo) — ex: "Lateral do armário", não "Armário inteiro". Peças com o mesmo texto em "Material/espessura" são agrupadas e cortadas nas mesmas chapas. Marque "Travar direção do veio" pra chapas com textura/padrão direcionado — a peça não vira 90° no encaixe.</p>
+      <div id="pecasForm"></div>
+      <button class="btn btn-add" id="btnAddPeca" type="button">+ Adicionar peça</button>
+
+      <h2 class="with-gap">Preço por chapa (opcional)</h2>
+      <p class="field-hint">Preencha o preço da chapa de cada material pra ver o custo estimado de material no plano. Deixe em branco se não quiser mostrar custo.</p>
+      <div id="precosForm"></div>
+      <p class="field-hint" id="precosEmpty" style="display:none;">Adicione peças acima pra ver os materiais aqui.</p>
+
+      <h2 class="with-gap">Sua empresa</h2>
+      <div class="field">
+        <label for="fCompanyName">Nome</label>
+        <input id="fCompanyName" type="text" />
+      </div>
+      <div class="field">
+        <label for="fCompanyTag">Descrição curta</label>
+        <input id="fCompanyTag" type="text" />
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="fCompanyPhone">Telefone / WhatsApp</label>
+          <input id="fCompanyPhone" type="text" />
+        </div>
+        <div class="field">
+          <label for="fCompanyCnpj">CNPJ</label>
+          <input id="fCompanyCnpj" type="text" />
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="btnPrint" type="button">Gerar PDF</button>
+      <p class="print-note" id="pdfNote">Abre a janela de impressão do navegador — escolha "Salvar como PDF" no destino.</p>
+    </div>
+
+    <div class="preview-wrap">
+      <div class="sheet" id="sheet"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var STORAGE_KEY = "gsj-plano-cortes-draft";
+
+  var defaultState = {
+    planoId: "",
+    refId: "",
+    cliente: "Armário de cozinha — exemplo",
+    chapaComprimento: 275,
+    chapaLargura: 185,
+    kerfMm: 4,
+    pecas: [
+      { id: 1, desc: "Lateral do armário", comprimento: 200, largura: 60, quantidade: 2, material: "MDF 15mm Branco TX", travarVeio: true },
+      { id: 2, desc: "Prateleira interna", comprimento: 58, largura: 35, quantidade: 6, material: "MDF 15mm Branco TX", travarVeio: false },
+      { id: 3, desc: "Porta", comprimento: 70, largura: 40, quantidade: 4, material: "MDF 15mm Branco TX", travarVeio: true },
+      { id: 4, desc: "Fundo do armário", comprimento: 198, largura: 58, quantidade: 1, material: "MDF 6mm Branco", travarVeio: false }
+    ],
+    precos: {},
+    companyName: "GSJ",
+    companyTag: "Marcenaria & Móveis Planejados",
+    companyPhone: "(32) 98705-9159",
+    companyCnpj: "66.494.551/0001-67",
+    cloudId: null
+  };
+
+  // ---- nuvem (Supabase) — salvar/abrir planos compartilhados entre dispositivos ----
+  // Projeto Supabase reaproveitado da obra "Vision" (ver central.md, 2026-10-03).
+  // A anon key abaixo é pública por design (protegida por RLS + senha de acesso única
+  // da equipe, não por sigilo da key) — não é um segredo a esconder.
+  var sb = window.GSJ.sb;
+
+
+  function genPlanoId() {
+    var d = new Date();
+    var y = d.getFullYear();
+    var m = String(d.getMonth() + 1).padStart(2, "0");
+    var day = String(d.getDate()).padStart(2, "0");
+    var rand = Math.floor(100 + Math.random() * 900);
+    return "PC-" + y + m + day + "-" + rand;
+  }
+
+  function safeGet() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+  function safeSave() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  var saved = safeGet();
+  var state = saved ? Object.assign({}, defaultState, saved) : JSON.parse(JSON.stringify(defaultState));
+  if (!Array.isArray(state.pecas) || state.pecas.length === 0) {
+    state.pecas = [{ id: 1, desc: "", comprimento: 0, largura: 0, quantidade: 1, material: "", travarVeio: false }];
+  }
+  state.pecas.forEach(function (p, i) { if (p.id == null) p.id = i + 1; if (p.travarVeio == null) p.travarVeio = false; });
+  if (!state.precos || typeof state.precos !== "object") state.precos = {};
+  if (state.kerfMm == null) state.kerfMm = 4;
+  delete state.perdaPct;
+  if (!state.planoId) { state.planoId = genPlanoId(); }
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  function fmtBRL(n) {
+    n = Number(n) || 0;
+    return "R$ " + n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function fmtNum(n, casas) {
+    n = Number(n) || 0;
+    return n.toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas });
+  }
+  function fmtDate(d) {
+    return d.toLocaleDateString("pt-BR");
+  }
+  function nextId(arr) {
+    var max = 0;
+    (arr || []).forEach(function (x) { if (x.id > max) max = x.id; });
+    return max + 1;
+  }
+
+  var els = {};
+  ["fPlanoId", "fRefId", "fCliente", "fChapaComp", "fChapaLarg", "fKerf",
+   "fCompanyName", "fCompanyTag", "fCompanyPhone", "fCompanyCnpj"].forEach(function (id) {
+    els[id] = document.getElementById(id);
+  });
+
+  function loadFieldsFromState() {
+    els.fPlanoId.value = state.planoId;
+    els.fRefId.value = state.refId;
+    els.fCliente.value = state.cliente;
+    els.fChapaComp.value = state.chapaComprimento;
+    els.fChapaLarg.value = state.chapaLargura;
+    els.fKerf.value = state.kerfMm;
+    els.fCompanyName.value = state.companyName;
+    els.fCompanyTag.value = state.companyTag;
+    els.fCompanyPhone.value = state.companyPhone;
+    els.fCompanyCnpj.value = state.companyCnpj;
+  }
+
+  els.fPlanoId.addEventListener("input", function () { state.planoId = this.value; updatePreview(); safeSave(); });
+  els.fRefId.addEventListener("input", function () { state.refId = this.value; updatePreview(); safeSave(); });
+  els.fCliente.addEventListener("input", function () { state.cliente = this.value; updatePreview(); safeSave(); });
+  els.fChapaComp.addEventListener("input", function () { state.chapaComprimento = this.value; updatePreview(); safeSave(); });
+  els.fChapaLarg.addEventListener("input", function () { state.chapaLargura = this.value; updatePreview(); safeSave(); });
+  els.fKerf.addEventListener("input", function () { state.kerfMm = this.value; updatePreview(); safeSave(); });
+  els.fCompanyName.addEventListener("input", function () { state.companyName = this.value; updatePreview(); safeSave(); });
+  els.fCompanyTag.addEventListener("input", function () { state.companyTag = this.value; updatePreview(); safeSave(); });
+  els.fCompanyPhone.addEventListener("input", function () { state.companyPhone = this.value; updatePreview(); safeSave(); });
+  els.fCompanyCnpj.addEventListener("input", function () { state.companyCnpj = this.value; updatePreview(); safeSave(); });
+
+  // ---- Peças ----
+  var pecasForm = document.getElementById("pecasForm");
+
+  function renderPecasForm() {
+    pecasForm.innerHTML = "";
+    state.pecas.forEach(function (peca, idx) {
+      var block = document.createElement("div");
+      block.className = "peca-block";
+
+      var descField = document.createElement("div");
+      descField.className = "field";
+      var descLabel = document.createElement("label");
+      descLabel.textContent = "Descrição da peça";
+      var descInput = document.createElement("input");
+      descInput.type = "text";
+      descInput.placeholder = "Ex: Lateral do armário";
+      descInput.value = peca.desc;
+      descInput.addEventListener("input", function () {
+        peca.desc = this.value; updatePreview(); safeSave();
+      });
+      descField.appendChild(descLabel);
+      descField.appendChild(descInput);
+
+      var row1 = document.createElement("div");
+      row1.className = "field-row";
+      var compField = document.createElement("div");
+      compField.className = "field";
+      var compLabel = document.createElement("label");
+      compLabel.textContent = "Comprimento (cm)";
+      var compInput = document.createElement("input");
+      compInput.type = "number"; compInput.min = "0"; compInput.step = "0.1";
+      compInput.value = peca.comprimento;
+      compInput.addEventListener("input", function () {
+        peca.comprimento = this.value; updatePreview(); safeSave();
+      });
+      compField.appendChild(compLabel); compField.appendChild(compInput);
+
+      var largField = document.createElement("div");
+      largField.className = "field";
+      var largLabel = document.createElement("label");
+      largLabel.textContent = "Largura (cm)";
+      var largInput = document.createElement("input");
+      largInput.type = "number"; largInput.min = "0"; largInput.step = "0.1";
+      largInput.value = peca.largura;
+      largInput.addEventListener("input", function () {
+        peca.largura = this.value; updatePreview(); safeSave();
+      });
+      largField.appendChild(largLabel); largField.appendChild(largInput);
+      row1.appendChild(compField); row1.appendChild(largField);
+
+      var row2 = document.createElement("div");
+      row2.className = "field-row";
+      var qtdField = document.createElement("div");
+      qtdField.className = "field";
+      var qtdLabel = document.createElement("label");
+      qtdLabel.textContent = "Quantidade";
+      var qtdInput = document.createElement("input");
+      qtdInput.type = "number"; qtdInput.min = "1"; qtdInput.step = "1";
+      qtdInput.value = peca.quantidade;
+      qtdInput.addEventListener("input", function () {
+        peca.quantidade = this.value; updatePreview(); safeSave();
+      });
+      qtdField.appendChild(qtdLabel); qtdField.appendChild(qtdInput);
+
+      var matField = document.createElement("div");
+      matField.className = "field";
+      var matLabel = document.createElement("label");
+      matLabel.textContent = "Material/espessura";
+      var matInput = document.createElement("input");
+      matInput.type = "text";
+      matInput.placeholder = "Ex: MDF 15mm Branco TX";
+      matInput.value = peca.material;
+      matInput.addEventListener("input", function () {
+        peca.material = this.value; updatePreview(); safeSave(); renderPrecosForm();
+      });
+      matField.appendChild(matLabel); matField.appendChild(matInput);
+      row2.appendChild(qtdField); row2.appendChild(matField);
+
+      var veioField = document.createElement("label");
+      veioField.className = "peca-check";
+      var veioCb = document.createElement("input");
+      veioCb.type = "checkbox";
+      veioCb.checked = !!peca.travarVeio;
+      veioCb.addEventListener("change", function () {
+        peca.travarVeio = veioCb.checked; updatePreview(); safeSave();
+      });
+      var veioSpan = document.createElement("span");
+      veioSpan.textContent = "Travar direção do veio (não girar a peça no encaixe)";
+      veioField.appendChild(veioCb);
+      veioField.appendChild(veioSpan);
+
+      var removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "block-remove";
+      removeBtn.textContent = "Remover peça";
+      removeBtn.addEventListener("click", function () {
+        if (state.pecas.length <= 1) return;
+        state.pecas.splice(idx, 1);
+        renderPecasForm(); updatePreview(); safeSave(); renderPrecosForm();
+      });
+
+      block.appendChild(descField);
+      block.appendChild(row1);
+      block.appendChild(row2);
+      block.appendChild(veioField);
+      block.appendChild(removeBtn);
+      pecasForm.appendChild(block);
+    });
+  }
+
+  document.getElementById("btnAddPeca").addEventListener("click", function () {
+    state.pecas.push({ id: nextId(state.pecas), desc: "", comprimento: 0, largura: 0, quantidade: 1, material: "", travarVeio: false });
+    renderPecasForm(); updatePreview(); safeSave();
+    var lastInput = pecasForm.querySelector(".peca-block:last-child input[type=text]");
+    if (lastInput) lastInput.focus();
+  });
+
+  // ---- Preços por material (dinâmico, baseado nos materiais usados nas peças) ----
+  var precosForm = document.getElementById("precosForm");
+  var precosEmpty = document.getElementById("precosEmpty");
+
+  function distinctMaterials() {
+    var seen = {};
+    var out = [];
+    state.pecas.forEach(function (p) {
+      var m = (p.material || "").trim();
+      if (m && !seen[m]) { seen[m] = true; out.push(m); }
+    });
+    return out;
+  }
+
+  function renderPrecosForm() {
+    precosForm.innerHTML = "";
+    var mats = distinctMaterials();
+    precosEmpty.style.display = mats.length ? "none" : "block";
+    mats.forEach(function (mat) {
+      var row = document.createElement("div");
+      row.className = "preco-row";
+      var label = document.createElement("span");
+      label.className = "mat-label";
+      label.textContent = mat;
+      var input = document.createElement("input");
+      input.type = "number"; input.min = "0"; input.step = "0.01";
+      input.placeholder = "R$";
+      input.value = state.precos[mat] != null ? state.precos[mat] : "";
+      input.addEventListener("input", function () {
+        state.precos[mat] = this.value;
+        updatePreview(); safeSave();
+      });
+      row.appendChild(label);
+      row.appendChild(input);
+      precosForm.appendChild(row);
+    });
+  }
+
+  document.getElementById("btnReset").addEventListener("click", function () {
+    state.cliente = "";
+    state.refId = "";
+    state.pecas = [{ id: 1, desc: "", comprimento: 0, largura: 0, quantidade: 1, material: "", travarVeio: false }];
+    state.precos = {};
+    state.chapaComprimento = 275;
+    state.chapaLargura = 185;
+    state.kerfMm = 4;
+    state.planoId = genPlanoId();
+    state.cloudId = null;
+    loadFieldsFromState();
+    renderPecasForm();
+    renderPrecosForm();
+    updatePreview();
+    safeSave();
+    setCloudStatus("Ainda não salvo na nuvem.");
+    els.fCliente.focus();
+  });
+
+  document.getElementById("btnPrint").addEventListener("click", function () {
+    window.print();
+  });
+
+  // Enviar direto pelo WhatsApp (PDF anexado) — ver wpp.js
+  if (window.GSJ && GSJ.wpp) GSJ.wpp.attach({
+    doc: "Plano de Cortes", key: "plano-de-cortes", saudacao: false, format: "a4", margin: [13, 15],
+    cliente: function () { return state.cliente; },
+    telefone: function () { return ""; },
+    ref: function () { return state.refId; }
+  });
+
+  // ---- nuvem: salvar / abrir planos compartilhados ----
+  var cloudStatusEl = document.getElementById("cloudStatus");
+  var btnCloudSave = document.getElementById("btnCloudSave");
+  var btnCloudOpen = document.getElementById("btnCloudOpen");
+  var cloudModal = document.getElementById("gsjCloudModal");
+  var cloudListEl = document.getElementById("cloudList");
+  var btnCloudClose = document.getElementById("btnCloudClose");
+
+  function setCloudStatus(msg, isError) {
+    if (!cloudStatusEl) return;
+    cloudStatusEl.textContent = msg;
+    cloudStatusEl.classList.toggle("cloud-status-error", !!isError);
+  }
+
+  if (state.cloudId) {
+    setCloudStatus("Carregado da nuvem — última alteração salva lá.");
+  }
+
+  async function cloudSave() {
+    if (!sb) { setCloudStatus("A biblioteca da nuvem não carregou — recarregue a página e tente de novo.", true); return; }
+    btnCloudSave.disabled = true;
+    setCloudStatus("Salvando na nuvem…");
+    try {
+      var payload = {
+        titulo: state.cliente || state.planoId || null,
+        dados: state
+      };
+      var result;
+      if (state.cloudId) {
+        result = await sb.from("gsj_planos_corte").update(payload).eq("id", state.cloudId).select().single();
+      } else {
+        result = await sb.from("gsj_planos_corte").insert(payload).select().single();
+      }
+      if (result.error) throw result.error;
+      state.cloudId = result.data.id;
+      if (window.GSJ) GSJ.logAction("abrir", "plano", (state.cliente || state.planoId || null));
+      if (window.GSJ) GSJ.logAction("salvar", "plano", (state.cliente || state.planoId || null));
+      safeSave();
+      var hora = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+      setCloudStatus("Salvo na nuvem às " + hora + ".");
+    } catch (e) {
+      setCloudStatus("Não deu pra salvar na nuvem agora — verifique sua internet.", true);
+    } finally {
+      btnCloudSave.disabled = false;
+    }
+  }
+
+  async function cloudOpenModal() {
+    cloudModal.hidden = false;
+    cloudListEl.innerHTML = '<span class="gsj-skel"></span><span class="gsj-skel"></span>';
+    if (!sb) { cloudListEl.innerHTML = '<p class="field-hint">A biblioteca da nuvem não carregou — recarregue a página.</p>'; return; }
+    try {
+      var result = await sb.from("gsj_planos_corte")
+        .select("id, titulo, updated_at")
+        .order("updated_at", { ascending: false })
+        .limit(100);
+      if (result.error) throw result.error;
+      var rows = result.data || [];
+      if (!rows.length) {
+        cloudListEl.innerHTML = '<p class="field-hint">Nenhum plano salvo na nuvem ainda.</p>';
+        return;
+      }
+      cloudListEl.innerHTML = "";
+      rows.forEach(function (row) {
+        var item = document.createElement("button");
+        item.type = "button";
+        item.className = "cloud-list-item";
+        var dt = row.updated_at ? new Date(row.updated_at).toLocaleString("pt-BR") : "";
+        item.innerHTML =
+          "<strong>" + esc(row.titulo || "(sem título)") + "</strong>" +
+          "<span>" + esc(dt) + "</span>";
+        item.addEventListener("click", function () { cloudLoadById(row.id); });
+        cloudListEl.appendChild(item);
+      });
+    } catch (e) {
+      cloudListEl.innerHTML = '<p class="field-hint">Não deu pra carregar a lista agora — verifique sua internet.</p>';
+    }
+  }
+
+  async function cloudLoadById(id) {
+    if (!sb) return;
+    try {
+      var result = await sb.from("gsj_planos_corte").select("id, dados").eq("id", id).single();
+      if (result.error) throw result.error;
+      var loaded = result.data.dados || {};
+      state = Object.assign({}, defaultState, loaded);
+      if (!Array.isArray(state.pecas) || state.pecas.length === 0) {
+        state.pecas = [{ id: 1, desc: "", comprimento: 0, largura: 0, quantidade: 1, material: "", travarVeio: false }];
+      }
+      if (!state.precos || typeof state.precos !== "object") state.precos = {};
+      state.cloudId = result.data.id;
+      loadFieldsFromState();
+      renderPecasForm();
+      renderPrecosForm();
+      updatePreview();
+      safeSave();
+      cloudModal.hidden = true;
+      setCloudStatus("Aberto da nuvem — última alteração salva lá.");
+    } catch (e) {
+      alert("Não deu pra abrir esse plano agora — verifique sua internet.");
+    }
+  }
+
+  if (btnCloudSave) btnCloudSave.addEventListener("click", cloudSave);
+  if (btnCloudOpen) btnCloudOpen.addEventListener("click", cloudOpenModal);
+  if (btnCloudClose) btnCloudClose.addEventListener("click", function () { cloudModal.hidden = true; });
+  if (cloudModal) cloudModal.addEventListener("click", function (e) { if (e.target === cloudModal) cloudModal.hidden = true; });
+
+  var sheet = document.getElementById("sheet");
+
+  // ---- algoritmo de encaixe (guillotine bin-packing, corte reto de ponta a ponta) ----
+  function packGroup(pieces, sheetW, sheetH, kerf) {
+    var unplaceable = [];
+    var toPlace = pieces.filter(function (p) {
+      var fitsNormal = p.comp <= sheetW && p.larg <= sheetH;
+      var fitsRotated = p.larg <= sheetW && p.comp <= sheetH;
+      var canFit = p.travarVeio ? fitsNormal : (fitsNormal || fitsRotated);
+      if (!canFit) { unplaceable.push(p); return false; }
+      return true;
+    });
+
+    toPlace.sort(function (a, b) { return (b.comp * b.larg) - (a.comp * a.larg); });
+
+    var sheets = [];
+    function newSheet() { return { placed: [], freeRects: [{ x: 0, y: 0, w: sheetW, h: sheetH }] }; }
+
+    function findBestFit(freeRects, pw, ph) {
+      var best = null;
+      for (var i = 0; i < freeRects.length; i++) {
+        var r = freeRects[i];
+        if (pw <= r.w && ph <= r.h) {
+          var leftoverW = r.w - pw, leftoverH = r.h - ph;
+          var shortScore = Math.min(leftoverW, leftoverH), longScore = Math.max(leftoverW, leftoverH);
+          if (!best || shortScore < best.shortScore || (shortScore === best.shortScore && longScore < best.longScore)) {
+            best = { rectIndex: i, rect: r, shortScore: shortScore, longScore: longScore };
+          }
+        }
+      }
+      return best;
+    }
+
+    function placeInSheet(sheetObj, piece) {
+      var candidates = [];
+      var fitA = findBestFit(sheetObj.freeRects, piece.comp + kerf, piece.larg + kerf);
+      if (fitA) candidates.push({ fit: fitA, w: piece.comp, h: piece.larg, rotated: false });
+      if (!piece.travarVeio) {
+        var fitB = findBestFit(sheetObj.freeRects, piece.larg + kerf, piece.comp + kerf);
+        if (fitB) candidates.push({ fit: fitB, w: piece.larg, h: piece.comp, rotated: true });
+      }
+      if (candidates.length === 0) return false;
+      candidates.sort(function (a, b) {
+        if (a.fit.shortScore !== b.fit.shortScore) return a.fit.shortScore - b.fit.shortScore;
+        return a.fit.longScore - b.fit.longScore;
+      });
+      var chosen = candidates[0];
+      var r = chosen.fit.rect;
+      var pw = chosen.w + kerf, ph = chosen.h + kerf;
+      var px = r.x, py = r.y;
+      sheetObj.freeRects.splice(chosen.fit.rectIndex, 1);
+      var leftoverW = r.w - pw, leftoverH = r.h - ph;
+      var rectsToAdd = [];
+      if (leftoverW <= leftoverH) {
+        if (r.h - ph > 1e-6) rectsToAdd.push({ x: r.x, y: r.y + ph, w: r.w, h: r.h - ph });
+        if (r.w - pw > 1e-6) rectsToAdd.push({ x: r.x + pw, y: r.y, w: r.w - pw, h: ph });
+      } else {
+        if (r.w - pw > 1e-6) rectsToAdd.push({ x: r.x + pw, y: r.y, w: r.w - pw, h: r.h });
+        if (r.h - ph > 1e-6) rectsToAdd.push({ x: r.x, y: r.y + ph, w: pw, h: r.h - ph });
+      }
+      rectsToAdd.forEach(function (nr) { sheetObj.freeRects.push(nr); });
+      sheetObj.placed.push({ instId: piece.instId, desc: piece.desc, x: px, y: py, w: chosen.w, h: chosen.h, rotated: chosen.rotated });
+      return true;
+    }
+
+    toPlace.forEach(function (piece) {
+      var placed = false;
+      for (var i = 0; i < sheets.length; i++) {
+        if (placeInSheet(sheets[i], piece)) { placed = true; break; }
+      }
+      if (!placed) {
+        var s = newSheet();
+        sheets.push(s);
+        if (!placeInSheet(s, piece)) unplaceable.push(piece);
+      }
+    });
+
+    return { sheets: sheets, unplaceable: unplaceable };
+  }
+
+  function computeCalc() {
+    var chapaC = Number(state.chapaComprimento) || 0;
+    var chapaL = Number(state.chapaLargura) || 0;
+    var kerfCm = (Number(state.kerfMm) || 0) / 10;
+    var areaChapaM2 = (chapaC * chapaL) / 10000;
+
+    var groupsMap = {};
+    var groupsOrder = [];
+    var instCounter = 0;
+    state.pecas.forEach(function (p) {
+      var mat = (p.material || "").trim() || "(sem material definido)";
+      if (!groupsMap[mat]) { groupsMap[mat] = { material: mat, instances: [] }; groupsOrder.push(mat); }
+      var comp = Number(p.comprimento) || 0;
+      var larg = Number(p.largura) || 0;
+      var qtd = Number(p.quantidade) || 0;
+      for (var i = 0; i < qtd; i++) {
+        instCounter++;
+        groupsMap[mat].instances.push({ instId: instCounter, desc: p.desc, comp: comp, larg: larg, travarVeio: !!p.travarVeio });
+      }
+    });
+
+    var groups = groupsOrder.map(function (mat) {
+      var g = groupsMap[mat];
+      var packed = (chapaC > 0 && chapaL > 0) ? packGroup(g.instances, chapaC, chapaL, kerfCm) : { sheets: [], unplaceable: g.instances };
+      var numChapas = packed.sheets.length;
+      var areaUsadaM2 = 0;
+      packed.sheets.forEach(function (s) { s.placed.forEach(function (p) { areaUsadaM2 += (p.w * p.h) / 10000; }); });
+      var aproveitamento = numChapas > 0 ? (areaUsadaM2 / (numChapas * areaChapaM2)) * 100 : 0;
+      var precoUnit = Number(state.precos[mat]);
+      var temPreco = state.precos[mat] !== undefined && state.precos[mat] !== "" && !isNaN(precoUnit) && precoUnit > 0;
+      var custo = temPreco ? numChapas * precoUnit : null;
+      return {
+        material: mat, sheets: packed.sheets, unplaceable: packed.unplaceable,
+        numChapas: numChapas, areaUsadaM2: areaUsadaM2, aproveitamento: aproveitamento, custo: custo
+      };
+    });
+
+    var totalChapas = groups.reduce(function (s, g) { return s + g.numChapas; }, 0);
+    var totalCusto = 0;
+    var temAlgumCusto = false;
+    groups.forEach(function (g) { if (g.custo != null) { totalCusto += g.custo; temAlgumCusto = true; } });
+
+    return {
+      areaChapaM2: areaChapaM2, chapaC: chapaC, chapaL: chapaL, kerfCm: kerfCm,
+      groups: groups, totalChapas: totalChapas, totalCusto: totalCusto, temAlgumCusto: temAlgumCusto
+    };
+  }
+
+  function buildSheetSvg(sheetObj, chapaC, chapaL) {
+    var vbW = chapaC, vbH = chapaL;
+    var parts = [];
+    parts.push('<rect x="0" y="0" width="' + vbW + '" height="' + vbH + '" fill="#fffefb" stroke="#954f14" stroke-width="0.6"/>');
+    sheetObj.placed.forEach(function (p, idx) {
+      var n = idx + 1;
+      var fs = Math.max(3, Math.min(9, Math.min(p.w, p.h) * 0.4));
+      parts.push('<rect x="' + p.x + '" y="' + p.y + '" width="' + p.w + '" height="' + p.h + '" fill="#f4e9da" stroke="#954f14" stroke-width="0.3"/>');
+      parts.push('<text x="' + (p.x + p.w / 2) + '" y="' + (p.y + p.h / 2) + '" font-size="' + fs.toFixed(1) + '" fill="#954f14" font-weight="700" text-anchor="middle" dominant-baseline="middle" font-family="sans-serif">' + n + (p.rotated ? ' ↻' : '') + '</text>');
+    });
+    var svgH = vbW > 0 ? Math.round(600 * vbH / vbW) : 300;
+    return '<svg viewBox="0 0 ' + vbW + ' ' + vbH + '" width="600" height="' + svgH + '" style="width:100%;height:auto;display:block;" preserveAspectRatio="xMinYMin meet">' + parts.join('') + '</svg>';
+  }
+
+  function buildSheetLegend(sheetObj) {
+    var rows = sheetObj.placed.map(function (p, idx) {
+      return '<tr><td>' + (idx + 1) + '</td><td>' + esc(p.desc || "—") + '</td><td class="num">' + fmtNum(p.w, 1) + ' × ' + fmtNum(p.h, 1) + ' cm</td><td class="num">' + (p.rotated ? "Girada 90°" : "—") + '</td></tr>';
+    }).join("");
+    return '<table class="sheet-items corte-legend"><thead><tr><th>Nº</th><th>Peça</th><th class="num">Dimensões</th><th class="num">Obs.</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+
+  function updatePreview() {
+    var calc = computeCalc();
+    var today = new Date();
+
+    var groupsHtml = calc.groups.map(function (g) {
+      var sheetsHtml = g.sheets.map(function (sheetObj, si) {
+        var areaSheetM2 = sheetObj.placed.reduce(function (s, p) { return s + p.w * p.h; }, 0) / 10000;
+        var pctSheet = calc.areaChapaM2 > 0 ? (areaSheetM2 / calc.areaChapaM2) * 100 : 0;
+        return '<div class="corte-sheet">' +
+          '<p class="corte-sheet-title">Chapa ' + (si + 1) + ' de ' + g.sheets.length + ' <span class="pct">— aproveitamento desta chapa: ' + fmtNum(pctSheet, 0) + '%</span></p>' +
+          buildSheetSvg(sheetObj, calc.chapaC, calc.chapaL) +
+          buildSheetLegend(sheetObj) +
+        '</div>';
+      }).join("");
+
+      var unplaceableHtml = g.unplaceable.length
+        ? '<p class="corte-warn">⚠ ' + g.unplaceable.length + ' peça(s) não coube(ram) em nenhuma chapa (mesmo numa chapa vazia) — vai precisar de emenda ou chapa maior: ' +
+          g.unplaceable.map(function (p) { return esc(p.desc || "—") + " (" + fmtNum(p.comp, 0) + "×" + fmtNum(p.larg, 0) + "cm" + (p.travarVeio ? ", veio travado" : "") + ")"; }).join(", ") + '</p>'
+        : '';
+
+      var statsLine = '<b>' + fmtNum(g.numChapas, 0) + ' chapa' + (g.numChapas === 1 ? '' : 's') + '</b> de ' +
+        fmtNum(calc.chapaC, 0) + '×' + fmtNum(calc.chapaL, 0) + 'cm' +
+        ' &nbsp;·&nbsp; Aproveitamento: ' + fmtNum(g.aproveitamento, 0) + '%' +
+        (g.custo != null ? ' &nbsp;·&nbsp; Custo estimado: <b>' + fmtBRL(g.custo) + '</b>' : '');
+
+      return '<div class="corte-group">' +
+        '<div class="corte-group-head"><span class="mat">' + esc(g.material) + '</span><span class="badge">' + fmtNum(g.numChapas, 0) + ' chapa' + (g.numChapas === 1 ? '' : 's') + '</span></div>' +
+        '<div class="corte-stats">' + statsLine + '</div>' +
+        unplaceableHtml +
+        sheetsHtml +
+      '</div>';
+    }).join("");
+
+    var totalHtml = '<div class="corte-total">' +
+      'Total geral: <span class="num">' + fmtNum(calc.totalChapas, 0) + ' chapa' + (calc.totalChapas === 1 ? '' : 's') + '</span>' +
+      (calc.temAlgumCusto ? ' &nbsp;·&nbsp; Custo estimado de material: <span class="num">' + fmtBRL(calc.totalCusto) + '</span>' : '') +
+    '</div>';
+
+    sheet.innerHTML =
+      '<div class="sheet-header">' +
+        '<div class="sheet-company">' +
+          '<div><p class="name">' + esc(state.companyName) + '</p>' +
+          '<p class="tag">' + esc(state.companyTag) + '</p>' +
+          (state.companyCnpj ? '<p class="cnpj">CNPJ ' + esc(state.companyCnpj) + '</p>' : '') + '</div>' +
+        '</div>' +
+        '<div class="sheet-meta">' +
+          '<div class="doc-title">PLANO DE CORTES</div>' +
+          (state.planoId ? 'Nº ' + esc(state.planoId) + '<br/>' : '') +
+          (state.refId ? 'Ref. orçamento/contrato ' + esc(state.refId) + '<br/>' : '') +
+          'Emitido em ' + fmtDate(today) +
+        '</div>' +
+      '</div>' +
+      '<hr class="sheet-rule" />' +
+      '<p class="sheet-label">Projeto</p>' +
+      '<div class="sheet-client-block">' +
+        '<p class="sheet-client">' + esc(state.cliente || "—") + '</p>' +
+      '</div>' +
+      '<p class="sheet-label">Encaixe por chapa</p>' +
+      groupsHtml +
+      totalHtml +
+      '<p class="sheet-note">Encaixe calculado por algoritmo de corte reto de ponta a ponta (guilhotina), do jeito que uma serra circular/de bancada corta de verdade — números de chapas e aproveitamento são reais para esse encaixe, não uma estimativa. Ainda assim, o corte manual pode variar um pouco: confira as medidas antes de cortar.</p>' +
+      '<div class="sheet-footer">' +
+        esc(state.companyName) + ' — ' + esc(state.companyTag) +
+        (state.companyPhone ? ' &nbsp;|&nbsp; Tel./WhatsApp ' + esc(state.companyPhone) : '') +
+      '</div>';
+  }
+
+  loadFieldsFromState();
+  renderPecasForm();
+  renderPrecosForm();
+  updatePreview();
+})();
+</script>
+<script>
+(function () {
+  var wrap = document.querySelector(".preview-wrap");
+  if (!wrap) return;
+
+  var openBtn = document.createElement("button");
+  openBtn.type = "button";
+  openBtn.className = "btn-mobile-preview";
+  openBtn.innerHTML = "👁 Visualizar";
+  document.body.appendChild(openBtn);
+
+  var closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.className = "btn-close-preview";
+  closeBtn.innerHTML = "✕ Fechar";
+  wrap.insertBefore(closeBtn, wrap.firstChild);
+
+  openBtn.addEventListener("click", function () {
+    wrap.classList.add("mobile-fullscreen");
+    document.body.style.overflow = "hidden";
+    wrap.scrollTop = 0;
+  });
+  closeBtn.addEventListener("click", function () {
+    wrap.classList.remove("mobile-fullscreen");
+    document.body.style.overflow = "";
+  });
+})();
+</script>
+</body></html>

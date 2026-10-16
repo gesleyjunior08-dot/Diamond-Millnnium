@@ -1,0 +1,844 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Contrato GSJ</title>
+<style>
+  html { color-scheme: light dark; }
+  body { margin: 0; }
+
+  @import url("https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&family=Source+Sans+3:wght@400;500;600;700&display=swap");
+
+  :root {
+    --bg: #faf6ef;
+    --surface: #ffffff;
+    --surface-2: #fffdf9;
+    --text: #2b2118;
+    --text-muted: #6b5d4f;
+    --accent: #954f14;
+    --accent-2: #c9832e;
+    --accent-soft: #f4e9da;
+    --line: #e3d9c8;
+    --danger: #a6402f;
+    --danger-soft: #f4e1dc;
+    --shadow: 0 1px 2px rgba(43, 33, 24, 0.05), 0 12px 32px rgba(43, 33, 24, 0.08);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1c1712; --surface: #241d17; --surface-2: #2b2319;
+      --text: #efe7da; --text-muted: #b3a591;
+      --accent: #dd9752; --accent-2: #e8a866; --accent-soft: #3a2c1e;
+      --line: #3c3226; --danger: #d97d68; --danger-soft: #3a241f;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 12px 32px rgba(0, 0, 0, 0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1c1712; --surface: #241d17; --surface-2: #2b2319;
+    --text: #efe7da; --text-muted: #b3a591;
+    --accent: #dd9752; --accent-2: #e8a866; --accent-soft: #3a2c1e;
+    --line: #3c3226; --danger: #d97d68; --danger-soft: #3a241f;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 12px 32px rgba(0, 0, 0, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  /* ---- correcao de overflow horizontal no mobile ---- */
+  html, body { overflow-x: hidden; }
+  .layout > * { min-width: 0; }
+  .field-row > *, .field-row-3 > *, .field-row-4 > * { min-width: 0; }
+  .cond-grid > *, .info-grid > * { min-width: 0; }
+  .item-row > * { min-width: 0; }
+  .piece-card, .piece-card * { min-width: 0; }
+  .field input, .field textarea, .field select { min-width: 0; }
+
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.5; padding: 32px 20px 64px;
+  }
+
+  .app { max-width: 1180px; margin: 0 auto; }
+  .app-header { margin-bottom: 24px; max-width: 68ch; }
+  .toolbar-lockup { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .toolbar-lockup span { font-family: "Newsreader", ui-serif, Georgia, serif; font-weight: 700; font-size: 15px; color: var(--text); }
+  .app-header .eyebrow {
+    font-size: 12.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 8px;
+  }
+  .app-header h1 {
+    font-family: "Newsreader", ui-serif, Georgia, serif; font-weight: 600;
+    font-size: clamp(24px, 3.6vw, 30px); margin: 0 0 8px;
+  }
+  .app-header p { color: var(--text-muted); font-size: 15px; margin: 0; }
+
+  .disclaimer {
+    font-size: 12.5px; color: var(--text); background: var(--accent-soft);
+    border-radius: 10px; padding: 12px 16px; margin: 16px 0 0; line-height: 1.5; max-width: 68ch;
+  }
+
+  .layout { display: grid; grid-template-columns: minmax(300px, 400px) 1fr; gap: 26px; align-items: start; margin-top: 24px; }
+  @media (max-width: 880px) { .layout { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    padding: 22px; box-shadow: var(--shadow);
+  }
+  .panel h2 { font-family: "Newsreader", ui-serif, Georgia, serif; font-weight: 600; font-size: 16px; margin: 0 0 14px; }
+  .panel h2.with-gap { margin-top: 22px; }
+  .panel .subnote { font-size: 11.5px; color: var(--text-muted); margin: -8px 0 14px; line-height: 1.5; }
+
+  .field { margin-bottom: 12px; }
+  .field label {
+    display: block; font-size: 12px; font-weight: 600; color: var(--text-muted);
+    margin-bottom: 5px; letter-spacing: 0.01em;
+  }
+  .field input, .field textarea, .field select {
+    width: 100%; font-family: inherit; font-size: 14.5px; color: var(--text);
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px;
+    padding: 8px 10px;
+  }
+  .field textarea { resize: vertical; min-height: 60px; line-height: 1.4; }
+  .field input:focus-visible, .field textarea:focus-visible, .field select:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 1px;
+  }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .field-hint { font-size: 11.5px; color: var(--text-muted); margin: -8px 0 14px; line-height: 1.5; }
+
+  .check-field {
+    display: flex; align-items: flex-start; gap: 10px; background: var(--surface-2);
+    border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px;
+  }
+  .check-field input[type="checkbox"] { width: 16px; height: 16px; margin-top: 2px; accent-color: var(--accent); flex: none; }
+  .check-field label { font-size: 13px; color: var(--text); font-weight: 400; margin: 0; }
+
+  .btn {
+    font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+    border-radius: 9px; padding: 9px 14px; border: 1px solid var(--line);
+    background: var(--surface-2); color: var(--text);
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn-primary {
+    background: var(--accent); border-color: var(--accent); color: #fff8ef; width: 100%;
+    font-size: 15px; padding: 12px 14px; margin-top: 18px;
+  }
+  .btn-primary:hover { background: var(--accent-2); border-color: var(--accent-2); }
+  .btn-ghost { background: transparent; border-color: transparent; color: var(--text-muted); font-size: 13px; padding: 6px 4px; }
+  .btn-ghost:hover { color: var(--accent); }
+  .toolbar-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+  .print-note { font-size: 12.5px; color: var(--text-muted); margin-top: 10px; line-height: 1.5; }
+
+  /* ---- preview sheet ---- */
+  .preview-wrap { display: flex; justify-content: center; }
+  .sheet {
+    background: #fffefb; color: #2b2118; width: 100%; max-width: 210mm;
+    padding: 18mm 20mm; border-radius: 4px; box-shadow: var(--shadow);
+    border: 1px solid var(--line); font-size: 13px; line-height: 1.55; overflow-x: auto;
+  }
+  .sheet-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+  .sheet-company .name { font-family: "Newsreader", ui-serif, Georgia, serif; font-weight: 700; font-size: 24px; margin: 0; }
+  .sheet-company .tag { font-size: 12px; color: #6b5d4f; margin-top: 2px; }
+  .sheet-company .cnpj { font-size: 11px; color: #6b5d4f; margin-top: 1px; }
+  .sheet-meta { text-align: right; font-size: 12px; color: #6b5d4f; line-height: 1.6; }
+  .sheet-meta .doc-title { font-weight: 700; font-size: 15px; color: #954f14; letter-spacing: 0.03em; margin-bottom: 4px; }
+  .sheet-rule { height: 2px; background: #954f14; margin: 12px 0 16px; border: none; }
+  .sheet-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+    color: #954f14; margin: 18px 0 6px;
+  }
+  .sheet-label:first-of-type { margin-top: 0; }
+  .sheet-parties { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .sheet-party .role { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #6b5d4f; margin: 0 0 3px; }
+  .sheet-party .pname { font-family: "Newsreader", ui-serif, Georgia, serif; font-weight: 700; font-size: 16px; margin: 0 0 3px; }
+  .sheet-party p { margin: 0 0 2px; font-size: 12.5px; color: #3a2c1e; }
+  .sheet-clause p { margin: 0 0 8px; white-space: pre-wrap; }
+  .meas-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border: 1px solid #e3d9c8; border-radius: 6px; overflow: hidden; margin: 6px 0 10px; }
+  .meas-cell { padding: 8px 10px; border-left: 1px solid #e3d9c8; border-top: 1px solid #e3d9c8; }
+  .meas-cell:nth-child(-n+4) { border-top: none; }
+  .meas-cell:nth-child(4n+1) { border-left: none; }
+  .meas-cell .lbl { font-size: 9px; font-weight: 700; letter-spacing: .05em; color: #6b5d4f; text-transform: uppercase; }
+  .meas-cell .val { font-size: 12.5px; margin-top: 2px; }
+  .cond-grid { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid #e3d9c8; border-radius: 6px; overflow: hidden; margin: 6px 0 4px; }
+  .cond-cell { padding: 10px 12px; border-left: 1px solid #e3d9c8; }
+  .cond-cell:first-child { border-left: none; }
+  .cond-cell .lbl { font-size: 9.5px; font-weight: 700; letter-spacing: 0.06em; color: #6b5d4f; text-transform: uppercase; }
+  .cond-cell .val { font-size: 13px; margin-top: 4px; }
+  .sheet-signature { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 32px; }
+  .sig-line { border-top: 1px solid #2b2118; margin-top: 30px; }
+  .sig-label { font-size: 11px; color: #6b5d4f; margin: 6px 0 0; line-height: 1.5; }
+  .sheet-footer { text-align: center; font-size: 11px; color: #6b5d4f; margin-top: 20px; border-top: 1px solid #e3d9c8; padding-top: 10px; }
+
+  @media print {
+    body { padding: 0; background: #fff; }
+    .app-header, .panel:first-of-type, .toolbar-row, .print-note, .disclaimer { display: none; }
+    .layout { display: block; margin-top: 0; }
+    .preview-wrap { display: block; }
+    .sheet { box-shadow: none; border: none; border-radius: 0; max-width: none; width: 100%; padding: 0;  overflow: visible;}
+    @page { size: A4; margin: 16mm 18mm; }
+  }
+
+  .btn-mobile-preview {
+    display: none; position: fixed; bottom: 20px; right: 20px; z-index: 500;
+    background: var(--accent); color: #fff8ef; border: none; border-radius: 999px;
+    padding: 12px 20px; font-family: inherit; font-weight: 600; font-size: 14px;
+    box-shadow: var(--shadow); cursor: pointer; align-items: center; gap: 6px;
+  }
+  @media (max-width: 880px) { .btn-mobile-preview { display: inline-flex; } }
+  .btn-close-preview {
+    display: none; position: sticky; top: 0; margin: 0 0 14px auto;
+    background: var(--surface); color: var(--text); border: 1px solid var(--line);
+    border-radius: 999px; padding: 8px 16px; font-family: inherit; font-weight: 600;
+    font-size: 13px; cursor: pointer; box-shadow: var(--shadow); align-items: center; gap: 6px;
+  }
+  .preview-wrap.mobile-fullscreen {
+    position: fixed; inset: 0; z-index: 600; background: var(--bg);
+    overflow-y: auto; padding: 16px; margin: 0;
+    display: flex !important; flex-direction: column; align-items: center;
+  }
+  .preview-wrap.mobile-fullscreen .btn-close-preview { display: flex; }
+  @media print { .btn-mobile-preview, .btn-close-preview { display: none !important; } }
+
+  .preview-wrap.mobile-fullscreen .sheet { padding: 28px 18px; }
+
+  /* ---- nuvem: barra de ações + status ---- */
+  .cloud-bar { display: flex; gap: 8px; margin: 10px 0 4px; }
+  .btn-cloud { flex: 1; font-size: 13px; padding: 8px 10px; }
+  .btn-cloud-save { background: var(--accent-soft); border-color: var(--accent-2); color: var(--accent); font-weight: 700; }
+  .btn-cloud-save:hover { background: var(--accent); color: #fff8ef; }
+  .cloud-status {
+    font-size: 11.5px; color: var(--text-muted); margin: 0 0 14px; padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .cloud-status-error { color: var(--danger); }
+
+  /* ---- gate de acesso único compartilhado ---- */
+  .auth-gate {
+    position: fixed; inset: 0; z-index: 1000; background: var(--bg);
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  /* o atributo "hidden" por si só pode perder pra um display:flex/grid do autor
+     com a mesma especificidade — força explicitamente aqui (ver central.md) */
+  .auth-gate[hidden], .cloud-modal[hidden] { display: none !important; }
+  .auth-box {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: var(--shadow); padding: 28px; max-width: 360px; width: 100%; text-align: center;
+  }
+  .auth-box h2 {
+    font-family: "Newsreader", ui-serif, Georgia, serif; font-weight: 600; font-size: 19px; margin: 0 0 8px;
+  }
+  .auth-box p { font-size: 13.5px; color: var(--text-muted); margin: 0 0 16px; line-height: 1.5; }
+  .auth-box input {
+    width: 100%; font-family: inherit; font-size: 15px; color: var(--text); text-align: center;
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
+  }
+  .auth-box input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .auth-error { color: var(--danger); font-size: 12.5px; margin: 8px 0 0 !important; }
+
+  /* ---- modal "abrir da nuvem" ---- */
+  .cloud-modal {
+    position: fixed; inset: 0; z-index: 900; background: rgba(43, 33, 24, 0.45);
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .cloud-modal-box {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: var(--shadow); padding: 20px; max-width: 480px; width: 100%;
+    max-height: 80vh; display: flex; flex-direction: column;
+  }
+  .cloud-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .cloud-modal-header h2 { font-family: "Newsreader", ui-serif, Georgia, serif; font-weight: 600; font-size: 17px; }
+  .cloud-list { overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+  .cloud-list-item {
+    display: flex; flex-direction: column; gap: 2px; text-align: left; font-family: inherit;
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 9px;
+    padding: 9px 12px; cursor: pointer; color: var(--text);
+  }
+  .cloud-list-item:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .cloud-list-item strong { font-size: 14px; }
+  .cloud-list-item span { font-size: 11.5px; color: var(--text-muted); }
+
+  @media print { .auth-gate, .cloud-modal { display: none !important; } }
+</style>
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#954f14">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GSJ">
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("./sw.js").catch(function () {});
+    });
+  }
+</script>
+<link rel="stylesheet" href="./shell.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./auth.js"></script>
+<script src="./wpp.js"></script>
+<script>window.GSJ && window.GSJ.boot({ page: "contrato" });</script>
+</head>
+<body>
+
+<div id="gsjCloudModal" class="cloud-modal" hidden>
+  <div class="cloud-modal-box">
+    <div class="cloud-modal-header">
+      <h2 style="margin:0">Contratos salvos na nuvem</h2>
+      <button class="btn btn-ghost" id="btnCloudClose" type="button">Fechar</button>
+    </div>
+    <div id="cloudList" class="cloud-list"><span class="gsj-skel"></span><span class="gsj-skel"></span></div>
+  </div>
+</div>
+
+<div class="app" id="gsjPageRoot">
+  <div class="app-header">
+    <div class="toolbar-lockup"><span>GSJ</span></div>
+    <p class="eyebrow">GSJ · ferramenta interna</p>
+    <h1>Contrato de prestação de serviço</h1>
+    <p>Preencha os dados à esquerda, confira a prévia à direita e gere o PDF. Já inclui o termo de medição e a autorização de uso de imagem — não precisa de documentos separados.</p>
+    <p class="disclaimer">⚠️ Isto é um modelo de ponto de partida, não uma peça jurídica pronta. Revise as cláusulas — principalmente rescisão, multas e prazos — com um contador ou advogado antes de usar oficialmente com clientes.</p>
+  </div>
+
+  <div class="layout">
+    <div class="panel" id="formPanel">
+      <div class="toolbar-row">
+        <h2 style="margin:0">Dados do contrato</h2>
+        <button class="btn btn-ghost" id="btnReset" type="button">Novo contrato</button>
+      </div>
+
+      <div class="cloud-bar">
+        <button class="btn btn-cloud" id="btnCloudOpen" type="button">☁ Abrir da nuvem</button>
+        <button class="btn btn-cloud btn-cloud-save" id="btnCloudSave" type="button">☁ Salvar na nuvem</button>
+      </div>
+      <p class="cloud-status" id="cloudStatus">Ainda não salvo na nuvem.</p>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="fOrcamentoRef">Nº do orçamento de referência</label>
+          <input id="fOrcamentoRef" type="text" placeholder="Ex: GSJ-20260907-561" />
+        </div>
+        <div class="field">
+          <label for="fDataContrato">Data do contrato</label>
+          <input id="fDataContrato" type="date" />
+        </div>
+      </div>
+
+      <h2 class="with-gap">Contratante (cliente)</h2>
+      <div class="field">
+        <label for="fClienteNome">Nome completo</label>
+        <input id="fClienteNome" type="text" placeholder="Ex: João da Silva" />
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="fClienteDoc">CPF/CNPJ</label>
+          <input id="fClienteDoc" type="text" placeholder="000.000.000-00" />
+        </div>
+        <div class="field">
+          <label for="fClienteTelefone">Telefone</label>
+          <input id="fClienteTelefone" type="text" placeholder="(00) 00000-0000" />
+        </div>
+      </div>
+      <div class="field">
+        <label for="fClienteEndereco">Endereço</label>
+        <input id="fClienteEndereco" type="text" placeholder="Rua, número, bairro, cidade" />
+      </div>
+
+      <h2 class="with-gap">Contratada (GSJ)</h2>
+      <div class="field-row">
+        <div class="field">
+          <label for="fEmpresaNome">Nome</label>
+          <input id="fEmpresaNome" type="text" />
+        </div>
+        <div class="field">
+          <label for="fEmpresaCnpj">CNPJ</label>
+          <input id="fEmpresaCnpj" type="text" />
+        </div>
+      </div>
+      <div class="field">
+        <label for="fEmpresaEndereco">Endereço</label>
+        <input id="fEmpresaEndereco" type="text" placeholder="Rua, número, bairro, cidade" />
+      </div>
+
+      <h2 class="with-gap">Objeto e valor</h2>
+      <div class="field">
+        <label for="fObjeto">Descrição do objeto / escopo</label>
+        <textarea id="fObjeto" placeholder="Resumo dos itens do orçamento — ex: fabricação e instalação de armário de cozinha e quarto conforme orçamento nº..."></textarea>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="fValorTotal">Valor total (R$)</label>
+          <input id="fValorTotal" type="number" min="0" step="0.01" />
+        </div>
+        <div class="field">
+          <label for="fPagamento">Forma de pagamento</label>
+          <input id="fPagamento" type="text" />
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="fPrazoExecucao">Prazo de execução</label>
+          <input id="fPrazoExecucao" type="text" placeholder="Ex: 30 dias úteis" />
+        </div>
+        <div class="field">
+          <label for="fPrazoEntrega">Prazo de entrega/instalação</label>
+          <input id="fPrazoEntrega" type="text" placeholder="Ex: a combinar após produção" />
+        </div>
+      </div>
+
+      <h2 class="with-gap">Cláusulas</h2>
+      <p class="subnote">Textos padrão prontos — edite à vontade para o caso específico.</p>
+      <div class="field">
+        <label for="fObrigContratada">Obrigações da contratada</label>
+        <textarea id="fObrigContratada"></textarea>
+      </div>
+      <div class="field">
+        <label for="fObrigContratante">Obrigações do contratante</label>
+        <textarea id="fObrigContratante"></textarea>
+      </div>
+      <div class="field">
+        <label for="fAlteracoes">Alterações de projeto</label>
+        <textarea id="fAlteracoes"></textarea>
+      </div>
+      <div class="field">
+        <label for="fEntregaInstalacao">Entrega e instalação</label>
+        <textarea id="fEntregaInstalacao"></textarea>
+      </div>
+      <div class="field">
+        <label for="fGarantia">Garantia</label>
+        <textarea id="fGarantia"></textarea>
+        <p class="field-hint" style="margin:6px 0 0;">Deixe em branco se este serviço não tiver garantia — a cláusula some do contrato.</p>
+      </div>
+      <div class="field">
+        <label for="fRescisao">Rescisão e cancelamento</label>
+        <textarea id="fRescisao"></textarea>
+      </div>
+
+      <h2 class="with-gap">Termo de medição</h2>
+      <p class="subnote">Preencha após a visita técnica, antes de iniciar a produção.</p>
+      <div class="field-row">
+        <div class="field">
+          <label for="fMedLargura">Largura</label>
+          <input id="fMedLargura" type="text" placeholder="Ex: 3,20m" />
+        </div>
+        <div class="field">
+          <label for="fMedAltura">Altura</label>
+          <input id="fMedAltura" type="text" placeholder="Ex: 2,70m" />
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="fMedProfundidade">Profundidade</label>
+          <input id="fMedProfundidade" type="text" placeholder="Ex: 0,60m" />
+        </div>
+        <div class="field">
+          <label for="fMedVaos">Vãos</label>
+          <input id="fMedVaos" type="text" placeholder="Ex: janela, tomada" />
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="fMedPrumoEsquadro">Prumo e esquadro</label>
+          <input id="fMedPrumoEsquadro" type="text" placeholder="Ex: conforme / fora de prumo 1cm" />
+        </div>
+        <div class="field">
+          <label for="fMedNivel">Nível</label>
+          <input id="fMedNivel" type="text" placeholder="Ex: piso nivelado" />
+        </div>
+      </div>
+      <div class="field">
+        <label for="fMedInterferencias">Interferências</label>
+        <textarea id="fMedInterferencias" placeholder="Ex: tubulação hidráulica na parede lateral, ponto de energia a reposicionar"></textarea>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="fMedData">Data da medição</label>
+          <input id="fMedData" type="date" />
+        </div>
+        <div class="field">
+          <label for="fMedResponsavel">Responsável pela medição</label>
+          <input id="fMedResponsavel" type="text" />
+        </div>
+      </div>
+
+      <h2 class="with-gap">Autorização de uso de imagem</h2>
+      <div class="check-field">
+        <input type="checkbox" id="fAutorizaImagem" />
+        <label for="fAutorizaImagem">O contratante autoriza a GSJ a fotografar/filmar o ambiente e o resultado final para uso em portfólio e divulgação (Instagram, site, materiais de marketing), podendo esta autorização ser revogada a qualquer momento mediante comunicação por escrito.</label>
+      </div>
+
+      <h2 class="with-gap">Assinatura</h2>
+      <div class="field">
+        <label for="fLocal">Local</label>
+        <input id="fLocal" type="text" placeholder="Cidade/UF" />
+      </div>
+
+      <button class="btn btn-primary" id="btnPrint" type="button">Gerar PDF</button>
+      <p class="print-note" id="pdfNote">Abre a janela de impressão do navegador — escolha "Salvar como PDF" no destino.</p>
+    </div>
+
+    <div class="preview-wrap">
+      <div class="sheet" id="sheet"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var STORAGE_KEY = "gsj-contrato-draft";
+
+  var defaultState = {
+    orcamentoRef: "",
+    dataContrato: "",
+    clienteNome: "",
+    clienteDoc: "",
+    clienteTelefone: "",
+    clienteEndereco: "",
+    empresaNome: "GSJ",
+    empresaCnpj: "66.494.551/0001-67",
+    empresaEndereco: "",
+    objeto: "",
+    valorTotal: "",
+    pagamento: "40% de entrada, 30% na entrega dos materiais e 30% na conclusão da instalação",
+    prazoExecucao: "",
+    prazoEntrega: "",
+    obrigContratada: "A CONTRATADA se compromete a executar os serviços conforme especificações técnicas aprovadas, utilizando materiais de qualidade e mão de obra qualificada, respeitando os prazos acordados neste contrato.",
+    obrigContratante: "O CONTRATANTE se compromete a fornecer acesso ao local de instalação nas datas combinadas, efetuar os pagamentos nos prazos estabelecidos e comunicar eventuais alterações com antecedência mínima antes do início da produção.",
+    alteracoes: "Alterações solicitadas após a aprovação deste contrato serão avaliadas quanto ao impacto em prazo e valor, e só entrarão em produção mediante aprovação formal por escrito de ambas as partes. Alterações solicitadas após o início da produção podem gerar custo adicional de material e mão de obra.",
+    entregaInstalacao: "A entrega e a instalação serão realizadas mediante agendamento prévio, com acesso liberado ao local pelo CONTRATANTE. Eventuais remarcações por indisponibilidade do CONTRATANTE poderão impactar o prazo total de entrega.",
+    garantia: "90 dias contra defeitos de fabricação e de instalação, a partir da data de entrega.",
+    rescisao: "Em caso de cancelamento pelo CONTRATANTE após o início da produção, fica retido o valor já investido em materiais e mão de obra executada até a data do cancelamento. Em caso de descumprimento contratual por qualquer das partes, a parte prejudicada poderá notificar a outra por escrito e rescindir o contrato.",
+    medLargura: "", medAltura: "", medProfundidade: "", medVaos: "",
+    medPrumoEsquadro: "", medNivel: "", medInterferencias: "",
+    medData: "", medResponsavel: "",
+    autorizaImagem: false,
+    local: "",
+    cloudId: null
+  };
+
+  // ---- nuvem (Supabase) — salvar/abrir contratos compartilhados entre dispositivos ----
+  // Projeto Supabase reaproveitado da obra "Vision" (ver central.md, 2026-10-03).
+  // A anon key abaixo é pública por design (protegida por RLS + senha de acesso única
+  // da equipe, não por sigilo da key) — não é um segredo a esconder.
+  var sb = window.GSJ.sb;
+
+
+  function safeGet() {
+    try { var raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
+  }
+  function safeSave() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  var saved = safeGet();
+  var state = saved ? Object.assign({}, defaultState, saved) : JSON.parse(JSON.stringify(defaultState));
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  function fmtBRL(n) {
+    n = Number(n) || 0;
+    return "R$ " + n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function fmtDateBR(iso) {
+    if (!iso) return "—";
+    var parts = iso.split("-");
+    if (parts.length !== 3) return iso;
+    return parts[2] + "/" + parts[1] + "/" + parts[0];
+  }
+  function fmtDateToday() {
+    return new Date().toLocaleDateString("pt-BR");
+  }
+
+  var TEXT_IDS = ["fOrcamentoRef","fClienteNome","fClienteDoc","fClienteTelefone","fClienteEndereco",
+    "fEmpresaNome","fEmpresaCnpj","fEmpresaEndereco","fObjeto","fValorTotal","fPagamento",
+    "fPrazoExecucao","fPrazoEntrega","fObrigContratada","fObrigContratante","fAlteracoes",
+    "fEntregaInstalacao","fGarantia","fRescisao","fMedLargura","fMedAltura","fMedProfundidade",
+    "fMedVaos","fMedPrumoEsquadro","fMedNivel","fMedInterferencias","fMedResponsavel","fLocal"];
+  var DATE_IDS = ["fDataContrato","fMedData"];
+
+  var STATE_KEY = {
+    fOrcamentoRef:"orcamentoRef", fDataContrato:"dataContrato", fClienteNome:"clienteNome",
+    fClienteDoc:"clienteDoc", fClienteTelefone:"clienteTelefone", fClienteEndereco:"clienteEndereco",
+    fEmpresaNome:"empresaNome", fEmpresaCnpj:"empresaCnpj", fEmpresaEndereco:"empresaEndereco",
+    fObjeto:"objeto", fValorTotal:"valorTotal", fPagamento:"pagamento",
+    fPrazoExecucao:"prazoExecucao", fPrazoEntrega:"prazoEntrega",
+    fObrigContratada:"obrigContratada", fObrigContratante:"obrigContratante",
+    fAlteracoes:"alteracoes", fEntregaInstalacao:"entregaInstalacao", fGarantia:"garantia",
+    fRescisao:"rescisao", fMedLargura:"medLargura", fMedAltura:"medAltura",
+    fMedProfundidade:"medProfundidade", fMedVaos:"medVaos", fMedPrumoEsquadro:"medPrumoEsquadro",
+    fMedNivel:"medNivel", fMedInterferencias:"medInterferencias", fMedData:"medData",
+    fMedResponsavel:"medResponsavel", fLocal:"local"
+  };
+
+  var els = {};
+  TEXT_IDS.concat(DATE_IDS).forEach(function (id) { els[id] = document.getElementById(id); });
+  var elAutoriza = document.getElementById("fAutorizaImagem");
+
+  function loadFieldsFromState() {
+    TEXT_IDS.concat(DATE_IDS).forEach(function (id) {
+      els[id].value = state[STATE_KEY[id]];
+    });
+    elAutoriza.checked = !!state.autorizaImagem;
+  }
+
+  TEXT_IDS.concat(DATE_IDS).forEach(function (id) {
+    els[id].addEventListener("input", function () {
+      state[STATE_KEY[id]] = this.value;
+      updatePreview(); safeSave();
+    });
+  });
+  elAutoriza.addEventListener("change", function () {
+    state.autorizaImagem = this.checked;
+    updatePreview(); safeSave();
+  });
+
+  document.getElementById("btnReset").addEventListener("click", function () {
+    state.orcamentoRef = ""; state.dataContrato = "";
+    state.clienteNome = ""; state.clienteDoc = ""; state.clienteTelefone = ""; state.clienteEndereco = "";
+    state.objeto = ""; state.valorTotal = ""; state.prazoExecucao = ""; state.prazoEntrega = "";
+    state.medLargura = ""; state.medAltura = ""; state.medProfundidade = ""; state.medVaos = "";
+    state.medPrumoEsquadro = ""; state.medNivel = ""; state.medInterferencias = "";
+    state.medData = ""; state.medResponsavel = "";
+    state.autorizaImagem = false; state.local = "";
+    state.cloudId = null;
+    loadFieldsFromState(); updatePreview(); safeSave();
+    setCloudStatus("Ainda não salvo na nuvem.");
+    els.fClienteNome.focus();
+  });
+
+  // ---- nuvem: salvar / abrir contratos compartilhados ----
+  var cloudStatusEl = document.getElementById("cloudStatus");
+  var btnCloudSave = document.getElementById("btnCloudSave");
+  var btnCloudOpen = document.getElementById("btnCloudOpen");
+  var cloudModal = document.getElementById("gsjCloudModal");
+  var cloudListEl = document.getElementById("cloudList");
+  var btnCloudClose = document.getElementById("btnCloudClose");
+
+  function setCloudStatus(msg, isError) {
+    if (!cloudStatusEl) return;
+    cloudStatusEl.textContent = msg;
+    cloudStatusEl.classList.toggle("cloud-status-error", !!isError);
+  }
+
+  if (state.cloudId) {
+    setCloudStatus("Carregado da nuvem — última alteração salva lá.");
+  }
+
+  async function cloudSave() {
+    if (!sb) { setCloudStatus("A biblioteca da nuvem não carregou — recarregue a página e tente de novo.", true); return; }
+    btnCloudSave.disabled = true;
+    setCloudStatus("Salvando na nuvem…");
+    try {
+      var payload = {
+        numero: state.orcamentoRef || null,
+        cliente: state.clienteNome || null,
+        valor: Number(state.valorTotal) || 0,
+        dados: state
+      };
+      var result;
+      if (state.cloudId) {
+        result = await sb.from("gsj_contratos").update(payload).eq("id", state.cloudId).select().single();
+      } else {
+        result = await sb.from("gsj_contratos").insert(payload).select().single();
+      }
+      if (result.error) throw result.error;
+      state.cloudId = result.data.id;
+      if (window.GSJ) GSJ.logAction("abrir", "contrato", (state.orcamentoRef || state.clienteNome || null));
+      if (window.GSJ) GSJ.logAction("salvar", "contrato", (state.orcamentoRef || state.clienteNome || null));
+      safeSave();
+      var hora = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+      setCloudStatus("Salvo na nuvem às " + hora + ".");
+    } catch (e) {
+      setCloudStatus("Não deu pra salvar na nuvem agora — verifique sua internet.", true);
+    } finally {
+      btnCloudSave.disabled = false;
+    }
+  }
+
+  async function cloudOpenModal() {
+    cloudModal.hidden = false;
+    cloudListEl.innerHTML = '<span class="gsj-skel"></span><span class="gsj-skel"></span>';
+    if (!sb) { cloudListEl.innerHTML = '<p class="field-hint">A biblioteca da nuvem não carregou — recarregue a página.</p>'; return; }
+    try {
+      var result = await sb.from("gsj_contratos")
+        .select("id, numero, cliente, valor, updated_at")
+        .order("updated_at", { ascending: false })
+        .limit(100);
+      if (result.error) throw result.error;
+      var rows = result.data || [];
+      if (!rows.length) {
+        cloudListEl.innerHTML = '<p class="field-hint">Nenhum contrato salvo na nuvem ainda.</p>';
+        return;
+      }
+      cloudListEl.innerHTML = "";
+      rows.forEach(function (row) {
+        var item = document.createElement("button");
+        item.type = "button";
+        item.className = "cloud-list-item";
+        var dt = row.updated_at ? new Date(row.updated_at).toLocaleString("pt-BR") : "";
+        item.innerHTML =
+          "<strong>" + esc(row.cliente || "(sem cliente)") + "</strong>" +
+          "<span>" + esc(row.numero || "—") + " · " + fmtBRL(row.valor || 0) + " · " + esc(dt) + "</span>";
+        item.addEventListener("click", function () { cloudLoadById(row.id); });
+        cloudListEl.appendChild(item);
+      });
+    } catch (e) {
+      cloudListEl.innerHTML = '<p class="field-hint">Não deu pra carregar a lista agora — verifique sua internet.</p>';
+    }
+  }
+
+  async function cloudLoadById(id) {
+    if (!sb) return;
+    try {
+      var result = await sb.from("gsj_contratos").select("id, dados").eq("id", id).single();
+      if (result.error) throw result.error;
+      var loaded = result.data.dados || {};
+      state = Object.assign({}, defaultState, loaded);
+      state.cloudId = result.data.id;
+      loadFieldsFromState();
+      updatePreview();
+      safeSave();
+      cloudModal.hidden = true;
+      setCloudStatus("Aberto da nuvem — última alteração salva lá.");
+    } catch (e) {
+      alert("Não deu pra abrir esse contrato agora — verifique sua internet.");
+    }
+  }
+
+  if (btnCloudSave) btnCloudSave.addEventListener("click", cloudSave);
+  if (btnCloudOpen) btnCloudOpen.addEventListener("click", cloudOpenModal);
+  if (btnCloudClose) btnCloudClose.addEventListener("click", function () { cloudModal.hidden = true; });
+  if (cloudModal) cloudModal.addEventListener("click", function (e) { if (e.target === cloudModal) cloudModal.hidden = true; });
+
+  document.getElementById("btnPrint").addEventListener("click", function () {
+    window.print();
+  });
+
+  // Enviar direto pelo WhatsApp (PDF anexado) — ver wpp.js
+  if (window.GSJ && GSJ.wpp) GSJ.wpp.attach({
+    doc: "Contrato", key: "contrato", format: "a4", margin: [16, 18],
+    cliente: function () { return state.clienteNome; },
+    telefone: function () { return state.clienteTelefone; },
+    ref: function () { return state.orcamentoRef; }
+  });
+
+  var sheet = document.getElementById("sheet");
+
+  function clause(label, text) {
+    if (!text || !text.trim()) return "";
+    return '<p class="sheet-label">' + label + '</p><div class="sheet-clause"><p>' + esc(text) + '</p></div>';
+  }
+
+  function updatePreview() {
+    var medHtml =
+      '<div class="meas-grid">' +
+        '<div class="meas-cell"><div class="lbl">Largura</div><div class="val">' + esc(state.medLargura || "—") + '</div></div>' +
+        '<div class="meas-cell"><div class="lbl">Altura</div><div class="val">' + esc(state.medAltura || "—") + '</div></div>' +
+        '<div class="meas-cell"><div class="lbl">Profundidade</div><div class="val">' + esc(state.medProfundidade || "—") + '</div></div>' +
+        '<div class="meas-cell"><div class="lbl">Vãos</div><div class="val">' + esc(state.medVaos || "—") + '</div></div>' +
+        '<div class="meas-cell"><div class="lbl">Prumo/esquadro</div><div class="val">' + esc(state.medPrumoEsquadro || "—") + '</div></div>' +
+        '<div class="meas-cell"><div class="lbl">Nível</div><div class="val">' + esc(state.medNivel || "—") + '</div></div>' +
+        '<div class="meas-cell"><div class="lbl">Medido em</div><div class="val">' + fmtDateBR(state.medData) + '</div></div>' +
+        '<div class="meas-cell"><div class="lbl">Responsável</div><div class="val">' + esc(state.medResponsavel || "—") + '</div></div>' +
+      '</div>' +
+      (state.medInterferencias ? '<p style="margin:0 0 4px;"><b>Interferências observadas:</b> ' + esc(state.medInterferencias) + '</p>' : '');
+
+    var imagemTexto = state.autorizaImagem
+      ? "O CONTRATANTE autoriza a CONTRATADA a fotografar/filmar o ambiente e o resultado final para uso em portfólio e divulgação (redes sociais, site, materiais de marketing), podendo esta autorização ser revogada a qualquer momento mediante comunicação por escrito."
+      : "O CONTRATANTE NÃO autoriza o uso de fotos/vídeos deste ambiente para fins de portfólio ou divulgação.";
+
+    sheet.innerHTML =
+      '<div class="sheet-header">' +
+        '<div class="sheet-company">' +
+          '<p class="name">' + esc(state.empresaNome) + '</p>' +
+          (state.empresaCnpj ? '<p class="cnpj">CNPJ ' + esc(state.empresaCnpj) + '</p>' : '') +
+          (state.empresaEndereco ? '<p class="cnpj">' + esc(state.empresaEndereco) + '</p>' : '') +
+        '</div>' +
+        '<div class="sheet-meta">' +
+          '<div class="doc-title">CONTRATO DE PRESTAÇÃO DE SERVIÇO</div>' +
+          (state.orcamentoRef ? 'Ref. orçamento ' + esc(state.orcamentoRef) + '<br/>' : '') +
+          'Data: ' + (state.dataContrato ? fmtDateBR(state.dataContrato) : fmtDateToday()) +
+        '</div>' +
+      '</div>' +
+      '<hr class="sheet-rule" />' +
+
+      '<p class="sheet-label" style="margin-top:0;">Partes</p>' +
+      '<div class="sheet-parties">' +
+        '<div class="sheet-party">' +
+          '<p class="role">Contratante</p>' +
+          '<p class="pname">' + esc(state.clienteNome || "—") + '</p>' +
+          (state.clienteDoc ? '<p>CPF/CNPJ: ' + esc(state.clienteDoc) + '</p>' : '') +
+          (state.clienteTelefone ? '<p>Tel: ' + esc(state.clienteTelefone) + '</p>' : '') +
+          (state.clienteEndereco ? '<p>' + esc(state.clienteEndereco) + '</p>' : '') +
+        '</div>' +
+        '<div class="sheet-party">' +
+          '<p class="role">Contratada</p>' +
+          '<p class="pname">' + esc(state.empresaNome || "—") + '</p>' +
+          (state.empresaCnpj ? '<p>CNPJ: ' + esc(state.empresaCnpj) + '</p>' : '') +
+          (state.empresaEndereco ? '<p>' + esc(state.empresaEndereco) + '</p>' : '') +
+        '</div>' +
+      '</div>' +
+
+      clause("Objeto do contrato", state.objeto) +
+
+      '<p class="sheet-label">Valor e condições</p>' +
+      '<div class="cond-grid">' +
+        '<div class="cond-cell"><div class="lbl">Valor total</div><div class="val">' + fmtBRL(state.valorTotal) + '</div></div>' +
+        '<div class="cond-cell"><div class="lbl">Forma de pagamento</div><div class="val">' + esc(state.pagamento || "—") + '</div></div>' +
+        '<div class="cond-cell"><div class="lbl">Prazo de execução</div><div class="val">' + esc(state.prazoExecucao || "—") + '</div></div>' +
+      '</div>' +
+      '<div class="cond-grid" style="margin-top:8px;grid-template-columns:1fr;">' +
+        '<div class="cond-cell"><div class="lbl">Prazo de entrega/instalação</div><div class="val">' + esc(state.prazoEntrega || "—") + '</div></div>' +
+      '</div>' +
+
+      clause("Obrigações da contratada", state.obrigContratada) +
+      clause("Obrigações do contratante", state.obrigContratante) +
+      clause("Alterações de projeto", state.alteracoes) +
+      clause("Entrega e instalação", state.entregaInstalacao) +
+      (state.garantia && state.garantia.trim() ? clause("Garantia", state.garantia) : "") +
+      clause("Rescisão e cancelamento", state.rescisao) +
+
+      '<p class="sheet-label">Termo de medição</p>' +
+      medHtml +
+
+      '<p class="sheet-label">Autorização de uso de imagem</p>' +
+      '<div class="sheet-clause"><p>' + esc(imagemTexto) + '</p></div>' +
+
+      '<div class="sheet-signature">' +
+        '<div class="sig-col"><div class="sig-line"></div><p class="sig-label">' + esc(state.clienteNome || "Contratante") + '<br/>Contratante</p></div>' +
+        '<div class="sig-col"><div class="sig-line"></div><p class="sig-label">' + esc(state.empresaNome || "Contratada") + '<br/>Contratada</p></div>' +
+      '</div>' +
+      '<div class="sheet-footer">' +
+        (state.local ? esc(state.local) + ', ' : '') + (state.dataContrato ? fmtDateBR(state.dataContrato) : fmtDateToday()) +
+      '</div>';
+  }
+
+  loadFieldsFromState();
+  updatePreview();
+})();
+</script>
+<script>
+(function () {
+  var wrap = document.querySelector(".preview-wrap");
+  if (!wrap) return;
+
+  var openBtn = document.createElement("button");
+  openBtn.type = "button";
+  openBtn.className = "btn-mobile-preview";
+  openBtn.innerHTML = "👁 Visualizar";
+  document.body.appendChild(openBtn);
+
+  var closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.className = "btn-close-preview";
+  closeBtn.innerHTML = "✕ Fechar";
+  wrap.insertBefore(closeBtn, wrap.firstChild);
+
+  openBtn.addEventListener("click", function () {
+    wrap.classList.add("mobile-fullscreen");
+    document.body.style.overflow = "hidden";
+    wrap.scrollTop = 0;
+  });
+  closeBtn.addEventListener("click", function () {
+    wrap.classList.remove("mobile-fullscreen");
+    document.body.style.overflow = "";
+  });
+})();
+</script>
+</body></html>

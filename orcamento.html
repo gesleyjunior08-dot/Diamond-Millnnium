@@ -1,0 +1,1747 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Gerador de Orçamentos GSJ</title>
+<style>
+  @import url("https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&family=Source+Sans+3:wght@400;500;600;700&display=swap");
+
+  :root {
+    --bg: #faf6ef;
+    --surface: #ffffff;
+    --surface-2: #fffdf9;
+    --text: #2b2118;
+    --text-muted: #6b5d4f;
+    --accent: #954f14;
+    --accent-2: #c9832e;
+    --accent-soft: #f4e9da;
+    --line: #e3d9c8;
+    --danger: #a6402f;
+    --danger-soft: #f4e1dc;
+    --shadow: 0 1px 2px rgba(43, 33, 24, 0.05), 0 12px 32px rgba(43, 33, 24, 0.08);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1c1712;
+      --surface: #241d17;
+      --surface-2: #2b2319;
+      --text: #efe7da;
+      --text-muted: #b3a591;
+      --accent: #dd9752;
+      --accent-2: #e8a866;
+      --accent-soft: #3a2c1e;
+      --line: #3c3226;
+      --danger: #d97d68;
+      --danger-soft: #3a241f;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 12px 32px rgba(0, 0, 0, 0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1c1712;
+    --surface: #241d17;
+    --surface-2: #2b2319;
+    --text: #efe7da;
+    --text-muted: #b3a591;
+    --accent: #dd9752;
+    --accent-2: #e8a866;
+    --accent-soft: #3a2c1e;
+    --line: #3c3226;
+    --danger: #d97d68;
+    --danger-soft: #3a241f;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 12px 32px rgba(0, 0, 0, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  /* ---- correcao de overflow horizontal no mobile ---- */
+  html, body { overflow-x: hidden; }
+  .layout > * { min-width: 0; }
+  .field-row > *, .field-row-3 > *, .field-row-4 > * { min-width: 0; }
+  .cond-grid > *, .info-grid > * { min-width: 0; }
+  .item-row > * { min-width: 0; }
+  .piece-card, .piece-card * { min-width: 0; }
+  .field input, .field textarea, .field select { min-width: 0; }
+
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.5;
+    padding: 32px 20px 64px;
+  }
+
+  .app { max-width: 1180px; margin: 0 auto; }
+
+  .app-header { margin-bottom: 24px; max-width: 68ch; }
+  .app-header .eyebrow {
+    font-size: 12.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 8px;
+  }
+  .app-header h1 {
+    font-family: "Newsreader", ui-serif, Georgia, serif; font-weight: 600;
+    font-size: clamp(24px, 3.6vw, 30px); margin: 0 0 8px;
+  }
+  .app-header p { color: var(--text-muted); font-size: 15px; margin: 0; }
+
+  .layout { display: grid; grid-template-columns: minmax(300px, 390px) 1fr; gap: 26px; align-items: start; }
+  @media (max-width: 880px) { .layout { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    padding: 22px; box-shadow: var(--shadow);
+  }
+
+  .panel h2 {
+    font-family: "Newsreader", ui-serif, Georgia, serif; font-weight: 600; font-size: 16px;
+    margin: 0 0 14px;
+  }
+  .panel h2.with-gap { margin-top: 22px; }
+
+  .field { margin-bottom: 12px; }
+  .field label {
+    display: block; font-size: 12px; font-weight: 600; color: var(--text-muted);
+    margin-bottom: 5px; letter-spacing: 0.01em;
+  }
+  .field input, .field textarea, .field select {
+    width: 100%; font-family: inherit; font-size: 14.5px; color: var(--text);
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px;
+    padding: 8px 10px;
+  }
+  .field textarea { resize: vertical; min-height: 52px; line-height: 1.4; }
+  .field input:focus-visible, .field textarea:focus-visible, .field select:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 1px;
+  }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .field-hint { font-size: 11.5px; color: var(--text-muted); margin: -8px 0 14px; line-height: 1.5; }
+
+  .field-label-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
+  .field-label-row label { margin-bottom: 0; }
+  .btn-ai {
+    font-family: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer;
+    border: 1px solid var(--line); background: var(--surface-2); color: var(--accent);
+    border-radius: 999px; padding: 3px 10px; line-height: 1.5; white-space: nowrap; flex: none;
+  }
+  .btn-ai:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .btn-ai:disabled { opacity: .6; cursor: default; }
+  .ai-hint { font-size: 11.5px; color: var(--text-muted); margin: -8px 0 14px; }
+
+  .item-row {
+    display: grid; grid-template-columns: 1fr 100px 28px 30px; gap: 6px; align-items: center;
+    margin-bottom: 8px;
+  }
+  .item-row input { font-variant-numeric: tabular-nums; }
+  .item-ai {
+    width: 28px; height: 30px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--surface-2); color: var(--accent); cursor: pointer; font-size: 13px;
+    display: grid; place-content: center; line-height: 1;
+  }
+  .item-ai:hover { background: var(--accent-soft); border-color: var(--accent); }
+  .item-ai:disabled { opacity: .5; cursor: default; }
+  .item-remove {
+    width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--surface-2); color: var(--danger); cursor: pointer; font-size: 15px;
+    display: grid; place-content: center; line-height: 1;
+  }
+  .item-remove:hover { background: var(--danger-soft); }
+
+  .pacote-block, .desconto-block {
+    border: 1px solid var(--line); border-radius: 10px; padding: 12px;
+    margin-bottom: 10px; background: var(--surface-2);
+  }
+  .check-list {
+    border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px;
+    background: var(--surface); max-height: 160px; overflow-y: auto;
+  }
+  .check-row { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 4px 0; }
+  .check-row input[type="checkbox"] { flex: none; width: auto; }
+  .check-row.disabled { color: var(--text-muted); }
+  .block-remove { width: 100%; margin-top: 2px; }
+
+  .btn {
+    font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+    border-radius: 9px; padding: 9px 14px; border: 1px solid var(--line);
+    background: var(--surface-2); color: var(--text);
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn-add { width: 100%; margin-top: 2px; }
+  .btn-primary {
+    background: var(--accent); border-color: var(--accent); color: #fff8ef; width: 100%;
+    font-size: 15px; padding: 12px 14px; margin-top: 18px;
+  }
+  .btn-primary:hover { background: var(--accent-2); border-color: var(--accent-2); }
+  .btn-ghost { background: transparent; border-color: transparent; color: var(--text-muted); font-size: 13px; padding: 6px 4px; }
+  .btn-ghost:hover { color: var(--accent); }
+
+  .toolbar-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+
+  /* ---- nuvem: barra de ações + status ---- */
+  .cloud-bar { display: flex; gap: 8px; margin: 10px 0 4px; }
+  .btn-cloud { flex: 1; font-size: 13px; padding: 8px 10px; }
+  .btn-cloud-save { background: var(--accent-soft); border-color: var(--accent-2); color: var(--accent); font-weight: 700; }
+  .btn-cloud-save:hover { background: var(--accent); color: #fff8ef; }
+  .cloud-status {
+    font-size: 11.5px; color: var(--text-muted); margin: 0 0 14px; padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .cloud-status-error { color: var(--danger); }
+
+  /* ---- gate de acesso único compartilhado ---- */
+  .auth-gate {
+    position: fixed; inset: 0; z-index: 1000; background: var(--bg);
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .auth-gate[hidden], .cloud-modal[hidden] { display: none !important; }
+  .auth-box {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: var(--shadow); padding: 28px; max-width: 360px; width: 100%; text-align: center;
+  }
+  .auth-box h2 {
+    font-family: "Newsreader", ui-serif, Georgia, serif; font-weight: 600; font-size: 19px; margin: 0 0 8px;
+  }
+  .auth-box p { font-size: 13.5px; color: var(--text-muted); margin: 0 0 16px; line-height: 1.5; }
+  .auth-box input {
+    width: 100%; font-family: inherit; font-size: 15px; color: var(--text); text-align: center;
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
+  }
+  .auth-box input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .auth-error { color: var(--danger); font-size: 12.5px; margin: 8px 0 0 !important; }
+
+  /* ---- modal "abrir da nuvem" ---- */
+  .cloud-modal {
+    position: fixed; inset: 0; z-index: 900; background: rgba(43, 33, 24, 0.45);
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .cloud-modal-box {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: var(--shadow); padding: 20px; max-width: 480px; width: 100%;
+    max-height: 80vh; display: flex; flex-direction: column;
+  }
+  .cloud-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .cloud-modal-header h2 { font-family: "Newsreader", ui-serif, Georgia, serif; font-weight: 600; font-size: 17px; }
+  .cloud-list { overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+  .cloud-list-item {
+    display: flex; flex-direction: column; gap: 2px; text-align: left; font-family: inherit;
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 9px;
+    padding: 9px 12px; cursor: pointer; color: var(--text);
+  }
+  .cloud-list-item:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .cloud-list-item strong { font-size: 14px; }
+  .cloud-list-item span { font-size: 11.5px; color: var(--text-muted); }
+
+  .print-note {
+    font-size: 12.5px; color: var(--text-muted); margin-top: 10px; line-height: 1.5;
+  }
+
+  /* ---- preview sheet, styled to match the emitted PDF ---- */
+  .preview-wrap { display: flex; justify-content: center; }
+  .sheet {
+    background: #fffefb; color: #2b2118; width: 100%; max-width: 210mm;
+    padding: 14mm 16mm; border-radius: 4px; box-shadow: var(--shadow);
+    border: 1px solid var(--line); overflow-x: auto;
+  }
+  .sheet-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+  .sheet-company { display: flex; align-items: flex-start; gap: 10px; }  .sheet-company .name {
+    font-family: "Newsreader", ui-serif, Georgia, serif; font-weight: 700; font-size: 27px; margin: 0;
+  }
+  .sheet-company .tag { font-size: 12px; color: #6b5d4f; margin-top: 2px; }
+  .sheet-company .cnpj { font-size: 11px; color: #6b5d4f; margin-top: 1px; }
+  .sheet-meta { text-align: right; font-size: 12px; color: #6b5d4f; line-height: 1.6; }
+  .sheet-meta .doc-title {
+    font-weight: 700; font-size: 15px; color: #954f14; letter-spacing: 0.03em;
+    margin-bottom: 4px;
+  }
+  .sheet-rule { height: 2px; background: #954f14; margin: 8px 0 10px; border: none; }
+  .sheet-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+    color: #954f14; margin: 0 0 4px;
+  }
+  .sheet-client-block { margin: 0 0 10px; }
+  .sheet-client { font-family: "Newsreader", ui-serif, Georgia, serif; font-weight: 700; font-size: 17px; margin: 0 0 3px; }
+  .sheet-client-meta { font-size: 11.5px; color: #6b5d4f; margin: 0 0 2px; }
+  .sheet-scope-out { font-size: 12px; margin: 0 0 12px; line-height: 1.45; }
+  .sheet-warranty { margin-top: 8px; }
+  .sheet-warranty p:not(.sheet-label) { font-size: 12px; margin: 0; line-height: 1.45; }
+  .sheet-signature { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 10px; }
+  .sig-line { border-top: 1px solid #2b2118; margin-top: 10px; }
+  .sig-label { font-size: 10.5px; color: #6b5d4f; margin: 6px 0 0; line-height: 1.4; }
+
+  table.sheet-items { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 12px; }
+  table.sheet-items thead th {
+    text-align: left; background: #f4e9da; color: #954f14; font-weight: 700;
+    padding: 5px 9px; border-bottom: 1.5px solid #954f14;
+  }
+  table.sheet-items thead th.num { text-align: right; }
+  table.sheet-items tbody td { padding: 5px 9px; border-bottom: 1px solid #e3d9c8; }
+  table.sheet-items tbody td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.sheet-items tfoot td {
+    padding: 6px 9px; font-weight: 700; background: #f4e9da; border-top: 2px solid #954f14;
+  }
+  table.sheet-items tfoot td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.sheet-items tfoot tr.total-final-row td {
+    border-top: 1px dashed #c9a876; background: #fbf3e7;
+  }
+  table.sheet-items tfoot tr.total-final-row td.num { color: #954f14; font-size: 13.5px; }
+
+  .combo-note {
+    background: #f4e9da; border: 1px solid #e3d9c8; border-left: 3px solid #954f14;
+    border-radius: 7px; padding: 7px 10px; margin: 0 0 8px; color: #2b2118;
+  }
+  .combo-note .combo-note-title { font-weight: 700; color: #954f14; margin: 0 0 2px; font-size: 11.5px; }
+  .combo-note p { margin: 0; font-size: 11.5px; line-height: 1.4; }
+  .combo-note .was { text-decoration: line-through; color: #8a7a68; }
+  .combo-note .now { font-weight: 700; color: #954f14; font-size: 13px; }
+
+  .price-stack { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.3; }
+  .price-stack .was { text-decoration: line-through; color: #8a7a68; font-size: 10px; }
+  .price-stack .now { font-weight: 700; color: #954f14; font-size: 12px; }
+  table.sheet-items tfoot .price-stack .was { font-size: 10.5px; }
+  table.sheet-items tfoot .price-stack .now { font-size: 13.5px; }
+  .disc-motivo { font-size: 9.5px; color: #8a7a68; text-align: right; margin-top: 1px; white-space: normal; }
+  .pkg-tag { font-size: 9.5px; color: #8a7a68; font-weight: 400; display: block; margin-top: 1px; white-space: normal; }
+
+  .combo-note .price-stack { align-items: flex-start; margin: 2px 0 1px; }
+  .combo-note .price-stack .was { font-size: 11px; }
+  .combo-note .price-stack .now { font-size: 14.5px; }
+  .combo-note .pacote-items-list { font-size: 10.5px; color: #6b5d4f; margin: 0 0 1px; }
+  .combo-note .pacote-economia { font-size: 11px; color: #954f14; font-weight: 600; margin: 1px 0 0; }
+  .combo-note.taxa-note p + p { margin-top: 3px; }
+
+  .sheet-note { font-size: 11px; color: #6b5d4f; margin: 0 0 6px; font-style: italic; }
+  table.sheet-options { width: 100%; border-collapse: collapse; margin: 0 0 10px; font-size: 11.5px; }
+  table.sheet-options thead th {
+    text-align: left; background: #f4e9da; color: #954f14; font-weight: 700;
+    padding: 4px 8px; border-bottom: 1.5px solid #954f14; font-size: 11px;
+  }
+  table.sheet-options thead th.num { text-align: right; }
+  table.sheet-options tbody td { padding: 4px 8px; border-bottom: 1px solid #e3d9c8; vertical-align: top; }
+  table.sheet-options tbody td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.sheet-options tbody td.opcao-nome { font-weight: 700; }
+  table.sheet-options tbody td.opcao-desc { color: #6b5d4f; }
+
+  .sheet-materials p { font-size: 12px; margin: 0 0 4px; line-height: 1.45; }
+  .sheet-materials b { font-weight: 700; }
+
+  .cond-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid #e3d9c8;
+    border-radius: 6px; overflow: hidden; margin-top: 8px;
+  }
+  .cond-cell { padding: 7px 10px; border-left: 1px solid #e3d9c8; }
+  .cond-cell:first-child { border-left: none; }
+  .cond-cell .lbl { font-size: 9px; font-weight: 700; letter-spacing: 0.06em; color: #6b5d4f; text-transform: uppercase; }
+  .cond-cell .val { font-size: 12px; margin-top: 3px; line-height: 1.35; }
+
+  .sheet-footer {
+    text-align: center; font-size: 10.5px; color: #6b5d4f; margin-top: 6px;
+    border-top: 1px solid #e3d9c8; padding-top: 4px;
+  }
+
+  @media print {
+    body { padding: 0; background: #fff; }
+    .app-header, .panel:first-of-type, .toolbar-row, .print-note, .auth-gate, .cloud-modal { display: none !important; }
+    .layout { display: block; }
+    .preview-wrap { display: block; }
+    .sheet { box-shadow: none; border: none; border-radius: 0; max-width: none; width: 100%; padding: 0;  overflow: visible;}
+    @page { size: A4; margin: 13mm 15mm; }
+    /* tudo que vem depois da tabela de itens é tratado como 1 bloco só: se não couber no
+       resto da página 1, o navegador pula ele inteiro pra página 2, em vez de cortar
+       uma caixa/seção ao meio bem debaixo da tabela */
+    .sheet-rest { page-break-inside: avoid; }
+  }
+
+  .toolbar-lockup { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .toolbar-lockup svg { width: 22px; height: 22px; color: var(--accent); }
+  .toolbar-lockup span {
+    font-family: "Newsreader", ui-serif, Georgia, serif; font-weight: 700; font-size: 15px; color: var(--text);
+  }
+
+  .btn-mobile-preview {
+    display: none; position: fixed; bottom: 20px; right: 20px; z-index: 500;
+    background: var(--accent); color: #fff8ef; border: none; border-radius: 999px;
+    padding: 12px 20px; font-family: inherit; font-weight: 600; font-size: 14px;
+    box-shadow: var(--shadow); cursor: pointer; align-items: center; gap: 6px;
+  }
+  @media (max-width: 880px) { .btn-mobile-preview { display: inline-flex; } }
+  .btn-close-preview {
+    display: none; position: sticky; top: 0; margin: 0 0 14px auto;
+    background: var(--surface); color: var(--text); border: 1px solid var(--line);
+    border-radius: 999px; padding: 8px 16px; font-family: inherit; font-weight: 600;
+    font-size: 13px; cursor: pointer; box-shadow: var(--shadow); align-items: center; gap: 6px;
+  }
+  .preview-wrap.mobile-fullscreen {
+    position: fixed; inset: 0; z-index: 600; background: var(--bg);
+    overflow-y: auto; padding: 16px; margin: 0;
+    display: flex !important; flex-direction: column; align-items: center;
+  }
+  .preview-wrap.mobile-fullscreen .btn-close-preview { display: flex; }
+  @media print { .btn-mobile-preview, .btn-close-preview { display: none !important; } }
+
+  .preview-wrap.mobile-fullscreen .sheet { padding: 28px 18px; }
+  /* ---- versao local: sem IA (decisao 2026-09-07) ---- */
+  .btn-ai, .ai-hint { display: none !important; }
+  .item-ai { display: none !important; }
+  .item-row { grid-template-columns: 1fr 100px 30px !important; }
+
+</style>
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#954f14">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GSJ">
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("./sw.js").catch(function () {});
+    });
+  }
+</script>
+<link rel="stylesheet" href="./shell.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./auth.js"></script>
+<script src="./wpp.js"></script>
+<script>window.GSJ && window.GSJ.boot({ page: "orcamento" });</script>
+</head>
+<body>
+
+<div id="gsjCloudModal" class="cloud-modal" hidden>
+  <div class="cloud-modal-box">
+    <div class="cloud-modal-header">
+      <h2 style="margin:0">Orçamentos salvos na nuvem</h2>
+      <button class="btn btn-ghost" id="btnCloudClose" type="button">Fechar</button>
+    </div>
+    <div id="cloudList" class="cloud-list"><span class="gsj-skel"></span><span class="gsj-skel"></span></div>
+  </div>
+</div>
+
+<div class="app" id="gsjPageRoot">
+  <div class="app-header">
+    <div class="toolbar-lockup"><span>GSJ</span></div>
+    <p class="eyebrow">GSJ · ferramenta interna</p>
+    <h1>Gerador de orçamentos</h1>
+    <p>Preencha os dados à esquerda, confira a prévia à direita e gere o PDF — o layout é o mesmo que já foi enviado para os primeiros clientes.</p>
+  </div>
+
+  <div class="layout">
+    <div class="panel" id="formPanel">
+      <div class="toolbar-row">
+        <h2 style="margin:0">Dados do orçamento</h2>
+        <button class="btn btn-ghost" id="btnReset" type="button">Nova cotação</button>
+      </div>
+
+      <div class="cloud-bar">
+        <button class="btn btn-cloud" id="btnCloudOpen" type="button">☁ Abrir da nuvem</button>
+        <button class="btn btn-cloud btn-cloud-save" id="btnCloudSave" type="button">☁ Salvar na nuvem</button>
+      </div>
+      <p class="cloud-status" id="cloudStatus">Ainda não salvo na nuvem.</p>
+
+      <div class="field">
+        <label for="fOrcamentoId">Código do orçamento</label>
+        <input id="fOrcamentoId" type="text" placeholder="Ex: GSJ-20260907-561" />
+        <p class="field-hint" style="margin:6px 0 0;">Gerado sozinho, mas você pode editar. Copie este código pro campo "Nº do orçamento/contrato" dos outros documentos (contrato, recibo, termo de entrega, ficha de produção) — assim eles ficam ligados a este orçamento mesmo trocando de navegador ou computador.</p>
+      </div>
+      <div class="field">
+        <label for="fClient">Cliente</label>
+        <input id="fClient" type="text" placeholder="Ex: João e Maria" />
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="fClienteDoc">CPF/CNPJ do cliente</label>
+          <input id="fClienteDoc" type="text" placeholder="000.000.000-00" />
+        </div>
+        <div class="field">
+          <label for="fClienteTelefone">Telefone do cliente</label>
+          <input id="fClienteTelefone" type="text" placeholder="(00) 00000-0000" />
+        </div>
+      </div>
+      <div class="field">
+        <label for="fClienteEmail">E-mail do cliente</label>
+        <input id="fClienteEmail" type="text" placeholder="cliente@email.com" />
+      </div>
+      <div class="field">
+        <label for="fClienteEndereco">Endereço de entrega/instalação</label>
+        <input id="fClienteEndereco" type="text" placeholder="Rua, número, bairro, cidade" />
+      </div>
+
+      <h2 class="with-gap">Itens do projeto</h2>
+      <div id="itemsForm"></div>
+      <button class="btn btn-add" id="btnAddItem" type="button">+ Adicionar item</button>
+
+      <h2 class="with-gap">Opções de cor / acabamento</h2>
+      <p class="field-hint">Mostre variações disponíveis pra um item — ex: "Armário de cozinha, Azul: Fórmica Branco TX" / "Armário de cozinha, Verde: Fórmica Preto Fosco". Aparece numa tabela própria, só como referência: os valores aqui NÃO somam no Total do orçamento. Deixe o valor em 0 pra indicar "sem custo adicional", ou vazio pra não mostrar valor nenhum.</p>
+      <div id="opcoesForm"></div>
+      <button class="btn btn-add" id="btnAddOpcao" type="button">+ Adicionar opção</button>
+
+      <h2 class="with-gap">Pacotes / combos</h2>
+      <p class="field-hint">Agrupe itens que só saem mais baratos quando fechados juntos — ex: "Transporte — ida" + "Transporte — volta" por um valor combinado. O pacote NÃO é um desconto no total: ele troca a soma dos itens escolhidos pelo valor combinado, e mostra os dois números no orçamento (soma riscada em cima, valor do pacote embaixo).</p>
+      <div id="pacotesForm"></div>
+      <button class="btn btn-add" id="btnAddPacote" type="button">+ Adicionar pacote</button>
+
+      <h2 class="with-gap">Desconto</h2>
+      <p class="field-hint">Dê um desconto no total do orçamento ou em um item específico — pode ter vários, cada um no seu alvo. O valor original aparece riscado em cima e o valor com desconto embaixo.</p>
+      <div id="descontosForm"></div>
+      <button class="btn btn-add" id="btnAddDesconto" type="button">+ Adicionar desconto</button>
+
+      <h2 class="with-gap">Taxa de projeto</h2>
+      <p class="field-hint">Cobrada à parte, no início, referente ao levantamento e detalhamento deste projeto — protege seu trabalho caso o cliente desista e leve o material pra outra marcenaria. Se o cliente fechar contrato dentro do prazo, o valor é abatido do total do orçamento. Deixe o valor em 0 para não usar esse recurso.</p>
+      <div class="field-row">
+        <div class="field">
+          <label for="fTaxaProjetoValor">Valor da taxa (R$)</label>
+          <input id="fTaxaProjetoValor" type="number" min="0" step="0.01" placeholder="0" />
+        </div>
+        <div class="field">
+          <label for="fTaxaProjetoDias">Abate se fechar em (dias)</label>
+          <input id="fTaxaProjetoDias" type="number" min="1" step="1" placeholder="30" />
+        </div>
+      </div>
+
+      <h2 class="with-gap">Escopo</h2>
+      <p class="field-hint">Deixar claro o que NÃO está incluso evita o principal motivo de conflito com cliente depois.</p>
+      <div class="field">
+        <div class="field-label-row">
+          <label for="fEscopoExclusoes">O que NÃO está incluso</label>
+          <button class="btn-ai" id="aiEscopoExclusoes" type="button">✨ Melhorar com IA</button>
+        </div>
+        <textarea id="fEscopoExclusoes" placeholder="Ex: instalação elétrica e hidráulica, pintura de paredes, frete para fora da cidade"></textarea>
+      </div>
+
+      <h2 class="with-gap">Materiais e acabamentos</h2>
+      <p class="ai-hint">✨ "Melhorar com IA" corrige português/concordância e sugere um texto se o campo estiver vazio — usa sua própria conta Claude.</p>
+      <div class="field">
+        <div class="field-label-row">
+          <label for="fMateriaisTexto">Texto de abertura</label>
+          <button class="btn-ai" id="aiMateriaisTexto" type="button">✨ Melhorar com IA</button>
+        </div>
+        <textarea id="fMateriaisTexto"></textarea>
+      </div>
+      <div class="field">
+        <div class="field-label-row">
+          <label for="fFerragens">Ferragens</label>
+          <button class="btn-ai" id="aiFerragens" type="button">✨ Melhorar com IA</button>
+        </div>
+        <textarea id="fFerragens"></textarea>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="fEspessuraMdf">Espessura do MDF</label>
+          <select id="fEspessuraMdf">
+            <option value="15mm">15mm</option>
+            <option value="18mm">18mm</option>
+            <option value="25mm">25mm</option>
+            <option value="Espessura variável">Espessura variável</option>
+          </select>
+        </div>
+        <div class="field">
+          <div class="field-label-row">
+            <label for="fAcabamento">MDF — acabamento escolhido</label>
+            <button class="btn-ai" id="aiAcabamento" type="button">✨</button>
+          </div>
+          <input id="fAcabamento" type="text" placeholder="Ex: Titânio, Giuduia e Noce Amêndoa" />
+        </div>
+      </div>
+
+      <h2 class="with-gap">Condições</h2>
+      <div class="field-row">
+        <div class="field">
+          <label for="fPagamento">Forma de pagamento</label>
+          <input id="fPagamento" type="text" />
+        </div>
+        <div class="field">
+          <label for="fEntrega">Prazo de entrega</label>
+          <input id="fEntrega" type="text" />
+        </div>
+      </div>
+      <div class="field">
+        <label for="fValidade">Validade do orçamento (dias a partir de hoje)</label>
+        <input id="fValidade" type="number" min="1" step="1" />
+      </div>
+      <div class="field">
+        <div class="field-label-row">
+          <label for="fGarantia">Garantia</label>
+          <button class="btn-ai" id="aiGarantia" type="button">✨ Melhorar com IA</button>
+        </div>
+        <textarea id="fGarantia"></textarea>
+        <p class="field-hint" style="margin:6px 0 0;">Deixe em branco se este serviço não tiver garantia — o campo some do PDF.</p>
+      </div>
+      <div class="field">
+        <div class="field-label-row">
+          <label for="fClausulaProjeto">Propriedade do projeto</label>
+          <button class="btn-ai" id="aiClausulaProjeto" type="button">✨ Melhorar com IA</button>
+        </div>
+        <textarea id="fClausulaProjeto"></textarea>
+        <p class="field-hint" style="margin:6px 0 0;">Deixa claro que o projeto é seu e não pode ser usado por outra marcenaria se o cliente desistir. Deixe em branco pra não incluir essa cláusula no PDF.</p>
+      </div>
+
+      <h2 class="with-gap">Sua empresa</h2>
+      <div class="field">
+        <label for="fCompanyName">Nome</label>
+        <input id="fCompanyName" type="text" />
+      </div>
+      <div class="field">
+        <label for="fCompanyTag">Descrição curta</label>
+        <input id="fCompanyTag" type="text" />
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="fCompanyPhone">Telefone / WhatsApp</label>
+          <input id="fCompanyPhone" type="text" />
+        </div>
+        <div class="field">
+          <label for="fCompanyCnpj">CNPJ</label>
+          <input id="fCompanyCnpj" type="text" />
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="btnPrint" type="button">Gerar PDF</button>
+      <p class="print-note" id="pdfNote">Abre a janela de impressão do navegador — escolha "Salvar como PDF". Em "Mais configurações", desmarque "Cabeçalhos e rodapés" para o link da página não aparecer no PDF.</p>
+    </div>
+
+    <div class="preview-wrap">
+      <div class="sheet" id="sheet"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---- geração de PDF: texto vetorial de verdade via jsPDF (não é window.print, que fica bloqueado no Artifact,
+  // nem uma imagem/print da tela — ver central.md "PDF vetorial" pro histórico da decisão) ----
+(function () {
+  var STORAGE_KEY = "gsj-orcamento-draft";
+
+  // ---- nuvem (Supabase) — salvar/abrir orçamentos compartilhados entre dispositivos ----
+  // Projeto Supabase reaproveitado da obra "Vision" (ver central.md, 2026-10-03).
+  // A anon key abaixo é pública por design (protegida por RLS + senha de acesso única
+  // da equipe, não por sigilo da key) — não é um segredo a esconder.
+  var sb = window.GSJ.sb;
+
+
+  var defaultState = {
+    client: "Wesley e Priscila",
+    clienteDoc: "",
+    clienteTelefone: "",
+    clienteEmail: "",
+    clienteEndereco: "",
+    items: [
+      { id: 1, desc: "Armário de quarto com 2 criados-mudos", value: 14150 },
+      { id: 2, desc: "Armário de cozinha — módulos inferior e superior", value: 7180 },
+      { id: 3, desc: "Armário de cozinha com torre quente", value: 8600 }
+    ],
+    escopoExclusoes: "Instalação elétrica e hidráulica, pintura de paredes e frete para fora da cidade.",
+    materiaisTexto: "Todos os materiais estão inclusos neste orçamento, sem custos adicionais.",
+    ferragens: "Dobradiças com sistema de amortecimento (soft-close) e corrediças invisíveis com amortecedor, disponíveis também com abertura por toque (sistema tip-on, sem puxadores aparentes).",
+    espessuraMdf: "15mm",
+    acabamento: "Titânio, Giuduia e Noce Amêndoa",
+    pagamento: "40% de entrada, 30% na entrega dos materiais e 30% na conclusão da instalação",
+    entrega: "A combinar",
+    validadeDias: 15,
+    garantia: "90 dias contra defeitos de fabricação e de instalação, a partir da data de entrega.",
+    taxaProjetoValor: 0,
+    taxaProjetoDias: 30,
+    clausulaProjeto: "Este projeto (desenhos, medidas e detalhamento técnico) é de autoria e propriedade da GSJ — Design em madeira, cedido ao cliente exclusivamente para avaliação desta proposta. A reprodução, o repasse ou o uso deste material por terceiros sem autorização prévia sujeita o responsável ao pagamento do valor equivalente à taxa de projeto (ou, na ausência desta, ao valor de mercado de um projeto equivalente).",
+    companyName: "GSJ",
+    companyTag: "Marcenaria & Móveis Planejados",
+    companyPhone: "(32) 98705-9159",
+    companyCnpj: "66.494.551/0001-67",
+    orcamentoId: "",
+    cloudId: null,
+    descontos: [],
+    pacotes: [],
+    opcoes: []
+  };
+
+  function genOrcamentoId() {
+    var d = new Date();
+    var y = d.getFullYear();
+    var m = String(d.getMonth() + 1).padStart(2, "0");
+    var day = String(d.getDate()).padStart(2, "0");
+    var rand = Math.floor(100 + Math.random() * 900);
+    return "GSJ-" + y + m + day + "-" + rand;
+  }
+
+  function safeGet() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+  function safeSave() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  var saved = safeGet();
+  var state = saved ? Object.assign({}, defaultState, saved) : JSON.parse(JSON.stringify(defaultState));
+  if (!Array.isArray(state.items) || state.items.length === 0) {
+    state.items = [{ desc: "", value: 0 }];
+  }
+  state.items.forEach(function (it, i) { if (it.id == null) it.id = i + 1; });
+  if (!Array.isArray(state.descontos)) state.descontos = [];
+  if (!Array.isArray(state.pacotes)) state.pacotes = [];
+  if (!Array.isArray(state.opcoes)) state.opcoes = [];
+  state.descontos.forEach(function (d, i) { if (d.id == null) d.id = i + 1; });
+  state.pacotes.forEach(function (p, i) {
+    if (p.id == null) p.id = i + 1;
+    if (!Array.isArray(p.itemIds)) p.itemIds = [];
+  });
+  state.opcoes.forEach(function (o, i) { if (o.id == null) o.id = i + 1; });
+  if (state.descontos.length === 0 && Number(state.descontoValor) > 0) {
+    state.descontos.push({
+      id: 1, alvo: "total",
+      tipo: state.descontoTipo === "percentual" ? "percentual" : "valor",
+      valor: state.descontoValor, motivo: state.descontoDesc || ""
+    });
+  }
+  delete state.descontoTipo; delete state.descontoValor; delete state.descontoDesc;
+  if (!state.orcamentoId) { state.orcamentoId = genOrcamentoId(); }
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  function fmtBRL(n) {
+    n = Number(n) || 0;
+    return "R$ " + n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function fmtDate(d) {
+    return d.toLocaleDateString("pt-BR");
+  }
+  function nextId(arr) {
+    var max = 0;
+    (arr || []).forEach(function (x) { if (x.id > max) max = x.id; });
+    return max + 1;
+  }
+
+  var els = {};
+  ["fOrcamentoId","fClient","fClienteDoc","fClienteTelefone","fClienteEmail","fClienteEndereco",
+   "fEscopoExclusoes","fMateriaisTexto","fFerragens","fEspessuraMdf","fAcabamento",
+   "fPagamento","fEntrega","fValidade","fGarantia","fTaxaProjetoValor","fTaxaProjetoDias","fClausulaProjeto",
+   "fCompanyName","fCompanyTag","fCompanyPhone","fCompanyCnpj"].forEach(function (id) {
+    els[id] = document.getElementById(id);
+  });
+
+  function loadFieldsFromState() {
+    els.fOrcamentoId.value = state.orcamentoId;
+    els.fClient.value = state.client;
+    els.fClienteDoc.value = state.clienteDoc;
+    els.fClienteTelefone.value = state.clienteTelefone;
+    els.fClienteEmail.value = state.clienteEmail;
+    els.fClienteEndereco.value = state.clienteEndereco;
+    els.fEscopoExclusoes.value = state.escopoExclusoes;
+    els.fMateriaisTexto.value = state.materiaisTexto;
+    els.fFerragens.value = state.ferragens;
+    els.fEspessuraMdf.value = state.espessuraMdf;
+    els.fAcabamento.value = state.acabamento;
+    els.fPagamento.value = state.pagamento;
+    els.fEntrega.value = state.entrega;
+    els.fValidade.value = state.validadeDias;
+    els.fGarantia.value = state.garantia;
+    els.fTaxaProjetoValor.value = state.taxaProjetoValor;
+    els.fTaxaProjetoDias.value = state.taxaProjetoDias;
+    els.fClausulaProjeto.value = state.clausulaProjeto;
+    els.fCompanyName.value = state.companyName;
+    els.fCompanyTag.value = state.companyTag;
+    els.fCompanyPhone.value = state.companyPhone;
+    els.fCompanyCnpj.value = state.companyCnpj;
+  }
+
+  els.fOrcamentoId.addEventListener("input", function () { state.orcamentoId = this.value; updatePreview(); safeSave(); });
+  els.fClient.addEventListener("input", function () { state.client = this.value; updatePreview(); safeSave(); });
+  els.fClienteDoc.addEventListener("input", function () { state.clienteDoc = this.value; updatePreview(); safeSave(); });
+  els.fClienteTelefone.addEventListener("input", function () { state.clienteTelefone = this.value; updatePreview(); safeSave(); });
+  els.fClienteEmail.addEventListener("input", function () { state.clienteEmail = this.value; updatePreview(); safeSave(); });
+  els.fClienteEndereco.addEventListener("input", function () { state.clienteEndereco = this.value; updatePreview(); safeSave(); });
+  els.fEscopoExclusoes.addEventListener("input", function () { state.escopoExclusoes = this.value; updatePreview(); safeSave(); });
+  els.fMateriaisTexto.addEventListener("input", function () { state.materiaisTexto = this.value; updatePreview(); safeSave(); });
+  els.fFerragens.addEventListener("input", function () { state.ferragens = this.value; updatePreview(); safeSave(); });
+  els.fEspessuraMdf.addEventListener("change", function () { state.espessuraMdf = this.value; updatePreview(); safeSave(); });
+  els.fAcabamento.addEventListener("input", function () { state.acabamento = this.value; updatePreview(); safeSave(); });
+  els.fPagamento.addEventListener("input", function () { state.pagamento = this.value; updatePreview(); safeSave(); });
+  els.fEntrega.addEventListener("input", function () { state.entrega = this.value; updatePreview(); safeSave(); });
+  els.fValidade.addEventListener("input", function () { state.validadeDias = this.value; updatePreview(); safeSave(); });
+  els.fGarantia.addEventListener("input", function () { state.garantia = this.value; updatePreview(); safeSave(); });
+  els.fTaxaProjetoValor.addEventListener("input", function () { state.taxaProjetoValor = this.value; updatePreview(); safeSave(); });
+  els.fTaxaProjetoDias.addEventListener("input", function () { state.taxaProjetoDias = this.value; updatePreview(); safeSave(); });
+  els.fClausulaProjeto.addEventListener("input", function () { state.clausulaProjeto = this.value; updatePreview(); safeSave(); });
+  els.fCompanyName.addEventListener("input", function () { state.companyName = this.value; updatePreview(); safeSave(); });
+  els.fCompanyTag.addEventListener("input", function () { state.companyTag = this.value; updatePreview(); safeSave(); });
+  els.fCompanyPhone.addEventListener("input", function () { state.companyPhone = this.value; updatePreview(); safeSave(); });
+  els.fCompanyCnpj.addEventListener("input", function () { state.companyCnpj = this.value; updatePreview(); safeSave(); });
+
+  // ---- IA (capacidade "sample" do Artifact) ----
+  var samplerPromise = null;
+  function getSampler() {
+    if (!samplerPromise) {
+      samplerPromise = (async function () {
+        try {
+          if (window.claude && typeof window.claude.use === "function") {
+            return await window.claude.use("sample");
+          }
+        } catch (e) {}
+        return null;
+      })();
+    }
+    return samplerPromise;
+  }
+
+  var HIDE_CODES = ["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"];
+
+  function bindAiButton(opts) {
+    var btn = opts.btn;
+    btn.addEventListener("click", async function () {
+      if (btn.disabled) return;
+      var sampler = await getSampler();
+      if (!sampler) {
+        btn.textContent = btn.classList.contains("item-ai") ? "—" : "IA indisponível";
+        btn.disabled = true;
+        btn.title = "Esse recurso só funciona na versão hospedada (o link), com o uso de IA permitido nesta visualização.";
+        return;
+      }
+      btn.disabled = true;
+      var prevLabel = btn.textContent;
+      btn.textContent = btn.classList.contains("item-ai") ? "…" : "Pensando…";
+      var ctl = new AbortController();
+      var permanentlyUnavailable = false;
+      try {
+        var prompt = opts.buildPrompt(opts.getValue());
+        var res = await sampler(prompt, {
+          modelTier: "quick",
+          cache: false,
+          signal: ctl.signal,
+          onText: function (u) { opts.setValue(u.text); }
+        });
+        opts.setValue(res.text.trim());
+      } catch (e) {
+        if (e && e.text) opts.setValue(e.text);
+        if (e && HIDE_CODES.indexOf(e.code) !== -1) {
+          permanentlyUnavailable = true;
+          btn.title = "Uso de IA não disponível nesta página.";
+        } else if (e && e.code !== "cancelled") {
+          btn.title = (e.code === "rate_limited")
+            ? "Muitos pedidos seguidos — espere um pouco e tente de novo."
+            : "Não deu pra usar a IA agora — tente de novo em instantes.";
+        }
+      } finally {
+        if (permanentlyUnavailable) {
+          btn.textContent = btn.classList.contains("item-ai") ? "—" : "IA indisponível";
+          btn.disabled = true;
+        } else {
+          btn.textContent = prevLabel;
+          btn.disabled = false;
+        }
+      }
+    });
+  }
+
+  bindAiButton({
+    btn: document.getElementById("aiEscopoExclusoes"),
+    getValue: function () { return state.escopoExclusoes; },
+    setValue: function (v) { state.escopoExclusoes = v; els.fEscopoExclusoes.value = v; updatePreview(); safeSave(); },
+    buildPrompt: function (current) {
+      return 'Você está revisando o campo "O que NÃO está incluso" de um orçamento de marcenaria (empresa "GSJ", móveis planejados sob medida, Brasil) — lista serviços/itens que ficam de fora do escopo (ex: elétrica, hidráulica, pintura de parede, frete).\n\n' +
+        'Tom da marca: direto, claro, sem enrolação.\n\n' +
+        'Texto atual do campo:\n"""\n' + (current || "(vazio)") + '\n"""\n\n' +
+        'Se já houver texto: corrija ortografia e concordância, e deixe mais claro — sem inventar itens de exclusão que não estejam mencionados.\n' +
+        'Se estiver vazio: sugira uma lista genérica comum no setor (ex: instalação elétrica e hidráulica, pintura de paredes, frete para fora da cidade) — deixe claro que é um ponto de partida a ajustar.\n\n' +
+        'Responda APENAS com o texto final pronto para uso no campo, sem aspas, sem explicações, sem markdown.';
+    }
+  });
+
+  bindAiButton({
+    btn: document.getElementById("aiGarantia"),
+    getValue: function () { return state.garantia; },
+    setValue: function (v) { state.garantia = v; els.fGarantia.value = v; updatePreview(); safeSave(); },
+    buildPrompt: function (current) {
+      return 'Você está revisando o campo "Garantia" de um orçamento de marcenaria (empresa "GSJ", móveis planejados sob medida, Brasil) — descreve o prazo e a cobertura da garantia oferecida ao cliente.\n\n' +
+        'Tom da marca: direto, confiável, sem promessas exageradas.\n\n' +
+        'Texto atual do campo:\n"""\n' + (current || "(vazio)") + '\n"""\n\n' +
+        'Se já houver texto: corrija ortografia e concordância, e deixe mais claro e profissional — sem inventar prazo ou cobertura diferente do que já está escrito.\n' +
+        'Se estiver vazio: sugira um texto padrão do setor (ex: 90 dias contra defeitos de fabricação e de instalação, a partir da data de entrega) — deixe claro que é um ponto de partida a ajustar.\n\n' +
+        'Responda APENAS com o texto final pronto para uso no campo, sem aspas, sem explicações, sem markdown.';
+    }
+  });
+
+  bindAiButton({
+    btn: document.getElementById("aiClausulaProjeto"),
+    getValue: function () { return state.clausulaProjeto; },
+    setValue: function (v) { state.clausulaProjeto = v; els.fClausulaProjeto.value = v; updatePreview(); safeSave(); },
+    buildPrompt: function (current) {
+      return 'Você está revisando o campo "Propriedade do projeto" de um orçamento de marcenaria (empresa "GSJ", móveis planejados sob medida, Brasil) — uma cláusula que protege o projeto/desenho contra uso por terceiros caso o cliente desista e leve o material pra outra marcenaria.\n\n' +
+        'Tom da marca: direto, técnico sem ser hermético, confiável (nunca promete o que não pode cumprir).\n\n' +
+        'Texto atual do campo:\n"""\n' + (current || "(vazio)") + '\n"""\n\n' +
+        'Se já houver texto: corrija ortografia e concordância, e deixe mais claro e profissional — sem inventar condição nova, mantendo o sentido original.\n' +
+        'Se estiver vazio: sugira um texto padrão afirmando que o projeto (desenhos, medidas e detalhamento técnico) é de autoria e propriedade da GSJ, cedido ao cliente só para avaliação da proposta, e que uso por terceiros sem autorização gera cobrança equivalente ao valor do projeto.\n\n' +
+        'Responda APENAS com o texto final pronto para uso no campo, sem aspas, sem explicações, sem markdown.';
+    }
+  });
+
+  bindAiButton({
+    btn: document.getElementById("aiMateriaisTexto"),
+    getValue: function () { return state.materiaisTexto; },
+    setValue: function (v) { state.materiaisTexto = v; els.fMateriaisTexto.value = v; updatePreview(); safeSave(); },
+    buildPrompt: function (current) {
+      return 'Você está revisando um campo de um orçamento de marcenaria (empresa "GSJ", móveis planejados sob medida, Brasil).\n' +
+        'Este campo é o texto de abertura da seção "Materiais e acabamentos inclusos" do orçamento — a frase que explica ao cliente que os materiais estão inclusos.\n\n' +
+        'Tom da marca: direto, sem enrolação, técnico sem ser hermético, confiável (nunca promete o que não pode cumprir).\n\n' +
+        'Texto atual do campo (pode estar vazio, incompleto, ou ter erros de português/concordância):\n"""\n' + (current || "(vazio)") + '\n"""\n\n' +
+        'Se já houver texto: corrija ortografia, concordância verbal e nominal, e deixe mais claro e profissional — sem inventar informação nova, mantendo o sentido original.\n' +
+        'Se estiver vazio: escreva uma frase de abertura adequada para este contexto.\n\n' +
+        'Responda APENAS com o texto final pronto para uso no campo — uma frase corrida, sem aspas, sem explicações, sem markdown.';
+    }
+  });
+
+  bindAiButton({
+    btn: document.getElementById("aiFerragens"),
+    getValue: function () { return state.ferragens; },
+    setValue: function (v) { state.ferragens = v; els.fFerragens.value = v; updatePreview(); safeSave(); },
+    buildPrompt: function (current) {
+      return 'Você está revisando o campo "Ferragens" de um orçamento de marcenaria (empresa "GSJ", móveis planejados sob medida, Brasil) — descreve as ferragens usadas (dobradiças, corrediças, sistemas de abertura, etc).\n\n' +
+        'Tom da marca: direto, técnico sem ser hermético (explica o termo técnico e o benefício), confiável.\n\n' +
+        'Texto atual do campo:\n"""\n' + (current || "(vazio)") + '\n"""\n\n' +
+        'Se já houver texto: corrija ortografia e concordância, e melhore a clareza técnica — sem inventar ferragens ou sistemas que não estejam mencionados.\n' +
+        'Se estiver vazio: sugira uma descrição comum no setor (ex: dobradiças com amortecedor, corrediças invisíveis com amortecedor ou sistema tip-on).\n\n' +
+        'Responda APENAS com o texto final pronto para uso no campo, sem aspas, sem explicações, sem markdown.';
+    }
+  });
+
+  bindAiButton({
+    btn: document.getElementById("aiAcabamento"),
+    getValue: function () { return state.acabamento; },
+    setValue: function (v) { state.acabamento = v; els.fAcabamento.value = v; updatePreview(); safeSave(); },
+    buildPrompt: function (current) {
+      return 'Você está revisando o campo "MDF — acabamento escolhido" de um orçamento de marcenaria (empresa "GSJ", móveis planejados sob medida, Brasil) — lista os nomes dos acabamentos/cores de MDF escolhidos pelo cliente.\n\n' +
+        'Texto atual do campo:\n"""\n' + (current || "(vazio)") + '\n"""\n\n' +
+        'Corrija apenas ortografia, capitalização e concordância dos nomes de acabamento já mencionados — NÃO invente nomes de acabamento que não estejam no texto original, e não mude o produto.\n' +
+        'Se estiver vazio, responda exatamente "(preencher com os acabamentos escolhidos pelo cliente)" — não invente.\n\n' +
+        'Responda APENAS com o texto final pronto para uso no campo, sem aspas, sem explicações, sem markdown.';
+    }
+  });
+
+  var itemsForm = document.getElementById("itemsForm");
+
+  function renderFormItems() {
+    itemsForm.innerHTML = "";
+    state.items.forEach(function (item, idx) {
+      var row = document.createElement("div");
+      row.className = "item-row";
+
+      var descInput = document.createElement("input");
+      descInput.type = "text";
+      descInput.placeholder = "Descrição do item";
+      descInput.value = item.desc;
+      descInput.addEventListener("input", function () {
+        state.items[idx].desc = this.value;
+        updatePreview(); safeSave();
+        renderPacotesForm(); renderDescontosForm(); renderOpcoesForm();
+      });
+
+      var valueInput = document.createElement("input");
+      valueInput.type = "number";
+      valueInput.min = "0";
+      valueInput.step = "0.01";
+      valueInput.placeholder = "Valor";
+      valueInput.value = item.value;
+      valueInput.addEventListener("input", function () {
+        state.items[idx].value = this.value;
+        updatePreview(); safeSave();
+        renderPacotesForm(); renderDescontosForm();
+      });
+
+      var aiBtn = document.createElement("button");
+      aiBtn.type = "button";
+      aiBtn.className = "item-ai";
+      aiBtn.textContent = "✨";
+      aiBtn.title = "Melhorar descrição com IA";
+      bindAiButton({
+        btn: aiBtn,
+        getValue: function () { return state.items[idx] ? state.items[idx].desc : ""; },
+        setValue: function (v) {
+          if (!state.items[idx]) return;
+          state.items[idx].desc = v;
+          descInput.value = v;
+          updatePreview(); safeSave();
+        },
+        buildPrompt: function (current) {
+          return 'Você está revisando a descrição de um item de um orçamento de marcenaria (móveis planejados sob medida, empresa "GSJ", Brasil).\n\n' +
+            'Descrição atual do item:\n"""\n' + (current || "(vazio)") + '\n"""\n\n' +
+            'Se já houver texto: corrija ortografia e concordância, e deixe mais claro e profissional — sem inventar cômodo, medida, material ou detalhe que não esteja no texto original.\n' +
+            'Se estiver vazio: responda exatamente "(descreva o item, ex: Armário de cozinha com torre quente)" — não invente um item específico.\n\n' +
+            'Responda APENAS com a descrição final, curta (uma linha), sem aspas, sem explicações, sem markdown.';
+        }
+      });
+
+      var removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "item-remove";
+      removeBtn.textContent = "×";
+      removeBtn.title = "Remover item";
+      removeBtn.addEventListener("click", function () {
+        if (state.items.length <= 1) return;
+        var removedId = state.items[idx].id;
+        state.items.splice(idx, 1);
+        state.opcoes = state.opcoes.filter(function (o) { return o.itemId !== removedId; });
+        renderFormItems(); updatePreview(); safeSave();
+        renderPacotesForm(); renderDescontosForm(); renderOpcoesForm();
+      });
+
+      row.appendChild(descInput);
+      row.appendChild(valueInput);
+      row.appendChild(aiBtn);
+      row.appendChild(removeBtn);
+      itemsForm.appendChild(row);
+    });
+  }
+
+  document.getElementById("btnAddItem").addEventListener("click", function () {
+    state.items.push({ id: nextId(state.items), desc: "", value: 0 });
+    renderFormItems(); updatePreview(); safeSave();
+    renderPacotesForm(); renderDescontosForm(); renderOpcoesForm();
+    var lastInput = itemsForm.querySelector(".item-row:last-child input");
+    if (lastInput) lastInput.focus();
+  });
+
+  // ---- Opções de cor/acabamento (variações por item, informativas — não somam no Total) ----
+  var opcoesFormEl = document.getElementById("opcoesForm");
+
+  function renderOpcoesForm() {
+    opcoesFormEl.innerHTML = "";
+    var validIds = state.items.map(function (it) { return it.id; });
+    state.opcoes.forEach(function (op) {
+      if (validIds.indexOf(op.itemId) === -1 && state.items.length) op.itemId = state.items[0].id;
+    });
+
+    state.opcoes.forEach(function (op, oIdx) {
+      var block = document.createElement("div");
+      block.className = "pacote-block";
+
+      var itemField = document.createElement("div");
+      itemField.className = "field";
+      var itemFieldLabel = document.createElement("label");
+      itemFieldLabel.textContent = "Item";
+      var itemSelect = document.createElement("select");
+      state.items.forEach(function (it) {
+        var opt = document.createElement("option");
+        opt.value = String(it.id);
+        opt.textContent = it.desc || "(sem descrição)";
+        itemSelect.appendChild(opt);
+      });
+      itemSelect.value = String(op.itemId);
+      itemSelect.addEventListener("change", function () {
+        op.itemId = Number(this.value); updatePreview(); safeSave();
+      });
+      itemField.appendChild(itemFieldLabel);
+      itemField.appendChild(itemSelect);
+
+      var row1 = document.createElement("div");
+      row1.className = "field-row";
+
+      var nomeField = document.createElement("div");
+      nomeField.className = "field";
+      var nomeLabel = document.createElement("label");
+      nomeLabel.textContent = "Opção (cor/nome)";
+      var nomeInput = document.createElement("input");
+      nomeInput.type = "text";
+      nomeInput.placeholder = "Ex: Azul";
+      nomeInput.value = op.nome || "";
+      nomeInput.addEventListener("input", function () { op.nome = this.value; updatePreview(); safeSave(); });
+      nomeField.appendChild(nomeLabel);
+      nomeField.appendChild(nomeInput);
+
+      var valorField = document.createElement("div");
+      valorField.className = "field";
+      var valorLabel = document.createElement("label");
+      valorLabel.textContent = "Valor (R$, opcional)";
+      var valorInput = document.createElement("input");
+      valorInput.type = "number";
+      valorInput.min = "0";
+      valorInput.step = "0.01";
+      valorInput.placeholder = "0";
+      valorInput.value = op.valor === "" || op.valor == null ? "" : op.valor;
+      valorInput.addEventListener("input", function () { op.valor = this.value; updatePreview(); safeSave(); });
+      valorField.appendChild(valorLabel);
+      valorField.appendChild(valorInput);
+
+      row1.appendChild(nomeField);
+      row1.appendChild(valorField);
+
+      var descField = document.createElement("div");
+      descField.className = "field";
+      var descFieldLabel = document.createElement("label");
+      descFieldLabel.textContent = "Descrição / material";
+      var descFieldInput = document.createElement("input");
+      descFieldInput.type = "text";
+      descFieldInput.placeholder = "Ex: Fórmica Branco TX";
+      descFieldInput.value = op.descricao || "";
+      descFieldInput.addEventListener("input", function () { op.descricao = this.value; updatePreview(); safeSave(); });
+      descField.appendChild(descFieldLabel);
+      descField.appendChild(descFieldInput);
+
+      var removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "btn btn-ghost block-remove";
+      removeBtn.textContent = "Remover opção";
+      removeBtn.addEventListener("click", function () {
+        state.opcoes.splice(oIdx, 1);
+        renderOpcoesForm(); updatePreview(); safeSave();
+      });
+
+      block.appendChild(itemField);
+      block.appendChild(row1);
+      block.appendChild(descField);
+      block.appendChild(removeBtn);
+      opcoesFormEl.appendChild(block);
+    });
+  }
+
+  document.getElementById("btnAddOpcao").addEventListener("click", function () {
+    if (!state.items.length) return;
+    state.opcoes.push({ id: nextId(state.opcoes), itemId: state.items[0].id, nome: "", descricao: "", valor: "" });
+    renderOpcoesForm(); updatePreview(); safeSave();
+    var lastInput = opcoesFormEl.querySelector(".pacote-block:last-child input[type=text]");
+    if (lastInput) lastInput.focus();
+  });
+
+  // ---- Pacotes (grupos de itens com valor combinado) ----
+  var pacotesFormEl = document.getElementById("pacotesForm");
+
+  function itemLabel(it) {
+    return (it.desc || "(sem descrição)") + " — " + fmtBRL(it.value);
+  }
+
+  function packagedMap(excludePacoteId) {
+    var map = {};
+    state.pacotes.forEach(function (p) {
+      if (p.id === excludePacoteId) return;
+      (p.itemIds || []).forEach(function (id) { map[id] = p.nome || "Pacote"; });
+    });
+    return map;
+  }
+
+  function renderPacotesForm() {
+    pacotesFormEl.innerHTML = "";
+    state.pacotes.forEach(function (pac, pIdx) {
+      var block = document.createElement("div");
+      block.className = "pacote-block";
+
+      var nomeField = document.createElement("div");
+      nomeField.className = "field";
+      var nomeLabel = document.createElement("label");
+      nomeLabel.textContent = "Nome do pacote";
+      var nomeInput = document.createElement("input");
+      nomeInput.type = "text";
+      nomeInput.placeholder = "Ex: Transporte (ida + volta)";
+      nomeInput.value = pac.nome || "";
+      nomeInput.addEventListener("input", function () {
+        pac.nome = this.value; updatePreview(); safeSave();
+      });
+      nomeField.appendChild(nomeLabel);
+      nomeField.appendChild(nomeInput);
+
+      var itemsField = document.createElement("div");
+      itemsField.className = "field";
+      var itemsLabel = document.createElement("label");
+      itemsLabel.textContent = "Itens deste pacote";
+      var checkList = document.createElement("div");
+      checkList.className = "check-list";
+      var otherPackaged = packagedMap(pac.id);
+      state.items.forEach(function (it) {
+        var row = document.createElement("label");
+        row.className = "check-row";
+        var cb = document.createElement("input");
+        cb.type = "checkbox";
+        var lockedTo = otherPackaged[it.id];
+        if (lockedTo) {
+          cb.disabled = true;
+          row.classList.add("disabled");
+        } else {
+          cb.checked = (pac.itemIds || []).indexOf(it.id) !== -1;
+          cb.addEventListener("change", function () {
+            var idx2 = pac.itemIds.indexOf(it.id);
+            if (cb.checked && idx2 === -1) pac.itemIds.push(it.id);
+            else if (!cb.checked && idx2 !== -1) pac.itemIds.splice(idx2, 1);
+            updatePreview(); safeSave();
+          });
+        }
+        var span = document.createElement("span");
+        span.textContent = itemLabel(it) + (lockedTo ? ' (já está no pacote "' + lockedTo + '")' : "");
+        row.appendChild(cb);
+        row.appendChild(span);
+        checkList.appendChild(row);
+      });
+      itemsField.appendChild(itemsLabel);
+      itemsField.appendChild(checkList);
+
+      var valorField = document.createElement("div");
+      valorField.className = "field";
+      var valorLabel = document.createElement("label");
+      valorLabel.textContent = "Valor combinado do pacote (R$)";
+      var valorInput = document.createElement("input");
+      valorInput.type = "number";
+      valorInput.min = "0";
+      valorInput.step = "0.01";
+      valorInput.placeholder = "0";
+      valorInput.value = pac.valor;
+      valorInput.addEventListener("input", function () {
+        pac.valor = this.value; updatePreview(); safeSave();
+      });
+      valorField.appendChild(valorLabel);
+      valorField.appendChild(valorInput);
+
+      var removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "btn btn-ghost block-remove";
+      removeBtn.textContent = "Remover pacote";
+      removeBtn.addEventListener("click", function () {
+        state.pacotes.splice(pIdx, 1);
+        renderPacotesForm(); updatePreview(); safeSave();
+      });
+
+      block.appendChild(nomeField);
+      block.appendChild(itemsField);
+      block.appendChild(valorField);
+      block.appendChild(removeBtn);
+      pacotesFormEl.appendChild(block);
+    });
+  }
+
+  document.getElementById("btnAddPacote").addEventListener("click", function () {
+    state.pacotes.push({ id: nextId(state.pacotes), nome: "", itemIds: [], valor: 0 });
+    renderPacotesForm(); updatePreview(); safeSave();
+    var lastInput = pacotesFormEl.querySelector(".pacote-block:last-child input[type=text]");
+    if (lastInput) lastInput.focus();
+  });
+
+  // ---- Desconto (no total ou em item específico) ----
+  var descontosFormEl = document.getElementById("descontosForm");
+
+  function renderDescontosForm() {
+    descontosFormEl.innerHTML = "";
+    var packagedIds = {};
+    state.pacotes.forEach(function (p) { (p.itemIds || []).forEach(function (id) { packagedIds[id] = true; }); });
+
+    state.descontos.forEach(function (desc, dIdx) {
+      var block = document.createElement("div");
+      block.className = "desconto-block";
+
+      var row1 = document.createElement("div");
+      row1.className = "field-row";
+
+      var alvoField = document.createElement("div");
+      alvoField.className = "field";
+      var alvoLabel = document.createElement("label");
+      alvoLabel.textContent = "Aplicar em";
+      var alvoSelect = document.createElement("select");
+      var optTotal = document.createElement("option");
+      optTotal.value = "total";
+      optTotal.textContent = "Total do orçamento";
+      alvoSelect.appendChild(optTotal);
+      state.items.forEach(function (it) {
+        if (packagedIds[it.id]) return;
+        var opt = document.createElement("option");
+        opt.value = String(it.id);
+        opt.textContent = "Item: " + (it.desc || "(sem descrição)");
+        alvoSelect.appendChild(opt);
+      });
+      alvoSelect.value = desc.alvo === "total" ? "total" : String(desc.alvo);
+      alvoSelect.addEventListener("change", function () {
+        desc.alvo = this.value === "total" ? "total" : Number(this.value);
+        updatePreview(); safeSave();
+      });
+      alvoField.appendChild(alvoLabel);
+      alvoField.appendChild(alvoSelect);
+
+      var tipoField = document.createElement("div");
+      tipoField.className = "field";
+      var tipoLabel = document.createElement("label");
+      tipoLabel.textContent = "Tipo";
+      var tipoSelect = document.createElement("select");
+      ["valor", "percentual"].forEach(function (v) {
+        var opt = document.createElement("option");
+        opt.value = v;
+        opt.textContent = v === "valor" ? "Valor fixo (R$)" : "Percentual (%)";
+        tipoSelect.appendChild(opt);
+      });
+      tipoSelect.value = desc.tipo === "percentual" ? "percentual" : "valor";
+      tipoSelect.addEventListener("change", function () {
+        desc.tipo = this.value; updatePreview(); safeSave();
+      });
+      tipoField.appendChild(tipoLabel);
+      tipoField.appendChild(tipoSelect);
+
+      row1.appendChild(alvoField);
+      row1.appendChild(tipoField);
+
+      var row2 = document.createElement("div");
+      row2.className = "field-row";
+
+      var valorField = document.createElement("div");
+      valorField.className = "field";
+      var valorLabel = document.createElement("label");
+      valorLabel.textContent = "Desconto";
+      var valorInput = document.createElement("input");
+      valorInput.type = "number";
+      valorInput.min = "0";
+      valorInput.step = "0.01";
+      valorInput.placeholder = "0";
+      valorInput.value = desc.valor;
+      valorInput.addEventListener("input", function () {
+        desc.valor = this.value; updatePreview(); safeSave();
+      });
+      valorField.appendChild(valorLabel);
+      valorField.appendChild(valorInput);
+
+      var motivoField = document.createElement("div");
+      motivoField.className = "field";
+      var motivoLabel = document.createElement("label");
+      motivoLabel.textContent = "Motivo (opcional)";
+      var motivoInput = document.createElement("input");
+      motivoInput.type = "text";
+      motivoInput.placeholder = "Ex: Cliente fidelidade";
+      motivoInput.value = desc.motivo || "";
+      motivoInput.addEventListener("input", function () {
+        desc.motivo = this.value; updatePreview(); safeSave();
+      });
+      motivoField.appendChild(motivoLabel);
+      motivoField.appendChild(motivoInput);
+
+      row2.appendChild(valorField);
+      row2.appendChild(motivoField);
+
+      var removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "btn btn-ghost block-remove";
+      removeBtn.textContent = "Remover desconto";
+      removeBtn.addEventListener("click", function () {
+        state.descontos.splice(dIdx, 1);
+        renderDescontosForm(); updatePreview(); safeSave();
+      });
+
+      block.appendChild(row1);
+      block.appendChild(row2);
+      block.appendChild(removeBtn);
+      descontosFormEl.appendChild(block);
+    });
+  }
+
+  document.getElementById("btnAddDesconto").addEventListener("click", function () {
+    state.descontos.push({ id: nextId(state.descontos), alvo: "total", tipo: "valor", valor: 0, motivo: "" });
+    renderDescontosForm(); updatePreview(); safeSave();
+    var lastInput = descontosFormEl.querySelector(".desconto-block:last-child input[type=number]");
+    if (lastInput) lastInput.focus();
+  });
+
+  document.getElementById("btnReset").addEventListener("click", function () {
+    state.client = "";
+    state.clienteDoc = "";
+    state.clienteTelefone = "";
+    state.clienteEmail = "";
+    state.clienteEndereco = "";
+    state.items = [{ id: 1, desc: "", value: 0 }];
+    state.descontos = [];
+    state.pacotes = [];
+    state.opcoes = [];
+    state.escopoExclusoes = "";
+    state.acabamento = "";
+    state.pagamento = "A combinar";
+    state.entrega = "A combinar";
+    state.orcamentoId = genOrcamentoId();
+    state.cloudId = null;
+    loadFieldsFromState();
+    renderFormItems();
+    renderPacotesForm();
+    renderDescontosForm();
+    renderOpcoesForm();
+    updatePreview();
+    safeSave();
+    setCloudStatus("Ainda não salvo na nuvem.");
+    els.fClient.focus();
+  });
+
+  // ---- nuvem: salvar / abrir orçamentos compartilhados ----
+  var cloudStatusEl = document.getElementById("cloudStatus");
+  var btnCloudSave = document.getElementById("btnCloudSave");
+  var btnCloudOpen = document.getElementById("btnCloudOpen");
+  var cloudModal = document.getElementById("gsjCloudModal");
+  var cloudListEl = document.getElementById("cloudList");
+  var btnCloudClose = document.getElementById("btnCloudClose");
+
+  function setCloudStatus(msg, isError) {
+    if (!cloudStatusEl) return;
+    cloudStatusEl.textContent = msg;
+    cloudStatusEl.classList.toggle("cloud-status-error", !!isError);
+  }
+
+  if (state.cloudId) {
+    setCloudStatus("Carregado da nuvem — última alteração salva lá.");
+  }
+
+  async function cloudSave() {
+    if (!sb) { setCloudStatus("A biblioteca da nuvem não carregou — recarregue a página e tente de novo.", true); return; }
+    btnCloudSave.disabled = true;
+    setCloudStatus("Salvando na nuvem…");
+    try {
+      var calc = computeCalc();
+      var payload = {
+        numero: state.orcamentoId || null,
+        cliente: state.client || null,
+        total: calc.totalFinal,
+        dados: state
+      };
+      var result;
+      if (state.cloudId) {
+        result = await sb.from("gsj_orcamentos").update(payload).eq("id", state.cloudId).select().single();
+      } else {
+        result = await sb.from("gsj_orcamentos").insert(payload).select().single();
+      }
+      if (result.error) throw result.error;
+      state.cloudId = result.data.id;
+      if (window.GSJ) GSJ.logAction("abrir", "orcamento", (state.orcamentoId || state.client || null));
+      if (window.GSJ) GSJ.logAction("salvar", "orcamento", (state.orcamentoId || state.client || null));
+      safeSave();
+      var hora = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+      setCloudStatus("Salvo na nuvem às " + hora + ".");
+    } catch (e) {
+      setCloudStatus("Não deu pra salvar na nuvem agora — verifique sua internet.", true);
+    } finally {
+      btnCloudSave.disabled = false;
+    }
+  }
+
+  async function cloudOpenModal() {
+    cloudModal.hidden = false;
+    cloudListEl.innerHTML = '<span class="gsj-skel"></span><span class="gsj-skel"></span>';
+    if (!sb) { cloudListEl.innerHTML = '<p class="field-hint">A biblioteca da nuvem não carregou — recarregue a página.</p>'; return; }
+    try {
+      var result = await sb.from("gsj_orcamentos")
+        .select("id, numero, cliente, total, updated_at")
+        .order("updated_at", { ascending: false })
+        .limit(100);
+      if (result.error) throw result.error;
+      var rows = result.data || [];
+      if (!rows.length) {
+        cloudListEl.innerHTML = '<p class="field-hint">Nenhum orçamento salvo na nuvem ainda.</p>';
+        return;
+      }
+      cloudListEl.innerHTML = "";
+      rows.forEach(function (row) {
+        var item = document.createElement("button");
+        item.type = "button";
+        item.className = "cloud-list-item";
+        var dt = row.updated_at ? new Date(row.updated_at).toLocaleString("pt-BR") : "";
+        item.innerHTML =
+          "<strong>" + esc(row.cliente || "(sem cliente)") + "</strong>" +
+          "<span>" + esc(row.numero || "—") + " · " + fmtBRL(row.total || 0) + " · " + esc(dt) + "</span>";
+        item.addEventListener("click", function () { cloudLoadById(row.id); });
+        cloudListEl.appendChild(item);
+      });
+    } catch (e) {
+      cloudListEl.innerHTML = '<p class="field-hint">Não deu pra carregar a lista agora — verifique sua internet.</p>';
+    }
+  }
+
+  async function cloudLoadById(id) {
+    if (!sb) return;
+    try {
+      var result = await sb.from("gsj_orcamentos").select("id, dados").eq("id", id).single();
+      if (result.error) throw result.error;
+      var loaded = result.data.dados || {};
+      state = Object.assign({}, defaultState, loaded);
+      state.cloudId = result.data.id;
+      if (!Array.isArray(state.items) || !state.items.length) state.items = [{ id: 1, desc: "", value: 0 }];
+      if (!Array.isArray(state.descontos)) state.descontos = [];
+      if (!Array.isArray(state.pacotes)) state.pacotes = [];
+      if (!Array.isArray(state.opcoes)) state.opcoes = [];
+      loadFieldsFromState();
+      renderFormItems();
+      renderOpcoesForm();
+      renderPacotesForm();
+      renderDescontosForm();
+      updatePreview();
+      safeSave();
+      cloudModal.hidden = true;
+      setCloudStatus("Aberto da nuvem — última alteração salva lá.");
+    } catch (e) {
+      alert("Não deu pra abrir esse orçamento agora — verifique sua internet.");
+    }
+  }
+
+  if (btnCloudSave) btnCloudSave.addEventListener("click", cloudSave);
+  if (btnCloudOpen) btnCloudOpen.addEventListener("click", cloudOpenModal);
+  if (btnCloudClose) btnCloudClose.addEventListener("click", function () { cloudModal.hidden = true; });
+  if (cloudModal) cloudModal.addEventListener("click", function (e) { if (e.target === cloudModal) cloudModal.hidden = true; });
+
+  document.getElementById("btnPrint").addEventListener("click", function () {
+    window.print();
+  });
+
+  // Enviar direto pelo WhatsApp (PDF anexado) — ver wpp.js
+  if (window.GSJ && GSJ.wpp) GSJ.wpp.attach({
+    doc: "Orçamento", key: "orcamento", format: "a4", margin: [13, 15],
+    cliente: function () { return state.client; },
+    telefone: function () { return state.clienteTelefone; },
+    ref: function () { return state.orcamentoId; }
+  });
+
+  var sheet = document.getElementById("sheet");
+
+  function computeCalc() {
+    var itemById = {};
+    state.items.forEach(function (it) { itemById[it.id] = it; });
+
+    var packagedIds = {};
+    var pacotesCalc = state.pacotes.map(function (p) {
+      var memberItems = (p.itemIds || []).map(function (id) { return itemById[id]; }).filter(Boolean);
+      memberItems.forEach(function (it) { packagedIds[it.id] = true; });
+      var originalSum = memberItems.reduce(function (s, it) { return s + (Number(it.value) || 0); }, 0);
+      var valor = Number(p.valor) || 0;
+      return { id: p.id, nome: p.nome, memberItems: memberItems, originalSum: originalSum, valor: valor, economia: originalSum - valor };
+    }).filter(function (pc) { return pc.memberItems.length > 0; });
+
+    var itemDiscountById = {};
+    state.descontos.forEach(function (d) {
+      if (d.alvo === "total") return;
+      var it = itemById[d.alvo];
+      if (!it || packagedIds[it.id]) return;
+      var val = Number(d.valor) || 0;
+      var amt = d.tipo === "percentual" ? (Number(it.value) || 0) * (val / 100) : val;
+      if (amt < 0) amt = 0;
+      itemDiscountById[it.id] = (itemDiscountById[it.id] || 0) + amt;
+    });
+    Object.keys(itemDiscountById).forEach(function (id) {
+      var it = itemById[id];
+      var cap = Number(it.value) || 0;
+      if (itemDiscountById[id] > cap) itemDiscountById[id] = cap;
+    });
+
+    // Valor final considera só desconto — pacote não entra aqui, só nas caixas de pacote abaixo da tabela.
+    var totalAntesGeral = 0;
+    state.items.forEach(function (it) {
+      var v = Number(it.value) || 0;
+      var disc = itemDiscountById[it.id] || 0;
+      totalAntesGeral += (v - disc);
+    });
+
+    var totalDiscountAmount = 0;
+    var totalMotivos = [];
+    state.descontos.forEach(function (d) {
+      if (d.alvo !== "total") return;
+      var val = Number(d.valor) || 0;
+      var amt = d.tipo === "percentual" ? totalAntesGeral * (val / 100) : val;
+      if (amt < 0) amt = 0;
+      totalDiscountAmount += amt;
+      if (d.motivo) totalMotivos.push(d.motivo);
+    });
+    if (totalDiscountAmount > totalAntesGeral) totalDiscountAmount = totalAntesGeral;
+
+    var totalFinal = totalAntesGeral - totalDiscountAmount;
+
+    var pacoteNameByItem = {};
+    pacotesCalc.forEach(function (pc) {
+      pc.memberItems.forEach(function (it) { pacoteNameByItem[it.id] = pc.nome || "Pacote"; });
+    });
+
+    // Opções de cor/acabamento: só referência visual, nunca entram em nenhum total.
+    var opcoesCalc = (state.opcoes || []).map(function (o) {
+      var it = itemById[o.itemId];
+      if (!it) return null;
+      var valorTexto;
+      if (o.valor === "" || o.valor == null) {
+        valorTexto = "—";
+      } else {
+        var vNum = Number(o.valor) || 0;
+        valorTexto = vNum === 0 ? "Sem custo adicional" : fmtBRL(vNum);
+      }
+      return { id: o.id, item: it, nome: o.nome, descricao: o.descricao, valorTexto: valorTexto };
+    }).filter(Boolean);
+
+    return {
+      itemDiscountById: itemDiscountById, packagedIds: packagedIds, pacoteNameByItem: pacoteNameByItem,
+      pacotesCalc: pacotesCalc, totalAntesGeral: totalAntesGeral,
+      totalDiscountAmount: totalDiscountAmount, totalMotivos: totalMotivos, totalFinal: totalFinal,
+      opcoesCalc: opcoesCalc
+    };
+  }
+
+  function updatePreview() {
+    var calc = computeCalc();
+    var rawOriginalSum = state.items.reduce(function (s, it) { return s + (Number(it.value) || 0); }, 0);
+
+    var today = new Date();
+    var validade = new Date();
+    validade.setDate(validade.getDate() + (Number(state.validadeDias) || 0));
+
+    var rows = state.items.map(function (it) {
+      var descHtml = esc(it.desc || "—");
+      if (calc.pacoteNameByItem[it.id]) {
+        descHtml += ' <span class="pkg-tag">— parte do pacote: ' + esc(calc.pacoteNameByItem[it.id]) + '</span>';
+      }
+      var discAmt = calc.itemDiscountById[it.id] || 0;
+      var valueHtml;
+      if (discAmt > 0) {
+        var itemDiscEntry = state.descontos.filter(function (d) { return d.alvo !== "total" && Number(d.alvo) === it.id && d.motivo; })[0];
+        valueHtml = '<div class="price-stack"><span class="was">' + fmtBRL(it.value) + '</span><span class="now">' + fmtBRL((Number(it.value) || 0) - discAmt) + '</span></div>' +
+          (itemDiscEntry ? '<div class="disc-motivo">' + esc(itemDiscEntry.motivo) + '</div>' : '');
+      } else {
+        valueHtml = fmtBRL(it.value);
+      }
+      return '<tr><td>' + descHtml + '</td><td class="num">' + valueHtml + '</td></tr>';
+    }).join("");
+
+    var hasTotalAdjustment = Math.round(rawOriginalSum * 100) !== Math.round(calc.totalFinal * 100);
+    var totalRowsHtml = '<tr><td>Total do orçamento</td><td class="num">' + fmtBRL(rawOriginalSum) + '</td></tr>' +
+      (hasTotalAdjustment
+        ? '<tr class="total-final-row"><td>Valor final</td><td class="num">' + fmtBRL(calc.totalFinal) + '</td></tr>'
+        : '');
+
+    var totalMotivoHtml = (calc.totalDiscountAmount > 0 && calc.totalMotivos.length)
+      ? '<p class="disc-motivo" style="text-align:left;margin:-8px 0 8px;">Desconto: ' + esc(calc.totalMotivos.join("; ")) + '</p>'
+      : '';
+
+    var opcoesHtml = "";
+    if (calc.opcoesCalc.length) {
+      var opcoesRowsHtml = calc.opcoesCalc.map(function (oc) {
+        return '<tr><td>' + esc(oc.item.desc || "—") + '</td>' +
+          '<td class="opcao-nome">' + esc(oc.nome || "—") + '</td>' +
+          '<td class="opcao-desc">' + esc(oc.descricao || "—") + '</td>' +
+          '<td class="num">' + esc(oc.valorTexto) + '</td></tr>';
+      }).join("");
+      opcoesHtml = '<p class="sheet-label">Opções de cor / acabamento disponíveis</p>' +
+        '<p class="sheet-note">Valores de referência — não entram na soma do Total do orçamento.</p>' +
+        '<table class="sheet-options">' +
+          '<thead><tr><th>Item</th><th>Opção</th><th>Descrição / material</th><th class="num">Valor</th></tr></thead>' +
+          '<tbody>' + opcoesRowsHtml + '</tbody>' +
+        '</table>';
+    }
+
+    var pacotesHtml = calc.pacotesCalc.map(function (pc) {
+      var nomesItens = pc.memberItems.map(function (it) { return it.desc || "(sem descrição)"; }).join(" + ");
+      return '<div class="combo-note">' +
+        '<p class="combo-note-title">🎁 ' + esc(pc.nome || "Pacote") + '</p>' +
+        '<p class="pacote-items-list">Inclui: ' + esc(nomesItens) + '</p>' +
+        '<div class="price-stack"><span class="was">' + fmtBRL(pc.originalSum) + '</span><span class="now">' + fmtBRL(pc.valor) + '</span></div>' +
+        (pc.economia > 0 ? '<p class="pacote-economia">Economia de ' + fmtBRL(pc.economia) + '</p>' : '') +
+      '</div>';
+    }).join("");
+
+    var taxaProjetoHtml = "";
+    var taxaValorPrev = Number(state.taxaProjetoValor) || 0;
+    if (taxaValorPrev > 0) {
+      var taxaDiasPrev = Number(state.taxaProjetoDias) || 30;
+      taxaProjetoHtml = '<div class="combo-note taxa-note">' +
+        '<p class="combo-note-title">📐 Taxa de projeto</p>' +
+        '<p>Valor: <b>' + fmtBRL(taxaValorPrev) + '</b> — referente ao levantamento e detalhamento deste projeto.</p>' +
+        '<p>Se o contrato for assinado em até ' + taxaDiasPrev + ' dias a partir da emissão, este valor é abatido do total do orçamento. Após esse prazo, a taxa não é reembolsável.</p>' +
+      '</div>';
+    }
+
+    var clientMetaParts = [];
+    if (state.clienteDoc) clientMetaParts.push("CPF/CNPJ: " + esc(state.clienteDoc));
+    if (state.clienteTelefone) clientMetaParts.push("Tel: " + esc(state.clienteTelefone));
+    if (state.clienteEmail) clientMetaParts.push("E-mail: " + esc(state.clienteEmail));
+    var clientMetaHtml = clientMetaParts.length
+      ? '<p class="sheet-client-meta">' + clientMetaParts.join(" &nbsp;·&nbsp; ") + '</p>' : "";
+    var clientEnderecoHtml = state.clienteEndereco
+      ? '<p class="sheet-client-meta">Endereço: ' + esc(state.clienteEndereco) + '</p>' : "";
+
+    sheet.innerHTML =
+      '<div class="sheet-header">' +
+        '<div class="sheet-company">' +
+          '<div><p class="name">' + esc(state.companyName) + '</p>' +
+          '<p class="tag">' + esc(state.companyTag) + '</p>' +
+          (state.companyCnpj ? '<p class="cnpj">CNPJ ' + esc(state.companyCnpj) + '</p>' : '') + '</div>' +
+        '</div>' +
+        '<div class="sheet-meta">' +
+          '<div class="doc-title">ORÇAMENTO</div>' +
+          (state.orcamentoId ? 'Nº ' + esc(state.orcamentoId) + '<br/>' : '') +
+          'Emitido em ' + fmtDate(today) + '<br/>' +
+          'Tel./WhatsApp ' + esc(state.companyPhone) +
+        '</div>' +
+      '</div>' +
+      '<hr class="sheet-rule" />' +
+      '<p class="sheet-label">Preparado para</p>' +
+      '<div class="sheet-client-block">' +
+        '<p class="sheet-client">' + esc(state.client || "—") + '</p>' +
+        clientMetaHtml + clientEnderecoHtml +
+      '</div>' +
+      '<p class="sheet-label">Itens do projeto</p>' +
+      '<table class="sheet-items">' +
+        '<thead><tr><th>Descrição</th><th class="num">Valor</th></tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+        '<tfoot>' + totalRowsHtml + '</tfoot>' +
+      '</table>' +
+      '<div class="sheet-rest">' +
+      totalMotivoHtml +
+      opcoesHtml +
+      pacotesHtml +
+      taxaProjetoHtml +
+      '<p class="sheet-label" style="padding-top:8px;">Itens não inclusos neste orçamento</p>' +
+      '<p class="sheet-scope-out">' + esc(state.escopoExclusoes || "—") + '</p>' +
+      '<p class="sheet-label">Materiais e acabamentos inclusos</p>' +
+      '<div class="sheet-materials">' +
+        '<p>' + esc(state.materiaisTexto) + '</p>' +
+        '<p><b>Ferragens:</b> ' + esc(state.ferragens) + '</p>' +
+        '<p><b>MDF:</b> ' + esc(state.espessuraMdf || "—") + ' — ' + esc(state.acabamento || "—") + '</p>' +
+      '</div>' +
+      '<div class="cond-grid">' +
+        '<div class="cond-cell"><div class="lbl">Forma de pagamento</div><div class="val">' + esc(state.pagamento || "—") + '</div></div>' +
+        '<div class="cond-cell"><div class="lbl">Prazo de entrega</div><div class="val">' + esc(state.entrega || "—") + '</div></div>' +
+        '<div class="cond-cell"><div class="lbl">Validade do orçamento</div><div class="val">' + fmtDate(validade) + '</div></div>' +
+      '</div>' +
+      (state.garantia && state.garantia.trim()
+        ? '<div class="sheet-warranty">' +
+            '<p class="sheet-label">Garantia</p>' +
+            '<p>' + esc(state.garantia) + '</p>' +
+          '</div>'
+        : '') +
+      (state.clausulaProjeto && state.clausulaProjeto.trim()
+        ? '<div class="sheet-warranty">' +
+            '<p class="sheet-label">Propriedade do projeto</p>' +
+            '<p>' + esc(state.clausulaProjeto) + '</p>' +
+          '</div>'
+        : '') +
+      '<div class="sheet-signature">' +
+        '<div class="sig-col"><div class="sig-line"></div><p class="sig-label">Assinatura do cliente — de acordo com este orçamento<br/>Data: ____/____/______</p></div>' +
+        '<div class="sig-col"><div class="sig-line"></div><p class="sig-label">' + esc(state.companyName) + ' — ' + esc(state.companyTag) + '</p></div>' +
+      '</div>' +
+      '<div class="sheet-footer">' +
+        esc(state.companyName) + ' — ' + esc(state.companyTag) + ' &nbsp;|&nbsp; Tel./WhatsApp ' + esc(state.companyPhone) + '<br/>' +
+        'Obrigado pela confiança — qualquer dúvida, estamos à disposição.' +
+      '</div>' +
+      '</div>';
+  }
+
+  loadFieldsFromState();
+  renderFormItems();
+  renderOpcoesForm();
+  renderPacotesForm();
+  renderDescontosForm();
+  updatePreview();
+})();
+</script>
+<script>
+(function () {
+  var wrap = document.querySelector(".preview-wrap");
+  if (!wrap) return;
+
+  var openBtn = document.createElement("button");
+  openBtn.type = "button";
+  openBtn.className = "btn-mobile-preview";
+  openBtn.innerHTML = "\uD83D\uDC41 Visualizar";
+  document.body.appendChild(openBtn);
+
+  var closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.className = "btn-close-preview";
+  closeBtn.innerHTML = "\u2715 Fechar";
+  wrap.insertBefore(closeBtn, wrap.firstChild);
+
+  openBtn.addEventListener("click", function () {
+    wrap.classList.add("mobile-fullscreen");
+    document.body.style.overflow = "hidden";
+    wrap.scrollTop = 0;
+  });
+  closeBtn.addEventListener("click", function () {
+    wrap.classList.remove("mobile-fullscreen");
+    document.body.style.overflow = "";
+  });
+})();
+</script>
+
+</body></html>
