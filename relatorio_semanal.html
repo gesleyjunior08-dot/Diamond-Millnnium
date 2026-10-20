@@ -17,17 +17,33 @@
     --line:#E4E6EA;
     --green:#1E7E34;
     --red:#B00020;
+    /* ---------- tokens visuais (2026-10-20) — acabamento "premium" pra
+       combinar com o painel da catraca (catraca_painel.html) e com o
+       diário de obra já atualizado: cantos mais arredondados e sombra
+       suave tingida de azul da marca, em vez de borda seca. ---------- */
+    --charcoal:#063593;
+    --charcoal-escuro:#042467;
+    --yellow:#0053D8;
+    --radius-card:16px;
+    --radius-btn:12px;
+    --radius-pill:999px;
+    --shadow-card:0 2px 12px rgba(6,53,147,0.08);
+    --shadow-elevated:0 14px 40px rgba(4,36,103,0.22);
+    --shadow-btn:0 3px 10px rgba(0,83,216,0.28);
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:"Segoe UI",Arial,Helvetica,sans-serif;background:#EEF0F3;color:#1C1C1C;font-variant-ligatures:none;}
+  input:focus, select:focus, textarea:focus{outline:none;border-color:var(--yellow);box-shadow:0 0 0 3px rgba(0,83,216,0.14);}
 
-  .login-screen{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:100;}
+  .login-screen{position:fixed;inset:0;background:radial-gradient(circle at 50% -10%, var(--charcoal) 0%, var(--charcoal-escuro) 65%, #021133 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;z-index:100;padding:16px;}
   .login-screen.hidden{display:none;}
-  .login-box{background:#fff;padding:34px;border-radius:12px;width:90%;max-width:320px;text-align:center;}
+  .login-marca{text-align:center;color:#fff;font-size:22px;font-weight:800;letter-spacing:2px;opacity:0.92;}
+  .login-marca span{display:block;font-size:12.5px;font-weight:400;letter-spacing:4px;text-transform:uppercase;opacity:0.55;margin-top:6px;}
+  .login-box{background:#fff;padding:34px;border-radius:calc(var(--radius-card) + 4px);width:90%;max-width:320px;text-align:center;box-shadow:var(--shadow-elevated);}
   .login-box img{height:44px;margin-bottom:16px;}
   .login-box h1{font-size:16px;margin-bottom:20px;color:var(--navy);font-weight:600;}
-  .login-box input{width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;margin-bottom:12px;font-size:14px;}
-  .login-box button{width:100%;padding:12px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;}
+  .login-box input{width:100%;padding:12px;border:1px solid #ddd;border-radius:var(--radius-btn);margin-bottom:12px;font-size:14px;}
+  .login-box button{width:100%;padding:12px;background:var(--blue);color:#fff;border:none;border-radius:var(--radius-btn);font-weight:600;cursor:pointer;box-shadow:var(--shadow-btn);}
   .login-box .error{color:var(--red);font-size:12px;margin-bottom:10px;font-weight:600;}
 
   .err-banner{position:fixed;top:0;left:0;right:0;background:#B00020;color:#fff;padding:10px 14px;font-size:12px;font-family:monospace;z-index:9999;display:none;word-break:break-word;}
@@ -37,12 +53,13 @@
 
   .toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:22px;}
   .toolbar .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
-  .toolbar input, .toolbar select{padding:9px 10px;border:1px solid #ccc;border-radius:8px;font-size:13px;}
-  .toolbar button{padding:9px 16px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;}
-  .btn-primary{background:var(--blue);color:#fff;}
+  .toolbar input, .toolbar select{padding:9px 10px;border:1px solid #ccc;border-radius:var(--radius-btn);font-size:13px;}
+  .toolbar button{padding:9px 16px;border:none;border-radius:var(--radius-btn);font-size:13px;font-weight:600;cursor:pointer;}
+  .btn-primary{background:var(--blue);color:#fff;box-shadow:var(--shadow-btn);}
+  .btn-primary:disabled{box-shadow:none;}
   .btn-ghost{background:#fff;border:1px solid #ccc !important;color:#333;}
 
-  .cover{background:linear-gradient(135deg, var(--navy), var(--blue-dark));color:#fff;border-radius:14px;padding:36px 32px;margin-bottom:26px;position:relative;overflow:hidden;}
+  .cover{background:linear-gradient(135deg, var(--charcoal) 0%, var(--charcoal-escuro) 100%);color:#fff;border-radius:var(--radius-card);padding:36px 32px;margin-bottom:26px;position:relative;overflow:hidden;box-shadow:0 4px 16px rgba(4,36,103,0.25);}
   .cover::after{content:"";position:absolute;right:-40px;top:-40px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,0.06);}
   .cover-top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;}
   .cover img{height:38px;filter:brightness(0) invert(1);}
@@ -57,11 +74,11 @@
   .cards{display:grid;grid-template-columns:repeat(4, 1fr);gap:14px;}
   @media (max-width:900px){.cards{grid-template-columns:repeat(2,1fr);}}
   @media (max-width:500px){.cards{grid-template-columns:repeat(2,1fr);}}
-  .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 16px;text-align:center;}
+  .card{background:#fff;border:1px solid rgba(6,53,147,0.08);border-radius:var(--radius-card);padding:18px 16px;text-align:center;box-shadow:var(--shadow-card);}
   .card .n{font-size:24px;font-weight:700;color:var(--navy);}
   .card .l{font-size:10px;color:var(--gray);margin-top:5px;text-transform:uppercase;letter-spacing:0.5px;}
 
-  .panel{background:#fff;border:1px solid var(--line);border-radius:10px;padding:20px;margin-bottom:18px;}
+  .panel{background:#fff;border:1px solid rgba(6,53,147,0.08);border-radius:var(--radius-card);padding:20px;margin-bottom:18px;box-shadow:var(--shadow-card);}
   .panel h3{font-size:13px;color:var(--navy);margin-bottom:14px;font-weight:600;}
 
   .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
@@ -74,7 +91,7 @@
 
   /* ---------- ASO (exame médico) — status + vencendo/vencido, 2026-10-02 ---------- */
   .aso-resumo{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;font-size:12px;}
-  .aso-resumo span{background:var(--gray-light);border-radius:20px;padding:5px 10px;}
+  .aso-resumo span{background:var(--gray-light);border-radius:var(--radius-pill);padding:5px 10px;}
   .aso-resumo .em-dia{background:#DFF3E3;color:#1e6b30;font-weight:600;}
   .aso-resumo .vencendo{background:#FFF3D6;color:#8a6700;font-weight:600;}
   .aso-resumo .vencido{background:#FBE1DD;color:#b3261e;font-weight:600;}
@@ -96,15 +113,15 @@
   /* ---- inspirado no relatório fotográfico em Word que o usuário já usava ---- */
   .foto-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px;}
   @media (max-width:600px){.foto-grid{grid-template-columns:1fr;}}
-  .foto-card{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;position:relative;}
+  .foto-card{border:1px solid rgba(6,53,147,0.08);border-radius:var(--radius-card);overflow:hidden;background:#fff;position:relative;box-shadow:var(--shadow-card);}
   .foto-img-wrap{position:relative;aspect-ratio:4/3;background:var(--gray-light);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;}
   .foto-img-wrap img{width:100%;height:100%;object-fit:cover;display:block;}
   .foto-img-placeholder{color:var(--gray);font-size:12px;text-align:center;padding:12px;line-height:1.5;}
   .foto-img-wrap.uploading{opacity:0.5;pointer-events:none;}
-  .foto-remove-btn{position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.55);color:#fff;border:none;border-radius:6px;width:26px;height:26px;font-size:14px;line-height:1;cursor:pointer;z-index:2;}
+  .foto-remove-btn{position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.55);color:#fff;border:none;border-radius:9px;width:26px;height:26px;font-size:14px;line-height:1;cursor:pointer;z-index:2;}
   .foto-titulo-input{display:block;width:100%;border:none;border-top:1px solid var(--line);padding:10px 12px;font-size:12px;font-weight:700;text-align:center;text-transform:uppercase;color:var(--navy);background:transparent;font-family:inherit;}
   .foto-titulo-input:focus{outline:2px solid var(--blue);outline-offset:-2px;}
-  .btn-add-foto{width:100%;padding:16px;border:2px dashed #c7ccd4;border-radius:10px;background:#fff;color:var(--blue);font-weight:600;font-size:13px;cursor:pointer;}
+  .btn-add-foto{width:100%;padding:16px;border:2px dashed #c7ccd4;border-radius:var(--radius-btn);background:#fff;color:var(--blue);font-weight:600;font-size:13px;cursor:pointer;}
   .foto-empty-hint{color:var(--gray);font-size:12px;padding:6px 2px 14px;grid-column:1/-1;}
 
   .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:#1C1C1C;color:#fff;padding:11px 18px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:200;max-width:88vw;text-align:center;}
@@ -117,6 +134,7 @@
     .toolbar, .err-banner, .login-screen, .toast{display:none !important;}
     #report{padding:0;max-width:100%;}
     .panel, .cover, .foto-card{break-inside:avoid;}
+    .panel, .card, .foto-card{box-shadow:none !important;}
     .foto-remove-btn, .btn-add-foto, .foto-empty-hint{display:none !important;}
     .foto-titulo-input{color:#000;}
   }
@@ -133,6 +151,7 @@ window.addEventListener('error', function(e) {
 </script>
 
 <div class="login-screen" id="loginScreen">
+  <div class="login-marca">DIAMOND MILLENNIUM<span>Relatório Semanal</span></div>
   <div class="login-box">
     <h1>📊 Relatório Semanal — Diamond Millennium</h1>
     <div class="error" id="loginError"></div>

@@ -9,6 +9,7 @@
 <style>
   :root {
     --charcoal:#063593;       /* azul escuro de marca - cabeçalho */
+    --charcoal-escuro:#042467;
     --yellow:#0053D8;         /* azul principal de marca - substitui o amarelo como cor de destaque */
     --green:#2F9E44;          /* mantido: verde semântico de presença */
     --orange:#E8590C;         /* mantido: laranja semântico de falta */
@@ -16,43 +17,57 @@
     --brand-graylight:#B1AEB5;
     --brand-graymid:#585759;
     --brand-black:#1C1C1C;
+    /* ---------- tokens visuais (2026-10-20) — acabamento "premium" pra
+       combinar com o painel da catraca (catraca_painel.html) e com o
+       diário de obra já reformados: cantos mais arredondados e sombra
+       suave tingida de azul da marca, em vez de borda seca, em
+       cards/botões. ---------- */
+    --radius-card:16px;
+    --radius-btn:12px;
+    --radius-pill:999px;
+    --shadow-card:0 2px 12px rgba(6,53,147,0.08);
+    --shadow-elevated:0 14px 40px rgba(4,36,103,0.22);
+    --shadow-btn:0 3px 10px rgba(0,83,216,0.28);
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:"Segoe UI",Arial,Helvetica,sans-serif;background:var(--concrete);color:var(--brand-black);font-variant-ligatures:none;font-kerning:normal;}
+  input:focus, select:focus, textarea:focus{outline:none;border-color:var(--yellow);box-shadow:0 0 0 3px rgba(0,83,216,0.14);}
 
-  .login-screen{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--charcoal);display:flex;align-items:center;justify-content:center;z-index:100;}
+  .login-screen{position:fixed;top:0;left:0;right:0;bottom:0;background:radial-gradient(circle at 50% -10%, var(--charcoal) 0%, var(--charcoal-escuro) 65%, #021133 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;z-index:100;padding:16px;}
   .login-screen.hidden{display:none;}
-  .login-box{background:#fff;padding:30px;border-radius:12px;width:90%;max-width:320px;}
+  .login-marca{text-align:center;color:#fff;font-size:22px;font-weight:800;letter-spacing:2px;opacity:0.92;}
+  .login-marca span{display:block;font-size:12.5px;font-weight:400;letter-spacing:4px;text-transform:uppercase;opacity:0.55;margin-top:6px;}
+  .login-box{background:#fff;padding:30px;border-radius:calc(var(--radius-card) + 4px);width:90%;max-width:320px;box-shadow:var(--shadow-elevated);}
   .login-box h1{font-size:20px;margin-bottom:20px;text-align:center;}
-  .login-box input{width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;margin-bottom:12px;font-size:14px;}
-  .login-box button{width:100%;padding:12px;background:var(--yellow);color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;}
-  .login-box button:disabled{opacity:0.6;cursor:not-allowed;}
+  .login-box input{width:100%;padding:12px;border:1px solid #ddd;border-radius:var(--radius-btn);margin-bottom:12px;font-size:14px;}
+  .login-box button{width:100%;padding:12px;background:var(--yellow);color:#fff;border:none;border-radius:var(--radius-btn);font-weight:600;cursor:pointer;box-shadow:var(--shadow-btn);}
+  .login-box button:disabled{opacity:0.6;cursor:not-allowed;box-shadow:none;}
   .login-box .error{color:var(--orange);font-size:12px;margin-bottom:10px;text-align:center;font-weight:600;}
   .login-box .success{color:var(--green);font-size:12px;margin-bottom:10px;text-align:center;font-weight:600;}
-  .login-box .btn-secondary{background:transparent;color:var(--yellow);border:2px solid var(--yellow);}
+  .login-box .btn-secondary{background:transparent;color:var(--yellow);border:2px solid var(--yellow);box-shadow:none;}
   .form-hidden{display:none;}
 
-  .head{background:var(--charcoal);color:#fff;padding:20px;border-bottom:5px solid var(--yellow);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+  .head{background:linear-gradient(135deg, var(--charcoal) 0%, var(--charcoal-escuro) 100%);color:#fff;padding:20px;border-bottom:5px solid var(--yellow);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;box-shadow:0 4px 16px rgba(4,36,103,0.25);}
   .head h1{font-size:20px;font-weight:600;}
   .head .sub{font-size:12px;opacity:0.7;margin-top:4px;}
-  .head button{background:#999;color:#fff;border:none;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:12px;}
+  .head button{background:#999;color:#fff;border:none;padding:8px 14px;border-radius:var(--radius-btn);cursor:pointer;font-size:12px;}
 
   .filters{display:flex;gap:10px;padding:16px 20px;flex-wrap:wrap;background:#fff;border-bottom:1px solid #ddd;align-items:center;}
-  .filters input, .filters select{padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;}
-  .filters button{padding:8px 16px;background:var(--charcoal);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;}
+  .filters input, .filters select{padding:8px 10px;border:1px solid #ddd;border-radius:var(--radius-btn);font-size:13px;}
+  .filters button{padding:8px 16px;background:var(--charcoal);color:#fff;border:none;border-radius:var(--radius-btn);cursor:pointer;font-size:13px;font-weight:600;box-shadow:var(--shadow-btn);}
   .filter-check{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--charcoal);cursor:pointer;user-select:none;}
   .filter-check input{width:15px;height:15px;cursor:pointer;}
 
   .content{padding:20px;max-width:1100px;margin:0 auto;}
 
   .cards{display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:12px;margin-bottom:20px;}
-  .card{background:#fff;border:1px solid #ddd;border-top:3px solid var(--yellow);border-radius:10px;padding:16px;text-align:center;}
+  .card{background:#fff;border:1px solid rgba(6,53,147,0.08);border-top:3px solid var(--yellow);border-radius:var(--radius-card);padding:16px;text-align:center;box-shadow:var(--shadow-card);}
   .card .n{font-size:26px;font-weight:700;}
   .card .l{font-size:12px;opacity:0.6;margin-top:4px;}
 
   .panels{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
   @media (max-width:800px){.panels{grid-template-columns:1fr;}}
-  .panel{background:#fff;border:1px solid #ddd;border-radius:10px;padding:16px;}
+  .panel{background:#fff;border:1px solid rgba(6,53,147,0.08);border-radius:var(--radius-card);padding:16px;box-shadow:var(--shadow-card);}
   .panel h3{font-size:14px;margin-bottom:12px;color:var(--charcoal);}
   .panel canvas{max-height:280px;}
 
@@ -60,7 +75,7 @@
   th, td{padding:10px 12px;text-align:left;font-size:13px;border-bottom:1px solid #eee;}
   th{background:#f5f5f5;font-weight:600;}
   tr:last-child td{border-bottom:none;}
-  .badge{padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;}
+  .badge{padding:2px 9px;border-radius:var(--radius-pill);font-size:11px;font-weight:600;}
   .badge-p{background:#DFF3E3;color:var(--green);}
   .badge-f{background:#FCE7DB;color:var(--orange);}
 
@@ -72,7 +87,7 @@
   .roster-table th{background:#f5f5f5;}
   .roster-table tr.total-row td{font-weight:700;border-top:2px solid #ccc;background:#fafafa;}
 
-  .qv-company{border:1px solid #ddd;border-radius:8px;margin-bottom:8px;overflow:hidden;}
+  .qv-company{border:1px solid #ddd;border-radius:var(--radius-btn);margin-bottom:8px;overflow:hidden;}
   .qv-head{background:#f5f5f5;padding:8px 12px;font-weight:600;font-size:13px;display:flex;justify-content:space-between;}
   .qv-list{padding:6px 12px;}
   .qv-item{padding:3px 0;font-size:12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;border-bottom:1px solid #f0f0f0;align-items:center;}
@@ -86,7 +101,7 @@
   .funcao-item{display:flex;justify-content:space-between;gap:10px;padding:10px 0;font-size:17px;border-bottom:1px solid #eee;break-inside:avoid;}
 
   .saida-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;font-size:14px;color:#c1121f;border-bottom:1px solid #f5d5d5;background:#fdf0f0;}
-  .saida-row:first-child{border-radius:8px 8px 0 0;}
+  .saida-row:first-child{border-radius:var(--radius-btn) var(--radius-btn) 0 0;}
   .saida-row:last-child{border-bottom:none;border-radius:0 0 8px 8px;}
   .saida-row b{font-weight:700;}
   .saida-horas{font-size:12px;opacity:0.85;white-space:nowrap;}
@@ -101,16 +116,16 @@
 
   .admin-hint{font-size:12px;opacity:0.75;margin-bottom:12px;line-height:1.5;}
   .admin-controls{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
-  .admin-controls input, .admin-controls select{padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;}
+  .admin-controls input, .admin-controls select{padding:8px 10px;border:1px solid #ddd;border-radius:var(--radius-btn);font-size:13px;}
 
   .badge-n{background:#eee;color:#888;}
-  .indiv-resultados{border:1px solid #ddd;border-radius:8px;margin-bottom:10px;max-height:220px;overflow-y:auto;background:#fff;}
+  .indiv-resultados{border:1px solid #ddd;border-radius:var(--radius-btn);margin-bottom:10px;max-height:220px;overflow-y:auto;background:#fff;}
   .indiv-resultados .empty{padding:14px;}
   .indiv-resultado-item{padding:8px 12px;font-size:13px;border-bottom:1px solid #eee;cursor:pointer;display:flex;justify-content:space-between;gap:10px;}
   .indiv-resultado-item:last-child{border-bottom:none;}
   .indiv-resultado-item:hover{background:#f5f5f5;}
   .indiv-resultado-item .ir-sub{opacity:0.6;font-size:11px;white-space:nowrap;}
-  .indiv-selecionado{display:flex;align-items:center;gap:10px;background:#eef3ff;border:1px solid #c9d9ff;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:13px;flex-wrap:wrap;}
+  .indiv-selecionado{display:flex;align-items:center;gap:10px;background:#eef3ff;border:1px solid #c9d9ff;border-radius:var(--radius-btn);padding:10px 12px;margin-bottom:12px;font-size:13px;flex-wrap:wrap;}
   .indiv-selecionado b{flex:1;}
   .indiv-selecionado .ir-sub{opacity:0.6;font-size:12px;}
   .indiv-selecionado .ir-x{cursor:pointer;font-weight:700;opacity:0.6;padding:2px 8px;font-size:16px;}
@@ -170,6 +185,7 @@ window.addEventListener('unhandledrejection', function(e) {
 </script>
 
 <div class="login-screen" id="loginScreen">
+  <div class="login-marca">DIAMOND MILLENNIUM<span>Dashboard</span></div>
   <div class="login-box">
     <h1>📊 Dashboard - Presença</h1>
     <div class="error" id="loginError"></div>
@@ -189,7 +205,7 @@ window.addEventListener('unhandledrejection', function(e) {
       </div>
     </div>
     <div style="display:flex;gap:8px;">
-      <button onclick="exportPDF()" style="background:var(--yellow);color:#fff;">📄 Exportar PDF</button>
+      <button onclick="exportPDF()" style="background:var(--yellow);color:#fff;box-shadow:var(--shadow-btn);">📄 Exportar PDF</button>
       <button onclick="doLogout()">Sair</button>
     </div>
   </div>
@@ -203,7 +219,7 @@ window.addEventListener('unhandledrejection', function(e) {
       Incluir esporádicos
     </label>
     <button onclick="loadData(); atualizarDiaRelatorio();">Filtrar</button>
-    <button onclick="resetFilters()" style="background:#999;">Limpar</button>
+    <button onclick="resetFilters()" style="background:#999;box-shadow:none;">Limpar</button>
   </div>
 
   <div class="content">
@@ -259,7 +275,7 @@ window.addEventListener('unhandledrejection', function(e) {
       <div class="admin-controls" id="indivDatasWrap" style="display:none;">
         <input type="date" id="indivDataIni">
         <input type="date" id="indivDataFim">
-        <button onclick="consultarIndividual()" style="padding:8px 16px;background:var(--charcoal);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">🔎 Consultar</button>
+        <button onclick="consultarIndividual()" style="padding:8px 16px;background:var(--charcoal);color:#fff;border:none;border-radius:var(--radius-btn);cursor:pointer;font-size:13px;font-weight:600;box-shadow:var(--shadow-btn);">🔎 Consultar</button>
       </div>
 
       <div id="indivResumo" class="doc-resumo"></div>

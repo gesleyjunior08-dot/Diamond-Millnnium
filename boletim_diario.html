@@ -6,16 +6,37 @@
 <title>Boletim Diário — Diamond Millennium</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root { --navy:#0B1F3A; --blue:#0053D8; --line:#999; --gray:#666; }
+  :root {
+    --navy:#0B1F3A; --blue:#0053D8; --line:#999; --gray:#666;
+    /* ---------- tokens visuais (2026-10-20) — acabamento "premium" pra
+       combinar com o painel da catraca e com o diário de obra: cantos mais
+       arredondados e sombra suave tingida de azul da marca em vez de borda
+       seca, em login/botões. A folha impressa do boletim (.sheet e tudo
+       dentro dela) continua com a grade em preto e branco, sem isso. ---------- */
+    --charcoal:#063593;
+    --charcoal-escuro:#042467;
+    --yellow:#0053D8;
+    --radius-card:16px;
+    --radius-btn:12px;
+    --radius-pill:999px;
+    --shadow-card:0 2px 12px rgba(6,53,147,0.08);
+    --shadow-elevated:0 14px 40px rgba(4,36,103,0.22);
+    --shadow-btn:0 3px 10px rgba(0,83,216,0.28);
+  }
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:Arial,Helvetica,sans-serif;background:#EEF0F3;color:#111;font-size:12px;}
+  input:focus, select:focus, textarea:focus{outline:none;border-color:var(--yellow);box-shadow:0 0 0 3px rgba(0,83,216,0.14);}
 
-  .login-screen{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:100;}
+  /* ---------- login (2026-10-20: fundo em gradiente + marca grande, no
+     mesmo espírito do painel da catraca / diário de obra) ---------- */
+  .login-screen{position:fixed;inset:0;background:radial-gradient(circle at 50% -10%, var(--charcoal) 0%, var(--charcoal-escuro) 65%, #021133 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;z-index:100;padding:16px;}
   .login-screen.hidden{display:none;}
-  .login-box{background:#fff;padding:30px;border-radius:12px;width:90%;max-width:300px;text-align:center;}
-  .login-box h1{font-size:15px;margin-bottom:18px;color:var(--navy);}
-  .login-box input{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-bottom:10px;font-size:14px;}
-  .login-box button{width:100%;padding:10px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;}
+  .login-marca{text-align:center;color:#fff;font-size:20px;font-weight:800;letter-spacing:2px;opacity:0.92;text-transform:uppercase;}
+  .login-marca span{display:block;font-size:11.5px;font-weight:400;letter-spacing:4px;text-transform:uppercase;opacity:0.55;margin-top:6px;}
+  .login-box{background:#fff;padding:30px;border-radius:calc(var(--radius-card) + 4px);width:90%;max-width:320px;text-align:center;box-shadow:var(--shadow-elevated);}
+  .login-box h1{font-size:15px;margin-bottom:18px;color:var(--charcoal);}
+  .login-box input{width:100%;padding:10px;border:1px solid #ddd;border-radius:var(--radius-btn);margin-bottom:10px;font-size:14px;}
+  .login-box button{width:100%;padding:10px;background:var(--yellow);color:#fff;border:none;border-radius:var(--radius-btn);font-weight:600;cursor:pointer;box-shadow:var(--shadow-btn);}
   .login-box .error{color:#B00020;font-size:12px;margin-bottom:8px;font-weight:600;}
 
   .err-banner{position:fixed;top:0;left:0;right:0;background:#B00020;color:#fff;padding:8px 14px;font-size:11px;font-family:monospace;z-index:9999;display:none;}
@@ -23,11 +44,15 @@
 
   #report{display:none;max-width:1000px;margin:0 auto;padding:16px;}
 
-  .toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+  /* ---------- toolbar (2026-10-20: virou um cartão com sombra suave, no
+     mesmo acabamento dos cards do diário de obra — fica acima da folha
+     impressa, que continua intocada) ---------- */
+  .toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;background:#fff;border:1px solid rgba(6,53,147,0.08);border-radius:var(--radius-card);padding:12px 14px;box-shadow:var(--shadow-card);}
   .toolbar .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
-  .toolbar input, .toolbar select{padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;}
-  .toolbar button{padding:8px 14px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;}
-  .btn-primary{background:var(--blue);color:#fff;}
+  .toolbar input, .toolbar select{padding:8px 10px;border:1px solid #ccc;border-radius:var(--radius-btn);font-size:13px;}
+  .toolbar button{padding:8px 14px;border:none;border-radius:var(--radius-btn);font-size:13px;font-weight:600;cursor:pointer;}
+  .btn-primary{background:var(--yellow);color:#fff;box-shadow:var(--shadow-btn);}
+  .btn-primary:disabled{box-shadow:none;}
   .btn-ghost{background:#fff;border:1px solid #ccc !important;color:#333;}
 
   .sheet{background:#fff;border:2px solid #000;}
@@ -41,16 +66,24 @@
 
   .section-header{background:#DCE3EC;font-weight:700;font-size:12px;padding:5px 10px;border-bottom:1px solid #000;border-top:1px solid #000;}
 
-  .propria-wrap{padding:10px;columns:2;column-gap:24px;}
-  .propria-row{display:flex;justify-content:space-between;gap:8px;padding:4px 8px;font-size:11px;border-bottom:1px dotted #ccc;break-inside:avoid;}
-  .propria-row .n{font-weight:600;white-space:nowrap;}
+  /* 2026-10-02 — "Equipe Própria" virou tabela com borda de verdade (igual
+     o boletim de papel: Função | Qtd | Função | Qtd, grade fechada), em vez
+     da lista de 2 colunas com linha pontilhada que tinha antes. */
+  .propria-wrap{padding:0;}
+  .propria-table{width:100%;border-collapse:collapse;}
+  .propria-table td{border:1px solid #000;padding:4px 8px;font-size:11px;}
+  .propria-table td.f{width:32%;}
+  .propria-table td.n{width:18%;text-align:center;font-weight:700;}
 
   .total-row{padding:8px 10px;font-weight:700;font-size:12px;border-top:2px solid #000;background:#f7f7f7;}
 
-  .terc-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));gap:0;}
-  .terc-box{border:1px solid #000;padding:6px 8px;}
-  .terc-nome{font-weight:700;font-size:10px;text-transform:uppercase;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .terc-linha{display:flex;justify-content:space-between;font-size:10.5px;}
+  /* "Equipe Terceirizada" — grade de caixas com cabeçalho sombreado (igual
+     o boletim de papel), cada caixa com Profissional/Ajudante/Total. */
+  .terc-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(135px, 1fr));gap:0;}
+  .terc-box{border:1px solid #000;}
+  .terc-nome{background:#DCE3EC;font-weight:700;font-size:9.5px;text-transform:uppercase;text-align:center;padding:4px 4px;border-bottom:1px solid #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .terc-body{padding:4px 8px 6px;}
+  .terc-linha{display:flex;justify-content:space-between;font-size:10.5px;padding:1px 0;}
   .terc-linha.total{font-weight:700;border-top:1px solid #999;margin-top:2px;padding-top:2px;}
   .terc-empresa-nome{font-size:9px;font-weight:700;color:#555;margin-top:4px;text-transform:uppercase;}
   .terc-empresa-nome:first-of-type{margin-top:0;}
@@ -93,6 +126,7 @@ window.addEventListener('error', function(e) {
 </script>
 
 <div class="login-screen" id="loginScreen">
+  <div class="login-marca">DIAMOND MILLENNIUM<span>Boletim Diário</span></div>
   <div class="login-box">
     <h1>📋 Boletim Diário — Diamond Millennium</h1>
     <div class="error" id="loginError"></div>
@@ -329,9 +363,20 @@ function renderPropria(rows) {
   });
   const funcoes = Object.keys(byFuncao).sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
-  wrap.innerHTML = funcoes.map(f => `
-    <div class="propria-row"><span class="f">${f}</span><span class="n">${byFuncao[f]}</span></div>
-  `).join('');
+  // tabela com borda fechada, 2 pares "Função | Qtd" por linha (igual o
+  // boletim de papel) — se sobrar 1 função ímpar no fim, fecha a linha com
+  // 2 células vazias pra não quebrar a grade.
+  let linhas = '';
+  for (let i = 0; i < funcoes.length; i += 2) {
+    const f1 = funcoes[i], f2 = funcoes[i + 1];
+    linhas += `
+      <tr>
+        <td class="f">${f1}</td><td class="n">${byFuncao[f1]}</td>
+        ${f2 !== undefined ? `<td class="f">${f2}</td><td class="n">${byFuncao[f2]}</td>` : `<td class="f"></td><td class="n"></td>`}
+      </tr>
+    `;
+  }
+  wrap.innerHTML = `<table class="propria-table"><tbody>${linhas}</tbody></table>`;
 
   totalRow.innerHTML = `<div style="display:flex;justify-content:space-between;">
     <span>Total de colaboradores - próprios</span><span>${rows.length} Colaboradores</span>
@@ -369,17 +414,19 @@ function renderTerceirizada(rows) {
     return `
       <div class="terc-box">
         <div class="terc-nome" title="${aloc}">${aloc}</div>
-        ${empresas.map(emp => {
-          const d = porEmpresa[emp];
-          const total = d.profissional + d.ajudante;
-          return `
-            <div class="terc-empresa-nome">${emp}</div>
-            <div class="terc-linha"><span>Profissional:</span><span>${d.profissional}</span></div>
-            <div class="terc-linha"><span>Ajudante:</span><span>${d.ajudante}</span></div>
-            <div class="terc-linha" style="font-weight:600;"><span>Subtotal:</span><span>${total}</span></div>
-          `;
-        }).join('')}
-        ${empresas.length > 1 ? `<div class="terc-linha total"><span>Total ${aloc}:</span><span>${totalAloc}</span></div>` : ''}
+        <div class="terc-body">
+          ${empresas.map((emp, i) => {
+            const d = porEmpresa[emp];
+            const total = d.profissional + d.ajudante;
+            return `
+              ${empresas.length > 1 ? `<div class="terc-empresa-nome">${emp}</div>` : ''}
+              <div class="terc-linha"><span>Profissional:</span><span>${d.profissional}</span></div>
+              <div class="terc-linha"><span>Ajudante:</span><span>${d.ajudante}</span></div>
+              <div class="terc-linha ${empresas.length === 1 ? 'total' : ''}"><span>Total:</span><span>${total}</span></div>
+            `;
+          }).join('')}
+          ${empresas.length > 1 ? `<div class="terc-linha total"><span>Total ${aloc}:</span><span>${totalAloc}</span></div>` : ''}
+        </div>
       </div>
     `;
   }).join('');

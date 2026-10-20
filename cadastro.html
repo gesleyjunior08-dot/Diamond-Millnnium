@@ -16,6 +16,13 @@
     --brand-graylight:#B1AEB5;
     --brand-graymid:#585759;
     --brand-black:#1C1C1C;
+    --charcoal-escuro:#042467;
+    --radius-card:16px;
+    --radius-btn:12px;
+    --radius-pill:999px;
+    --shadow-card:0 2px 12px rgba(6,53,147,0.08);
+    --shadow-elevated:0 14px 40px rgba(4,36,103,0.22);
+    --shadow-btn:0 3px 10px rgba(0,83,216,0.28);
     --safe-t:env(safe-area-inset-top, 0px);
     --safe-b:env(safe-area-inset-bottom, 0px);
     --safe-l:env(safe-area-inset-left, 0px);
@@ -25,25 +32,28 @@
   html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   body{font-family:"Segoe UI",Arial,Helvetica,sans-serif;background:var(--concrete);color:var(--brand-black);font-size:15px;line-height:1.4;padding-bottom:calc(24px + var(--safe-b));}
   button, select, input{touch-action:manipulation;}
+  input:focus, select:focus, textarea:focus{outline:none;border-color:var(--yellow);box-shadow:0 0 0 3px rgba(0,83,216,0.14);}
 
   /* ---------- login (mesmo padrão das outras ferramentas, só usado se
      esta tela for aberta sozinha, fora do app.html) ---------- */
-  .login-screen{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--charcoal);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px;}
+  .login-screen{position:fixed;top:0;left:0;right:0;bottom:0;background:radial-gradient(circle at 50% -10%, var(--charcoal) 0%, var(--charcoal-escuro) 65%, #021133 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;z-index:100;padding:16px;}
   .login-screen.hidden{display:none;}
-  .login-box{background:#fff;padding:26px 22px;border-radius:14px;width:100%;max-width:340px;}
+  .login-marca{text-align:center;color:#fff;font-size:22px;font-weight:800;letter-spacing:2px;opacity:0.92;}
+  .login-marca span{display:block;font-size:12.5px;font-weight:400;letter-spacing:4px;text-transform:uppercase;opacity:0.55;margin-top:6px;}
+  .login-box{background:#fff;padding:26px 22px;border-radius:calc(var(--radius-card) + 4px);width:100%;max-width:340px;box-shadow:var(--shadow-elevated);}
   .login-box h1{font-size:19px;margin-bottom:18px;text-align:center;}
-  .login-box input{width:100%;padding:13px 14px;border:1px solid #ddd;border-radius:9px;margin-bottom:12px;font-size:16px;}
-  .login-box button{width:100%;padding:13px;background:var(--yellow);color:#fff;border:none;border-radius:9px;font-weight:600;cursor:pointer;font-size:15px;min-height:46px;}
+  .login-box input{width:100%;padding:13px 14px;border:1px solid #ddd;border-radius:var(--radius-btn);margin-bottom:12px;font-size:16px;}
+  .login-box button{width:100%;padding:13px;background:var(--yellow);color:#fff;border:none;border-radius:var(--radius-btn);font-weight:600;cursor:pointer;font-size:15px;min-height:46px;box-shadow:var(--shadow-btn);}
   .login-box .error{color:var(--orange);font-size:12px;margin-bottom:10px;text-align:center;font-weight:600;}
 
   /* ---------- cabeçalho (mesmo padrão das outras ferramentas) ---------- */
-  .head{background:var(--charcoal);color:#fff;padding:calc(12px + var(--safe-t)) calc(14px + var(--safe-r)) 12px calc(14px + var(--safe-l));border-bottom:4px solid var(--yellow);display:flex;justify-content:space-between;align-items:center;gap:10px;position:sticky;top:0;z-index:20;}
+  .head{background:linear-gradient(135deg, var(--charcoal) 0%, var(--charcoal-escuro) 100%);color:#fff;padding:calc(12px + var(--safe-t)) calc(14px + var(--safe-r)) 12px calc(14px + var(--safe-l));border-bottom:4px solid var(--yellow);display:flex;justify-content:space-between;align-items:center;gap:10px;position:sticky;top:0;z-index:20;box-shadow:0 4px 16px rgba(4,36,103,0.25);}
   .head .brand{display:flex;align-items:center;gap:10px;min-width:0;}
   .head img{height:30px;width:auto;flex-shrink:0;}
   .head h1{font-size:15px;font-weight:600;line-height:1.2;}
   .head .sub{font-size:10.5px;opacity:0.75;margin-top:2px;line-height:1.2;}
   .head .actions{display:flex;gap:6px;flex-shrink:0;}
-  .head button{background:#ffffff26;color:#fff;border:none;padding:9px 11px;border-radius:9px;cursor:pointer;font-size:12px;font-weight:600;min-height:38px;}
+  .head button{background:#ffffff26;color:#fff;border:none;padding:9px 11px;border-radius:var(--radius-btn);cursor:pointer;font-size:12px;font-weight:600;min-height:38px;}
 
   .content{padding:16px 14px;max-width:520px;margin:0 auto;}
 
@@ -51,30 +61,30 @@
   h2.block-title:first-of-type{margin-top:0;}
 
   /* ---------- cartão do formulário ---------- */
-  .form-card{background:#fff;border-radius:14px;padding:18px 16px 20px;box-shadow:0 2px 10px rgba(0,0,0,0.06);}
+  .form-card{background:#fff;border:1px solid rgba(6,53,147,0.08);border-radius:var(--radius-card);padding:18px 16px 20px;box-shadow:var(--shadow-card);}
   .form-intro{font-size:12.5px;color:var(--brand-graymid);margin-bottom:16px;line-height:1.45;}
   .campo{margin-bottom:14px;position:relative;}
   .campo label{display:block;font-size:12.5px;font-weight:700;color:#55555c;margin-bottom:5px;}
   .campo label .opcional{font-weight:500;opacity:0.55;text-transform:none;}
-  .campo input{width:100%;padding:13px 14px;border:1.5px solid #ddd;border-radius:10px;font-size:16px;font-family:inherit;background:#fafafa;}
-  .campo input:focus{outline:none;border-color:var(--yellow);background:#fff;}
+  .campo input{width:100%;padding:13px 14px;border:1.5px solid #ddd;border-radius:var(--radius-btn);font-size:16px;font-family:inherit;background:#fafafa;}
+  .campo input:focus{background:#fff;}
   .campo .dica{font-size:11px;color:var(--brand-graymid);opacity:0.75;margin-top:4px;line-height:1.35;}
 
-  .aviso-duplicado{display:none;background:#FFF3CD;color:#7a5b00;border:1px solid #ffe08a;border-radius:9px;padding:10px 12px;font-size:12.5px;margin-bottom:14px;line-height:1.4;}
+  .aviso-duplicado{display:none;background:#FFF3CD;color:#7a5b00;border:1px solid #ffe08a;border-radius:var(--radius-btn);padding:10px 12px;font-size:12.5px;margin-bottom:14px;line-height:1.4;}
   .aviso-duplicado.show{display:block;}
 
-  .btn-salvar{width:100%;padding:15px;background:var(--yellow);color:#fff;border:none;border-radius:11px;font-size:15.5px;font-weight:700;cursor:pointer;min-height:50px;margin-top:4px;}
-  .btn-salvar:disabled{opacity:0.55;cursor:default;}
+  .btn-salvar{width:100%;padding:15px;background:var(--yellow);color:#fff;border:none;border-radius:var(--radius-btn);font-size:15.5px;font-weight:700;cursor:pointer;min-height:50px;margin-top:4px;box-shadow:var(--shadow-btn);}
+  .btn-salvar:disabled{opacity:0.55;cursor:default;box-shadow:none;}
   .btn-limpar{width:100%;padding:11px;background:none;border:none;color:var(--brand-graymid);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;margin-top:10px;}
 
   /* ---------- lista "cadastrados agora" (só nesta sessão, não é histórico
      permanente — é só pra quem está cadastrando várias pessoas seguidas
      acompanhar o que já fez sem perder a conta) ---------- */
-  .recem-card{background:#fff;border:1px solid #e2e2e6;border-left:4px solid var(--yellow);border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .recem-card{background:#fff;border:1px solid #e2e2e6;border-left:4px solid var(--yellow);border-radius:var(--radius-card);padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px;box-shadow:var(--shadow-card);}
   .recem-info{min-width:0;}
   .recem-nome{font-weight:700;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .recem-sub{font-size:11px;color:var(--brand-graymid);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .recem-status{font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:20px;white-space:nowrap;flex-shrink:0;}
+  .recem-status{font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:var(--radius-pill);white-space:nowrap;flex-shrink:0;}
   .recem-status.pendente{background:#FFF3CD;color:#7a5b00;}
   .recem-status.erro{background:#FDECEA;color:#B00020;}
 
@@ -102,6 +112,7 @@ window.addEventListener('unhandledrejection', function(e) {
 </script>
 
 <div class="login-screen" id="loginScreen">
+  <div class="login-marca">DIAMOND MILLENNIUM<span>Cadastro de Pessoal</span></div>
   <div class="login-box">
     <h1>📝 Cadastro de Pessoal</h1>
     <div class="error" id="loginError"></div>
