@@ -9,11 +9,18 @@
   :root {
     --azul: #0053D8;
     --azul-escuro: #063593;
+    --charcoal-escuro: #042467;
     --verde: #2F9E44;
     --laranja: #E8590C;
     --fundo: #f7f7f8;
     --borda: #e2e2e6;
     --cinza-texto: #585759;
+    --radius-card: 16px;
+    --radius-btn: 12px;
+    --radius-pill: 999px;
+    --shadow-card: 0 2px 12px rgba(6,53,147,0.08);
+    --shadow-elevated: 0 14px 40px rgba(4,36,103,0.22);
+    --shadow-btn: 0 3px 10px rgba(0,83,216,0.28);
   }
   * { box-sizing: border-box; }
   html, body {
@@ -27,19 +34,25 @@
   /* login (mesmo padrão do diario_obra.html) */
   #telaLogin {
     position: fixed; inset: 0;
-    background: linear-gradient(160deg, var(--azul-escuro), var(--azul) 65%);
-    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(circle at 50% -10%, var(--azul-escuro) 0%, var(--charcoal-escuro) 65%, #021133 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 22px;
     padding: 24px; z-index: 50;
   }
   #telaLogin.escondida { display: none; }
-  .cartaoLogin { background: #fff; border-radius: 20px; width: 100%; max-width: 340px; padding: 26px 22px; box-shadow: 0 20px 45px rgba(0,0,0,.25); }
+  .login-marca {
+    color: #fff; font-weight: 800; font-size: 20px; letter-spacing: 2px;
+    text-align: center; text-transform: uppercase;
+  }
+  .login-marca span { display: block; font-size: 12px; font-weight: 600; letter-spacing: 1px; opacity: .8; margin-top: 4px; text-transform: none; }
+  .cartaoLogin { background: #fff; border-radius: calc(var(--radius-card) + 4px); width: 100%; max-width: 340px; padding: 26px 22px; box-shadow: var(--shadow-elevated); }
   .cartaoLogin h1 { margin: 0 0 4px; text-align: center; font-size: 17px; color: var(--azul-escuro); }
   .cartaoLogin p { margin: 0 0 16px; text-align: center; font-size: 12.5px; color: var(--cinza-texto); }
   .campo { margin-bottom: 10px; }
   .campo label { display: block; font-size: 11.5px; font-weight: 700; color: #55555c; margin-bottom: 4px; }
-  .campo input { width: 100%; padding: 10px; border: 1.5px solid var(--borda); border-radius: 9px; font-size: 14.5px; font-family: inherit; background: #fafafa; }
-  .campo input:focus { outline: none; border-color: var(--azul); background: #fff; }
-  .btnPrincipal { width: 100%; padding: 11px; background: var(--azul); color: #fff; border: none; border-radius: 9px; font-size: 14.5px; font-weight: 700; cursor: pointer; }
+  .campo input { width: 100%; padding: 10px; border: 1.5px solid var(--borda); border-radius: var(--radius-btn); font-size: 14.5px; font-family: inherit; background: #fafafa; }
+  .campo input:focus { outline: none; border-color: var(--azul); background: #fff; box-shadow: 0 0 0 3px rgba(0,83,216,0.14); }
+  .btnPrincipal { width: 100%; padding: 11px; background: var(--azul); color: #fff; border: none; border-radius: var(--radius-btn); font-size: 14.5px; font-weight: 700; cursor: pointer; box-shadow: var(--shadow-btn); }
   #erroLogin { min-height: 16px; font-size: 12px; color: #c0392b; text-align: center; margin-top: 6px; }
 
   #acessoNegado { display: none; min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; }
@@ -57,7 +70,7 @@
   .head .sub { font-size: 12px; color: var(--cinza-texto); margin-top: 2px; }
   .btnSair { background: #f1f0f3; border: none; color: #444; font-size: 12.5px; font-weight: 700; padding: 9px 14px; border-radius: 20px; cursor: pointer; white-space: nowrap; }
 
-  .cartao { background: #fff; border-radius: 14px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .cartao { background: #fff; border: 1px solid rgba(6,53,147,0.08); border-radius: var(--radius-card); padding: 16px; margin-bottom: 16px; box-shadow: var(--shadow-card); }
   .cartao h2 { font-size: 14.5px; margin: 0 0 4px; color: var(--azul-escuro); }
   .cartao .desc { font-size: 12px; color: var(--cinza-texto); margin-bottom: 12px; }
 
@@ -66,7 +79,7 @@
   .pagina-info { min-width: 0; }
   .pagina-nome { font-size: 14px; font-weight: 700; }
   .pagina-meta { font-size: 11px; color: var(--cinza-texto); margin-top: 2px; }
-  .badge { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 20px; margin-left: 6px; }
+  .badge { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-pill); margin-left: 6px; }
   .badge-aberto { background: #eaf7ec; color: var(--verde); }
   .badge-leitura { background: #fdeee6; color: var(--laranja); }
 
@@ -85,12 +98,12 @@
   .permissao-checks { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-bottom: 10px; }
   .permissao-checks label { display: flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--cinza-texto); cursor: pointer; }
   .permissao-checks input { width: 15px; height: 15px; accent-color: var(--azul); }
-  .btnSalvarPermissao { background: var(--azul); color: #fff; border: none; border-radius: 8px; padding: 7px 14px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+  .btnSalvarPermissao { background: var(--azul); color: #fff; border: none; border-radius: var(--radius-btn); padding: 7px 14px; font-size: 12.5px; font-weight: 700; cursor: pointer; box-shadow: var(--shadow-btn); }
   .btnSalvarPermissao:disabled { opacity: .6; }
   .permissao-status { font-size: 11.5px; margin-left: 8px; color: var(--verde); }
 
   .filtros { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-  .filtros select, .filtros input { padding: 8px 10px; border: 1.5px solid var(--borda); border-radius: 9px; font-size: 13px; font-family: inherit; background: #fafafa; }
+  .filtros select, .filtros input { padding: 8px 10px; border: 1.5px solid var(--borda); border-radius: var(--radius-btn); font-size: 13px; font-family: inherit; background: #fafafa; }
   .filtros select { flex: 1 1 140px; }
   .filtros input[type="text"] { flex: 1 1 160px; }
 
@@ -122,6 +135,7 @@
 <body>
 
   <div id="telaLogin">
+    <div class="login-marca">DIAMOND MILLENNIUM<span>Painel Administrativo</span></div>
     <div class="cartaoLogin">
       <h1>Painel Administrativo</h1>
       <p>Acesso restrito — entre com sua conta.</p>
