@@ -217,7 +217,8 @@
     transition: background .15s ease, color .15s ease;
   }
   .aba:hover { background: rgba(255,255,255,0.1); color: #fff; }
-  .aba .icone { font-size: 17px; line-height: 1; flex-shrink: 0; }
+  .aba .icone { display: flex; align-items: center; justify-content: center; width: 19px; height: 19px; flex-shrink: 0; }
+  .aba .icone svg { width: 100%; height: 100%; }
   .aba .rotulo { font-size: 13.5px; line-height: 1.2; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
   .aba.selecionada { background: #fff; color: var(--azul-escuro); box-shadow: var(--shadow-btn); }
   .aba.selecionada .rotulo { font-weight: 700; }
@@ -277,6 +278,38 @@
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   #topo .saudacao small { display: block; font-weight: 500; font-size: 9.5px; opacity: .8; }
+
+  /* ---- título + descrição da aba atual, em cima do conteúdo ---- */
+  #cabecalhoAba {
+    flex: 0 0 auto;
+    display: flex; align-items: center; gap: 13px;
+    padding: 16px 24px;
+    background: #fff;
+    border-bottom: 1px solid rgba(6,53,147,0.08);
+  }
+  .cabecalhoAba-icone {
+    flex-shrink: 0;
+    width: 40px; height: 40px;
+    border-radius: var(--radius-btn);
+    background: linear-gradient(135deg, var(--azul) 0%, var(--azul-escuro) 100%);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow-btn);
+  }
+  .cabecalhoAba-icone svg { width: 21px; height: 21px; }
+  .cabecalhoAba-textos { min-width: 0; }
+  #cabecalhoAbaTitulo { margin: 0; font-size: 18.5px; font-weight: 800; color: var(--charcoal-escuro); line-height: 1.2; }
+  #cabecalhoAbaDescricao {
+    margin: 2px 0 0; font-size: 12.5px; color: #6b7280; line-height: 1.35;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  @media (max-width: 879.98px) {
+    #cabecalhoAba { padding: 11px 14px; gap: 10px; }
+    .cabecalhoAba-icone { width: 33px; height: 33px; }
+    .cabecalhoAba-icone svg { width: 18px; height: 18px; }
+    #cabecalhoAbaTitulo { font-size: 15.5px; }
+    #cabecalhoAbaDescricao { font-size: 11.5px; white-space: normal; }
+  }
 
   #conteudo {
     position: relative;
@@ -385,34 +418,34 @@
 
       <nav id="sidebarNav">
         <button class="aba" data-aba="presenca">
-          <span class="icone">📋</span><span class="rotulo">Presença</span>
+          <span class="icone"></span><span class="rotulo">Presença</span>
         </button>
         <button class="aba" data-aba="equipes">
-          <span class="icone">👥</span><span class="rotulo">Equipes</span>
+          <span class="icone"></span><span class="rotulo">Equipes</span>
         </button>
         <button class="aba" data-aba="diario">
-          <span class="icone">📔</span><span class="rotulo">Diário de Obra</span>
+          <span class="icone"></span><span class="rotulo">Diário de Obra</span>
         </button>
         <button class="aba" data-aba="dashboard">
-          <span class="icone">📊</span><span class="rotulo">Painel</span>
+          <span class="icone"></span><span class="rotulo">Painel</span>
         </button>
         <button class="aba" data-aba="semanal">
-          <span class="icone">📅</span><span class="rotulo">Relatório Semanal</span>
+          <span class="icone"></span><span class="rotulo">Relatório Semanal</span>
         </button>
         <button class="aba" data-aba="boletim">
-          <span class="icone">📄</span><span class="rotulo">Boletim Diário</span>
+          <span class="icone"></span><span class="rotulo">Boletim Diário</span>
         </button>
         <button class="aba" data-aba="rh">
-          <span class="icone">🧑‍💼</span><span class="rotulo">RH</span>
+          <span class="icone"></span><span class="rotulo">RH</span>
         </button>
         <button class="aba" data-aba="cadastro">
-          <span class="icone">📝</span><span class="rotulo">Cadastro</span>
+          <span class="icone"></span><span class="rotulo">Cadastro</span>
         </button>
         <button class="aba" data-aba="sugestoes">
-          <span class="icone">💡</span><span class="rotulo">Sugestões</span>
+          <span class="icone"></span><span class="rotulo">Sugestões</span>
         </button>
         <button class="aba escondida" data-aba="admin" id="abaAdmin">
-          <span class="icone">🔐</span><span class="rotulo">Admin</span>
+          <span class="icone"></span><span class="rotulo">Admin</span>
         </button>
       </nav>
 
@@ -433,6 +466,14 @@
           </div>
         </div>
       </header>
+
+      <div id="cabecalhoAba">
+        <div class="cabecalhoAba-icone" id="cabecalhoAbaIcone"></div>
+        <div class="cabecalhoAba-textos">
+          <h1 id="cabecalhoAbaTitulo">Presença</h1>
+          <p id="cabecalhoAbaDescricao">Marcação diária de presença, visitantes e saída antecipada.</p>
+        </div>
+      </div>
 
       <div id="conteudo">
         <div id="placeholder">Toque numa aba abaixo pra abrir.</div>
@@ -633,6 +674,82 @@
     sugestoes: document.getElementById('frame-sugestoes'),
     admin: document.getElementById('frame-admin'),
   };
+
+  // Ícones minimalistas (traço fino, cor herdada do botão) + título/descrição
+  // de cada aba — uma única fonte, usada tanto nos ícones do menu lateral
+  // quanto no cabeçalho que aparece em cima do conteúdo (ver abrirAba abaixo).
+  const METADADOS_ABA = {
+    presenca: {
+      titulo: 'Presença',
+      descricao: 'Marcação diária de presença, visitantes e saída antecipada.',
+      icone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 11 2 2 4-4"/><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>',
+    },
+    equipes: {
+      titulo: 'Equipes',
+      descricao: 'Times organizados por encarregado, com foto e classificação.',
+      icone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5"/><path d="M14 6a6 6 0 0 1 6 6v3"/><path d="M4 15v-3a6 6 0 0 1 6-6"/><rect x="2" y="15" width="20" height="4" rx="1"/></svg>',
+    },
+    diario: {
+      titulo: 'Diário de Obra',
+      descricao: 'Registro diário de serviços, tarefas e mapa de unidades.',
+      icone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4"/><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><path d="M21.378 5.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z"/></svg>',
+    },
+    dashboard: {
+      titulo: 'Painel',
+      descricao: 'Indicadores, gráficos e relatórios da obra em um só lugar.',
+      icone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>',
+    },
+    semanal: {
+      titulo: 'Relatório Semanal',
+      descricao: 'Resumo executivo da semana, pronto pra compartilhar.',
+      icone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>',
+    },
+    boletim: {
+      titulo: 'Boletim Diário',
+      descricao: 'Réplica digital do boletim diário em papel.',
+      icone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></svg>',
+    },
+    rh: {
+      titulo: 'RH',
+      descricao: 'Documentação, ativação e desativação de funcionários.',
+      icone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 10h2"/><path d="M16 14h2"/><path d="M6.17 15a3 3 0 0 1 5.66 0"/><circle cx="9" cy="11" r="2"/><rect x="2" y="5" width="20" height="14" rx="2"/></svg>',
+    },
+    cadastro: {
+      titulo: 'Cadastro',
+      descricao: 'Novo colaborador, com foto e documentos.',
+      icone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>',
+    },
+    sugestoes: {
+      titulo: 'Sugestões',
+      descricao: 'Ideias e observações da equipe pra melhorar a obra.',
+      icone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>',
+    },
+    admin: {
+      titulo: 'Admin',
+      descricao: 'Permissões, log de alterações e configurações do sistema.',
+      icone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>',
+    },
+  };
+
+  // Ícone de cada botão do menu lateral — preenchido uma vez, na subida.
+  botoes.forEach((b) => {
+    const dados = METADADOS_ABA[b.dataset.aba];
+    const spanIcone = b.querySelector('.icone');
+    if (dados && spanIcone) spanIcone.innerHTML = dados.icone;
+  });
+
+  // Título + descrição em cima do conteúdo, atualizados a cada troca de aba
+  // (ver abrirAba abaixo).
+  const cabecalhoAbaIcone = document.getElementById('cabecalhoAbaIcone');
+  const cabecalhoAbaTitulo = document.getElementById('cabecalhoAbaTitulo');
+  const cabecalhoAbaDescricao = document.getElementById('cabecalhoAbaDescricao');
+  function atualizarCabecalhoAba(nome) {
+    const dados = METADADOS_ABA[nome];
+    if (!dados) return;
+    if (cabecalhoAbaIcone) cabecalhoAbaIcone.innerHTML = dados.icone;
+    if (cabecalhoAbaTitulo) cabecalhoAbaTitulo.textContent = dados.titulo;
+    if (cabecalhoAbaDescricao) cabecalhoAbaDescricao.textContent = dados.descricao;
+  }
   // só essas 8 podem ser travadas em "somente leitura" e restringidas por
   // pessoa pelo admin.html — a aba "admin" nunca entra nessa lista (ela é
   // o próprio controle). "sugestoes" também fica de fora de propósito
@@ -853,6 +970,7 @@
 
   function abrirAba(nome) {
     closeSidebar();
+    atualizarCabecalhoAba(nome);
     botoes.forEach((b) => b.classList.toggle('selecionada', b.dataset.aba === nome));
     Object.entries(mapaFrame).forEach(([chave, frame]) => {
       if (chave === nome) {
