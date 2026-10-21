@@ -8,7 +8,6 @@
 <style>
   :root {
     --charcoal:#063593;
-    --charcoal-escuro:#042467;
     --yellow:#0053D8;
     --green:#2F9E44;
     --orange:#E8590C;
@@ -21,78 +20,63 @@
     --safe-b:env(safe-area-inset-bottom, 0px);
     --safe-l:env(safe-area-inset-left, 0px);
     --safe-r:env(safe-area-inset-r, 0px);
-    /* ---------- tokens visuais (2026-10-20) — acabamento "premium" pra
-       combinar com o painel da catraca (catraca_painel.html), que já usa
-       essa mesma paleta de cores: cantos mais arredondados e sombra suave
-       tingida de azul da marca, em vez de borda seca, em cards/botões. ---------- */
-    --radius-card:16px;
-    --radius-btn:12px;
-    --radius-pill:999px;
-    --shadow-card:0 2px 12px rgba(6,53,147,0.08);
-    --shadow-elevated:0 14px 40px rgba(4,36,103,0.22);
-    --shadow-btn:0 3px 10px rgba(0,83,216,0.28);
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
   html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   body{font-family:"Segoe UI",Arial,Helvetica,sans-serif;background:var(--concrete);color:var(--brand-black);font-size:15px;line-height:1.4;padding-bottom:calc(24px + var(--safe-b));}
   button, select{touch-action:manipulation;}
-  input:focus, select:focus, textarea:focus{outline:none;border-color:var(--yellow);box-shadow:0 0 0 3px rgba(0,83,216,0.14);}
 
   .err-banner{position:fixed;top:0;left:0;right:0;background:#B00020;color:#fff;padding:10px 14px;font-size:12px;font-family:monospace;z-index:9999;display:none;word-break:break-word;}
   .err-banner.show{display:block;}
 
-  /* ---------- login (2026-10-20: fundo em gradiente + marca grande, no
-     mesmo espírito do painel da catraca) ---------- */
-  .login-screen{position:fixed;top:0;left:0;right:0;bottom:0;background:radial-gradient(circle at 50% -10%, var(--charcoal) 0%, var(--charcoal-escuro) 65%, #021133 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;z-index:100;padding:16px;}
+  /* ---------- login ---------- */
+  .login-screen{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--charcoal);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px;}
   .login-screen.hidden{display:none;}
-  .login-marca{text-align:center;color:#fff;font-size:22px;font-weight:800;letter-spacing:2px;opacity:0.92;}
-  .login-marca span{display:block;font-size:12.5px;font-weight:400;letter-spacing:4px;text-transform:uppercase;opacity:0.55;margin-top:6px;}
-  .login-box{background:#fff;padding:28px 24px;border-radius:calc(var(--radius-card) + 4px);width:100%;max-width:340px;box-shadow:var(--shadow-elevated);}
+  .login-box{background:#fff;padding:26px 22px;border-radius:14px;width:100%;max-width:340px;}
   .login-box h1{font-size:19px;margin-bottom:18px;text-align:center;}
-  .login-box input{width:100%;padding:13px 14px;border:1px solid #ddd;border-radius:var(--radius-btn);margin-bottom:12px;font-size:16px;}
-  .login-box button{width:100%;padding:13px;background:var(--yellow);color:#fff;border:none;border-radius:var(--radius-btn);font-weight:600;cursor:pointer;font-size:15px;min-height:46px;box-shadow:var(--shadow-btn);}
+  .login-box input{width:100%;padding:13px 14px;border:1px solid #ddd;border-radius:9px;margin-bottom:12px;font-size:16px;}
+  .login-box button{width:100%;padding:13px;background:var(--yellow);color:#fff;border:none;border-radius:9px;font-weight:600;cursor:pointer;font-size:15px;min-height:46px;}
   .login-box .error{color:var(--orange);font-size:12px;margin-bottom:10px;text-align:center;font-weight:600;}
   .login-alt-link{text-align:center;font-size:12px;color:var(--charcoal);text-decoration:underline;font-weight:600;cursor:pointer;margin-top:10px;}
   .cadastro-usuario-box{display:none;margin-top:12px;padding-top:12px;border-top:1px solid #eee;}
   .cadastro-usuario-box.show{display:block;}
 
-  /* ---------- modal genérico (usado pra gerenciar usuários e pra corrigir
-     pessoa da medição) ---------- */
-  .modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(4,36,103,0.55);z-index:150;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto;}
+  /* ---------- modal genérico (usado pra gerenciar usuários) ---------- */
+  .modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:150;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto;}
   .modal-overlay.show{display:flex;}
-  .modal-box{background:#fff;border-radius:var(--radius-card);padding:18px;width:100%;max-width:420px;margin-top:calc(24px + var(--safe-t));box-shadow:var(--shadow-elevated);}
+  .modal-box{background:#fff;border-radius:14px;padding:18px;width:100%;max-width:420px;margin-top:calc(24px + var(--safe-t));}
   .modal-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;}
   .modal-head h2{font-size:15px;color:var(--charcoal);}
   .novo-usuario-box{display:none;margin-top:8px;}
   .novo-usuario-box.show{display:block;}
-  .novo-usuario-box input{width:100%;padding:11px 12px;border:1px solid #ddd;border-radius:var(--radius-btn);margin-bottom:8px;font-size:14px;font-family:inherit;}
+  .novo-usuario-box input{width:100%;padding:11px 12px;border:1px solid #ddd;border-radius:9px;margin-bottom:8px;font-size:14px;font-family:inherit;}
 
-  /* ---------- cabeçalho (2026-10-20: gradiente sutil, igual ao painel da
-     catraca, em vez de azul chapado) ---------- */
-  .head{background:linear-gradient(135deg, var(--charcoal) 0%, var(--charcoal-escuro) 100%);color:#fff;padding:calc(12px + var(--safe-t)) calc(14px + var(--safe-r)) 12px calc(14px + var(--safe-l));border-bottom:4px solid var(--yellow);display:flex;justify-content:space-between;align-items:center;gap:10px;position:sticky;top:0;z-index:20;box-shadow:0 4px 16px rgba(4,36,103,0.25);}
-  .head h1{font-size:15px;font-weight:600;line-height:1.2;letter-spacing:0.2px;}
+  /* ---------- cabeçalho ---------- */
+  .head{background:var(--charcoal);color:#fff;padding:calc(12px + var(--safe-t)) calc(14px + var(--safe-r)) 12px calc(14px + var(--safe-l));border-bottom:4px solid var(--yellow);display:flex;justify-content:space-between;align-items:center;gap:10px;position:sticky;top:0;z-index:20;}
+  .head h1{font-size:15px;font-weight:600;line-height:1.2;}
   .head .sub{font-size:10.5px;opacity:0.75;margin-top:2px;line-height:1.2;}
   .head .actions{display:flex;gap:6px;flex-shrink:0;}
-  .head button{background:#ffffff26;color:#fff;border:none;padding:9px 11px;border-radius:var(--radius-btn);cursor:pointer;font-size:12px;font-weight:600;min-height:38px;}
-  .head .btn-refresh{background:var(--yellow);box-shadow:var(--shadow-btn);}
+  .head button{background:#ffffff26;color:#fff;border:none;padding:9px 11px;border-radius:9px;cursor:pointer;font-size:12px;font-weight:600;min-height:38px;}
+  .head .btn-refresh{background:var(--yellow);}
 
   /* ---------- abas ---------- */
   .tabs{display:flex;gap:6px;padding:10px 14px;background:#fff;border-bottom:1px solid #ddd;position:sticky;top:56px;z-index:19;overflow-x:auto;}
-  .tab-btn{flex:1;padding:10px 8px;border:none;background:var(--concrete);border-radius:var(--radius-btn);font-size:12.5px;font-weight:700;color:var(--brand-graymid);cursor:pointer;white-space:nowrap;min-height:40px;transition:background .15s ease,color .15s ease;}
-  .tab-btn.active{background:var(--charcoal);color:#fff;box-shadow:var(--shadow-btn);}
+  .tab-btn{flex:1;padding:10px 8px;border:none;background:var(--concrete);border-radius:8px;font-size:12.5px;font-weight:700;color:var(--brand-graymid);cursor:pointer;white-space:nowrap;min-height:40px;}
+  .tab-btn.active{background:var(--charcoal);color:#fff;}
 
   .content{padding:14px;max-width:760px;margin:0 auto;}
+  @media (min-width:900px){ .content{max-width:1400px;padding:20px 28px;} }
   .aba-conteudo{display:none;}
   .aba-conteudo.show{display:block;}
 
-  .card-form{background:#fff;border:1px solid rgba(6,53,147,0.08);border-radius:var(--radius-card);padding:16px;margin-bottom:16px;box-shadow:var(--shadow-card);}
+  .card-form{background:#fff;border:1px solid #ddd;border-radius:12px;padding:16px;margin-bottom:16px;}
   .card-form h2{font-size:14.5px;margin-bottom:4px;color:var(--charcoal);}
   .card-form .sub{font-size:12px;color:var(--brand-graymid);margin-bottom:14px;}
 
   .form-group{margin-bottom:14px;}
   .form-group label{display:block;font-size:12.5px;font-weight:700;color:var(--brand-graymid);margin-bottom:6px;}
   .form-group input[type=text], .form-group input[type=date], .form-group select, .form-group textarea{
-    width:100%;padding:12px 13px;border:1px solid #ddd;border-radius:var(--radius-btn);font-size:15px;background:#fff;font-family:inherit;
+    width:100%;padding:12px 13px;border:1px solid #ddd;border-radius:9px;font-size:15px;background:#fff;font-family:inherit;
   }
   .form-group textarea{min-height:64px;resize:vertical;}
   .form-row{display:flex;gap:10px;}
@@ -105,42 +89,42 @@
   .unidade-feedback.erro{color:#B00020;}
   .unidade-hint{font-size:11px;color:var(--brand-graymid);margin-top:4px;line-height:1.35;}
 
-  .btn-secondary{padding:0 14px;border:1px solid #ddd;border-radius:var(--radius-btn);background:#fff;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;min-height:44px;color:var(--charcoal);}
-  .btn-primary{width:100%;padding:14px;border:none;border-radius:var(--radius-btn);background:var(--yellow);color:#fff;font-size:15px;font-weight:700;cursor:pointer;min-height:48px;box-shadow:var(--shadow-btn);}
-  .btn-primary:disabled{background:var(--brand-graylight);cursor:not-allowed;box-shadow:none;}
+  .btn-secondary{padding:0 14px;border:1px solid #ddd;border-radius:9px;background:#fff;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;min-height:44px;color:var(--charcoal);}
+  .btn-primary{width:100%;padding:14px;border:none;border-radius:10px;background:var(--yellow);color:#fff;font-size:15px;font-weight:700;cursor:pointer;min-height:48px;}
+  .btn-primary:disabled{background:var(--brand-graylight);cursor:not-allowed;}
 
   .novo-servico-box{display:none;gap:8px;margin-top:8px;}
   .novo-servico-box.show{display:flex;}
 
   .link-btn{background:none;border:none;color:var(--charcoal);font-size:12px;font-weight:700;text-decoration:underline;cursor:pointer;padding:8px 2px 0;display:inline-block;}
 
-  .gerenciar-servico-box{display:none;margin-top:8px;border:1px solid #ddd;border-radius:var(--radius-btn);padding:6px 10px;background:#fafafa;max-height:260px;overflow-y:auto;}
+  .gerenciar-servico-box{display:none;margin-top:8px;border:1px solid #ddd;border-radius:9px;padding:6px 10px;background:#fafafa;max-height:260px;overflow-y:auto;}
   .gerenciar-servico-box.show{display:block;}
   .servico-row{display:flex;align-items:center;gap:4px;padding:7px 2px;border-bottom:1px solid #eee;}
   .servico-row:last-child{border-bottom:none;}
   .servico-row .nome{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .servico-vazio{font-size:12.5px;color:var(--brand-graymid);padding:6px 2px;}
-  .btn-icon{border:none;background:none;cursor:pointer;font-size:17px;padding:6px;min-width:34px;min-height:34px;border-radius:9px;line-height:1;flex-shrink:0;}
+  .btn-icon{border:none;background:none;cursor:pointer;font-size:17px;padding:6px;min-width:34px;min-height:34px;border-radius:7px;line-height:1;flex-shrink:0;}
   .btn-icon:hover{background:#eee;}
-  .edit-servico-input{flex:1;min-width:0;padding:6px 8px;border:1px solid #ccc;border-radius:8px;font-size:13px;}
+  .edit-servico-input{flex:1;min-width:0;padding:6px 8px;border:1px solid #ccc;border-radius:7px;font-size:13px;}
 
   h2.block-title{font-size:13px;font-weight:700;color:var(--charcoal);margin:22px 2px 8px;text-transform:uppercase;letter-spacing:0.3px;}
   h2.block-title:first-of-type{margin-top:0;}
 
-  .rdo-card{background:#fff;border:1px solid rgba(6,53,147,0.08);border-left:5px solid var(--charcoal);border-radius:var(--radius-card);padding:12px 14px;margin-bottom:10px;box-shadow:var(--shadow-card);}
+  .rdo-card{background:#fff;border:1px solid #ddd;border-left:5px solid var(--charcoal);border-radius:10px;padding:12px 14px;margin-bottom:10px;}
   .rdo-card-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:4px;}
   .rdo-unidade{font-weight:700;font-size:13.5px;}
-  .badge-tipo{display:inline-block;padding:1px 8px;border-radius:var(--radius-pill);font-size:10.5px;font-weight:700;margin-left:4px;}
+  .badge-tipo{display:inline-block;padding:1px 7px;border-radius:10px;font-size:10.5px;font-weight:700;margin-left:4px;}
   .badge-tipo.badge-G{background:#FFF3E0;color:var(--orange);}
   .badge-tipo.badge-P{background:#EEF3FC;color:var(--yellow);}
   .rdo-periodo{font-size:11.5px;color:var(--brand-graymid);white-space:nowrap;}
   .rdo-servico{font-size:14.5px;font-weight:700;color:var(--charcoal);margin-bottom:2px;}
   .rdo-pessoas{font-size:13px;margin-bottom:2px;}
-  .rdo-obs{font-size:12.5px;color:var(--brand-graymid);background:var(--concrete);padding:8px 10px;border-radius:10px;margin-top:6px;white-space:pre-wrap;}
-  .rdo-retrabalho{font-size:12px;font-weight:600;color:#8a4b00;background:#fff2df;padding:3px 9px;border-radius:var(--radius-pill);display:inline-block;margin-top:3px;}
-  .medicao-atraso{font-size:12px;font-weight:700;color:#A33E00;background:#FFEAD1;border:1px solid #F3C98C;padding:4px 10px;border-radius:var(--radius-pill);display:inline-block;margin-top:5px;}
+  .rdo-obs{font-size:12.5px;color:var(--brand-graymid);background:var(--concrete);padding:8px 10px;border-radius:8px;margin-top:6px;white-space:pre-wrap;}
+  .rdo-retrabalho{font-size:12px;font-weight:600;color:#8a4b00;background:#fff2df;padding:3px 8px;border-radius:6px;display:inline-block;margin-top:3px;}
+  .medicao-atraso{font-size:12px;font-weight:700;color:#A33E00;background:#FFEAD1;border:1px solid #F3C98C;padding:4px 9px;border-radius:6px;display:inline-block;margin-top:5px;}
   .rdo-foto-wrap{position:relative;display:inline-block;margin-top:8px;}
-  .rdo-foto{width:96px;height:96px;object-fit:cover;border-radius:10px;display:block;cursor:pointer;background:var(--concrete);}
+  .rdo-foto{width:96px;height:96px;object-fit:cover;border-radius:8px;display:block;cursor:pointer;background:var(--concrete);}
   .rdo-foto-zoom{position:absolute;bottom:-3px;right:-3px;width:24px;height:24px;border-radius:50%;background:rgba(28,28,30,0.75);border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1;color:#fff;cursor:pointer;}
 
   /* ---------- foto ampliada (toque na foto/lupa do card) ---------- */
@@ -154,7 +138,7 @@
   .rdo-card-actions{display:flex;gap:2px;flex-shrink:0;}
   .rdo-card-actions .btn-icon{font-size:15px;min-width:28px;min-height:28px;padding:4px;}
 
-  .editando-banner{display:none;background:#FFF3E0;color:var(--orange);border:1px solid #FFD8A8;border-radius:var(--radius-btn);padding:9px 11px;font-size:12px;font-weight:600;margin-bottom:14px;line-height:1.4;}
+  .editando-banner{display:none;background:#FFF3E0;color:var(--orange);border:1px solid #FFD8A8;border-radius:9px;padding:9px 11px;font-size:12px;font-weight:600;margin-bottom:14px;line-height:1.4;}
   .editando-banner.show{display:block;}
   .foto-atual-hint{font-size:11.5px;color:var(--brand-graymid);margin-bottom:6px;line-height:1.35;}
   .checkbox-row{display:flex;align-items:center;gap:6px;font-size:12.5px;margin-top:8px;color:var(--brand-graymid);}
@@ -165,21 +149,21 @@
   .rdo-medido-row.is-medido{color:var(--green);}
 
   .busca-box{display:flex;gap:8px;margin-bottom:14px;}
-  .busca-box input, .busca-box select{flex:1;min-width:0;padding:12px 13px;border:1px solid #ddd;border-radius:var(--radius-btn);font-size:15px;}
+  .busca-box input, .busca-box select{flex:1;min-width:0;padding:12px 13px;border:1px solid #ddd;border-radius:9px;font-size:15px;}
   .busca-box select.sel-filtro-medido{flex:0 0 138px;}
 
   .func-combo{position:relative;flex:1;min-width:0;}
-  .func-combo input{width:100%;padding:12px 34px 12px 13px;border:1px solid #ddd;border-radius:var(--radius-btn);font-size:15px;font-family:inherit;}
+  .func-combo input{width:100%;padding:12px 34px 12px 13px;border:1px solid #ddd;border-radius:9px;font-size:15px;font-family:inherit;}
   .func-combo-clear{display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:17px;color:var(--brand-graymid);cursor:pointer;padding:7px;line-height:1;}
   .func-combo-clear.show{display:block;}
-  .func-combo-lista{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid #ddd;border-radius:var(--radius-btn);max-height:240px;overflow-y:auto;z-index:30;box-shadow:var(--shadow-elevated);}
+  .func-combo-lista{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid #ddd;border-radius:9px;max-height:240px;overflow-y:auto;z-index:30;box-shadow:0 4px 14px rgba(0,0,0,0.14);}
   .func-combo-lista.show{display:block;}
   .func-combo-item{padding:11px 13px;font-size:14px;cursor:pointer;border-bottom:1px solid #f0f0f0;}
   .func-combo-item:last-child{border-bottom:none;}
   .func-combo-item:hover, .func-combo-item.ativo{background:var(--concrete);}
   .func-combo-vazio{padding:11px 13px;font-size:13px;color:var(--brand-graymid);}
 
-  .checklist-funcionarios{border:1px solid #ddd;border-radius:var(--radius-btn);padding:2px 10px;max-height:220px;overflow-y:auto;background:#fafafa;}
+  .checklist-funcionarios{border:1px solid #ddd;border-radius:9px;padding:2px 10px;max-height:220px;overflow-y:auto;background:#fafafa;}
   .checklist-funcionarios label{display:flex;align-items:center;gap:9px;padding:9px 2px;border-bottom:1px solid #eee;font-size:13.5px;}
   .checklist-funcionarios label:last-child{border-bottom:none;}
   .checklist-funcionarios input{width:auto;margin:0;flex-shrink:0;}
@@ -191,7 +175,7 @@
   .mapa-legenda .quad{width:14px;height:14px;border-radius:3px;display:inline-block;}
   .mapa-legenda .quad.feito{background:var(--green);}
   .mapa-legenda .quad.livre{background:#fff;border:1px solid #ccc;}
-  .mapa-scroll{overflow-x:auto;overflow-y:visible;border:1px solid #ddd;border-radius:var(--radius-card);background:#fff;box-shadow:var(--shadow-card);-webkit-overflow-scrolling:touch;}
+  .mapa-scroll{overflow-x:auto;overflow-y:visible;border:1px solid #ddd;border-radius:10px;background:#fff;-webkit-overflow-scrolling:touch;}
   .mapa-tabela{border-collapse:collapse;width:100%;min-width:660px;}
   .mapa-tabela th, .mapa-tabela td{border:1px solid #e2e2e6;text-align:center;padding:0;}
   .mapa-tabela th{background:var(--concrete);font-size:10.5px;font-weight:700;color:var(--brand-graymid);padding:7px 3px;position:sticky;top:0;z-index:2;}
@@ -206,9 +190,9 @@
   .medicao-lock{max-width:340px;margin:40px auto;text-align:center;}
   .medicao-lock .cadeado{font-size:40px;margin-bottom:10px;}
   .medicao-lock .sub{font-size:13px;color:var(--brand-graymid);margin-bottom:18px;}
-  .medicao-lock input{width:100%;padding:13px 14px;border:1px solid #ddd;border-radius:var(--radius-btn);margin-bottom:10px;font-size:16px;text-align:center;}
+  .medicao-lock input{width:100%;padding:13px 14px;border:1px solid #ddd;border-radius:9px;margin-bottom:10px;font-size:16px;text-align:center;}
   .medicao-lock .error{color:var(--orange,#C0392B);font-size:12px;margin-bottom:10px;font-weight:600;min-height:16px;}
-  .medicao-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:#fff;border:1px solid rgba(6,53,147,0.08);border-radius:var(--radius-card);padding:10px 12px;margin-bottom:12px;box-shadow:var(--shadow-card);}
+  .medicao-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:#fff;border:1px solid #ddd;border-radius:10px;padding:10px 12px;margin-bottom:12px;}
   .medicao-toolbar .contagem{font-size:13px;font-weight:700;color:var(--charcoal);}
   .medicao-toolbar .links{display:flex;gap:12px;}
   .medicao-periodo-box{align-items:center;flex-wrap:wrap;margin-bottom:4px;}
@@ -221,32 +205,32 @@
   .rdo-card.selecionado{border-left-color:var(--yellow);background:#FFFBEF;}
   .medicao-check-row{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px dashed #e3e3e3;font-size:13px;font-weight:700;color:var(--charcoal);cursor:pointer;}
   .medicao-check-row input{width:auto;margin:0;transform:scale(1.2);}
-  .medicao-desmarcar-btn{width:100%;margin-top:8px;padding:9px;border:1px solid #F3C6C6;border-radius:var(--radius-btn);background:#FFF5F5;color:#C0392B;font-size:12px;font-weight:700;cursor:pointer;}
-  .medicao-corrigir-btn{width:100%;margin-top:6px;padding:9px;border:1px solid #CFE0F3;border-radius:var(--radius-btn);background:#F2F8FF;color:#1C5FA8;font-size:12px;font-weight:700;cursor:pointer;}
-  .medicao-finalizar{width:100%;padding:14px;border:none;border-radius:var(--radius-btn);background:var(--green);color:#fff;font-size:15px;font-weight:700;cursor:pointer;min-height:48px;margin-top:4px;box-shadow:0 3px 10px rgba(47,158,68,0.3);}
-  .medicao-finalizar:disabled{background:var(--brand-graylight);cursor:not-allowed;box-shadow:none;}
+  .medicao-desmarcar-btn{width:100%;margin-top:8px;padding:9px;border:1px solid #F3C6C6;border-radius:8px;background:#FFF5F5;color:#C0392B;font-size:12px;font-weight:700;cursor:pointer;}
+  .medicao-corrigir-btn{width:100%;margin-top:6px;padding:9px;border:1px solid #CFE0F3;border-radius:8px;background:#F2F8FF;color:#1C5FA8;font-size:12px;font-weight:700;cursor:pointer;}
+  .medicao-finalizar{width:100%;padding:14px;border:none;border-radius:10px;background:var(--green);color:#fff;font-size:15px;font-weight:700;cursor:pointer;min-height:48px;margin-top:4px;}
+  .medicao-finalizar:disabled{background:var(--brand-graylight);cursor:not-allowed;}
   .medicao-historico{margin-top:26px;}
-  .medicao-historico-item{background:#fff;border:1px solid rgba(6,53,147,0.08);border-radius:var(--radius-card);padding:10px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:var(--shadow-card);}
+  .medicao-historico-item{background:#fff;border:1px solid #ddd;border-radius:10px;padding:10px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
   .medicao-historico-item .info{font-size:12.5px;color:var(--brand-graymid);}
   .medicao-historico-item .info b{color:var(--brand-black);}
   .medicao-pago-linha{flex-basis:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;padding-top:8px;border-top:1px dashed #eee;}
-  .medicao-pago-badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:var(--radius-pill);white-space:nowrap;}
+  .medicao-pago-badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;}
   .medicao-pago-badge.pago{background:#E3F5E6;color:#1E7A34;border:1px solid #BEE6C5;}
   .medicao-pago-badge.nao-pago{background:#FFF1E0;color:#A35A00;border:1px solid #F3D8AE;}
-  .medicao-pago-btn{padding:6px 10px;border-radius:9px;border:1px solid #ddd;background:#fff;font-size:11.5px;font-weight:700;cursor:pointer;color:var(--charcoal);white-space:nowrap;}
+  .medicao-pago-btn{padding:6px 10px;border-radius:7px;border:1px solid #ddd;background:#fff;font-size:11.5px;font-weight:700;cursor:pointer;color:var(--charcoal);white-space:nowrap;}
   .medicao-resumo-pago{font-size:12px;font-weight:700;color:var(--brand-graymid);margin:-4px 2px 12px;}
 
   /* ---------- relatório de medição (tela cheia, imprimível) ---------- */
   .relatorio-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#fff;z-index:250;overflow-y:auto;}
   .relatorio-overlay.show{display:block;}
-  .relatorio-acoes{position:sticky;top:0;background:linear-gradient(135deg, var(--charcoal) 0%, var(--charcoal-escuro) 100%);padding:10px calc(14px + var(--safe-r)) 10px calc(14px + var(--safe-l));display:flex;justify-content:space-between;gap:10px;z-index:2;}
-  .relatorio-acoes button{padding:10px 16px;border:none;border-radius:var(--radius-btn);font-weight:700;cursor:pointer;font-size:13px;}
+  .relatorio-acoes{position:sticky;top:0;background:var(--charcoal);padding:10px calc(14px + var(--safe-r)) 10px calc(14px + var(--safe-l));display:flex;justify-content:space-between;gap:10px;z-index:2;}
+  .relatorio-acoes button{padding:10px 16px;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px;}
   .relatorio-acoes .btn-fechar{background:#fff;color:var(--charcoal);}
-  .relatorio-acoes .btn-imprimir{background:var(--yellow);color:#fff;box-shadow:var(--shadow-btn);}
+  .relatorio-acoes .btn-imprimir{background:var(--yellow);color:#fff;}
   .relatorio-doc{max-width:720px;margin:0 auto;padding:24px 18px 60px;}
   .relatorio-doc h1{font-size:20px;color:var(--charcoal);text-align:center;margin-bottom:4px;}
   .relatorio-doc .relatorio-sub{text-align:center;font-size:12.5px;color:var(--brand-graymid);margin-bottom:20px;}
-  .relatorio-info{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px;background:var(--concrete);border-radius:var(--radius-card);padding:14px 16px;margin-bottom:20px;font-size:13px;}
+  .relatorio-info{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px;background:var(--concrete);border-radius:10px;padding:14px 16px;margin-bottom:20px;font-size:13px;}
   .relatorio-info .campo b{display:block;font-size:10.5px;text-transform:uppercase;color:var(--brand-graymid);letter-spacing:0.3px;margin-bottom:2px;}
   .relatorio-tabela{width:100%;border-collapse:collapse;margin-bottom:18px;}
   .relatorio-tabela th, .relatorio-tabela td{border:1px solid #ddd;padding:7px 9px;font-size:12.5px;text-align:left;vertical-align:top;}
@@ -264,6 +248,62 @@
     .relatorio-overlay{position:absolute;}
     .relatorio-acoes{display:none;}
   }
+
+  /* ---------- aba Em andamento (2026-10-19) — encarregado marca só quem terminou ou parou ---------- */
+  .and-chips{display:flex;gap:6px;overflow-x:auto;margin-bottom:10px;padding-bottom:2px;}
+  .and-chip{flex:none;padding:9px 14px;border-radius:999px;border:1px solid #ddd;background:#fff;font-weight:700;font-size:13px;color:var(--brand-graymid);min-height:40px;cursor:pointer;}
+  .and-chip.ativo{background:var(--charcoal);border-color:var(--charcoal);color:#fff;}
+  .and-hint{font-size:12.5px;color:var(--brand-graymid);margin:0 2px 12px;line-height:1.4;}
+  .and-alerta{background:#FFEAD1;border:1px solid #F3C98C;color:#A33E00;border-radius:9px;padding:9px 11px;font-size:12.5px;font-weight:600;margin-bottom:12px;line-height:1.4;}
+  .and-pessoa{background:#fff;border:1px solid #ddd;border-radius:12px;padding:12px 14px;margin-bottom:10px;}
+  .and-nome{font-size:15.5px;font-weight:700;color:var(--charcoal);margin-bottom:8px;}
+  .and-serv{border-top:1px solid #eee;padding-top:10px;margin-top:10px;}
+  .and-nome + .and-serv{border-top:none;padding-top:0;margin-top:0;}
+  .and-linha{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap;}
+  .and-servnome{font-size:14.5px;font-weight:700;}
+  .and-local{font-size:13px;}
+  .and-idade{font-size:12px;color:var(--brand-graymid);white-space:nowrap;}
+  .and-idade.velho{color:#A33E00;font-weight:700;}
+  .and-junto{font-size:12px;color:var(--brand-graymid);margin-top:1px;}
+  .and-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
+  .and-btn{min-height:50px;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;border:none;}
+  .and-btn.ok{background:var(--green);color:#fff;}
+  .and-btn.parou{background:#FFF5F5;color:#C0392B;border:2px solid #F3C6C6;}
+  .and-estado{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;padding:9px 11px;border-radius:9px;font-size:13px;font-weight:700;}
+  .and-estado.ok{background:#E3F5E6;color:#1E7A34;}
+  .and-estado.parou{background:#FFF5F5;color:#C0392B;}
+  .and-estado button{border:1px solid #ddd;background:#fff;border-radius:7px;padding:7px 10px;font-weight:700;font-size:12px;cursor:pointer;color:var(--charcoal);flex-shrink:0;}
+  .and-sheet-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:160;align-items:flex-end;justify-content:center;}
+  .and-sheet-overlay.show{display:flex;}
+  .and-sheet{background:#fff;width:100%;max-width:520px;border-radius:16px 16px 0 0;max-height:88vh;overflow-y:auto;padding:18px calc(16px + var(--safe-r)) calc(18px + var(--safe-b)) calc(16px + var(--safe-l));}
+  .and-sheet h2{font-size:18px;color:var(--charcoal);margin-bottom:4px;line-height:1.25;}
+  .and-sheet h3{font-size:15px;color:var(--charcoal);margin:4px 0 8px;}
+  .and-sheet .sub{font-size:13px;color:var(--brand-graymid);margin-bottom:14px;}
+  .and-causas{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+  .and-causa{min-height:84px;border:2px solid #ddd;background:var(--concrete);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:14px;font-weight:700;cursor:pointer;color:var(--brand-black);padding:6px;text-align:center;}
+  .and-causa .ic{font-size:26px;line-height:1;}
+  .and-causa.ativo{border-color:#C0392B;background:#FFF5F5;color:#C0392B;}
+  .and-andar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
+  .and-andar button{width:54px;height:54px;border-radius:12px;border:1px solid #ddd;background:var(--concrete);font-size:26px;font-weight:700;cursor:pointer;color:var(--charcoal);}
+  .and-andar .lbl{font-size:20px;font-weight:700;color:var(--charcoal);}
+  .and-grade{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:10px;}
+  .and-cel{min-height:60px;border:1px solid #ccc;background:#fff;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:16px;font-weight:700;cursor:pointer;color:var(--brand-black);padding:2px;font-family:inherit;}
+  .and-cel small{font-size:10.5px;font-weight:600;color:var(--brand-graymid);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .and-cel.feito{background:var(--green);border-color:var(--green);color:#fff;cursor:default;}
+  .and-cel.feito small{color:#fff;}
+  .and-cel.andando{background:#FFF3E0;border-color:#FFD8A8;}
+  .and-cel:disabled{cursor:default;}
+  .mapa-legenda .quad.andando{background:#FFF3E0;border:1px solid #FFD8A8;}
+  .and-acoes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;}
+  .and-acoes button, .and-acoes-1 button{min-height:48px;border-radius:10px;border:1px solid #ddd;background:#fff;font-weight:700;font-size:14px;cursor:pointer;color:var(--charcoal);width:100%;}
+  .and-acoes-1{margin-top:6px;}
+  .and-servicos{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+  .and-servicos button{min-height:50px;border-radius:10px;border:1px solid #ddd;background:var(--concrete);font-weight:700;font-size:13px;cursor:pointer;padding:6px;color:var(--brand-black);}
+  .and-datas{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+  .and-datas button{min-height:52px;border-radius:10px;border:none;background:var(--green);color:#fff;font-weight:700;font-size:15px;cursor:pointer;}
+  .and-undo{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + var(--safe-b));background:var(--brand-black);color:#fff;border-radius:12px;padding:10px 12px 10px 16px;display:none;align-items:center;gap:12px;z-index:210;width:min(480px,calc(100% - 28px));justify-content:space-between;font-size:13.5px;}
+  .and-undo.show{display:flex;}
+  .and-undo button{background:var(--yellow);color:#fff;border:none;border-radius:8px;padding:9px 14px;font-weight:700;cursor:pointer;flex-shrink:0;}
 
   .toast{position:fixed;bottom:calc(20px + var(--safe-b));left:50%;transform:translateX(-50%);background:var(--brand-black);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;opacity:0;z-index:200;transition:opacity 0.3s;max-width:90%;text-align:center;}
   .toast.show{opacity:1;}
@@ -283,7 +323,6 @@ window.addEventListener('unhandledrejection', function(e) {
 </script>
 
 <div class="login-screen" id="loginScreen">
-  <div class="login-marca">DIAMOND MILLENNIUM<span>Diário de Obra</span></div>
   <div class="login-box">
     <h1>📋 Diário de Obra</h1>
     <div class="error" id="loginError"></div>
@@ -315,7 +354,8 @@ window.addEventListener('unhandledrejection', function(e) {
   </div>
 
   <div class="tabs">
-    <button class="tab-btn active" id="btn-aba-novo" onclick="mostrarAba('novo')">Novo registro</button>
+    <button class="tab-btn active" id="btn-aba-andamento" onclick="mostrarAba('andamento'); carregarAndamento();">Em andamento</button>
+    <button class="tab-btn" id="btn-aba-novo" onclick="mostrarAba('novo')">Novo registro</button>
     <button class="tab-btn" id="btn-aba-funcionario" onclick="mostrarAba('funcionario')">Por funcionário</button>
     <button class="tab-btn" id="btn-aba-unidade" onclick="mostrarAba('unidade')">Por unidade</button>
     <button class="tab-btn" id="btn-aba-tarefas" onclick="mostrarAba('tarefas')">Tarefas</button>
@@ -325,8 +365,15 @@ window.addEventListener('unhandledrejection', function(e) {
 
   <div class="content">
 
+    <!-- ================= ABA: EM ANDAMENTO (2026-10-19) ================= -->
+    <div class="aba-conteudo show" id="aba-andamento">
+      <div class="and-chips" id="andChips"></div>
+      <div class="and-hint">Toque só em quem <b>terminou</b> ou <b>parou</b>. Quem continua no mesmo serviço não precisa de nada.</div>
+      <div id="andLista"><div class="loading">Carregando...</div></div>
+    </div>
+
     <!-- ================= ABA: NOVO REGISTRO ================= -->
-    <div class="aba-conteudo show" id="aba-novo">
+    <div class="aba-conteudo" id="aba-novo">
       <div class="card-form">
         <h2>Registrar serviço</h2>
         <div class="sub">O que foi feito, onde e por quem — rápido, sem menu complicado.</div>
@@ -700,6 +747,8 @@ window.addEventListener('unhandledrejection', function(e) {
 </div>
 
 <div class="toast" id="toast"></div>
+<div class="and-sheet-overlay" id="andSheet" onclick="if (event.target === this) fecharSheetAnd()"><div class="and-sheet" id="andSheetBox" role="dialog" aria-modal="true"></div></div>
+<div class="and-undo" id="andUndo" role="status"><span id="andUndoMsg"></span><button type="button" onclick="andDesfazer()">Desfazer</button></div>
 
 <script>
 // ============================================================
@@ -1143,7 +1192,7 @@ function normalizarNomesExtras(valor) {
 async function carregarFuncionarios() {
   if (!sb) return;
   const { data, error } = await sb.from('funcionarios')
-    .select('id, nome, empresa')
+    .select('id, nome, empresa, encarregado') // encarregado: usado pelos filtros da aba "Em andamento"
     .eq('tipo', 'permanente').eq('ativo', true)
     .order('nome', { ascending: true });
   if (error) { showToast('⚠️ Erro ao carregar funcionários: ' + error.message); return; }
@@ -3196,6 +3245,414 @@ function abrirRegistroRapidoDoMapa(tipoLocal, andar, apartamento) {
 }
 
 // ============================================================
+// ABA "EM ANDAMENTO" (2026-10-19) — produção diária pro cálculo de RUP.
+// O encarregado não lança o dia de todo mundo: só toca em quem TERMINOU
+// (preenche data_fim do registro que já existe e pergunta pra onde a
+// pessoa vai, criando o próximo registro com 1 toque na grade do andar)
+// ou PAROU (grava em rdo_ocorrencias: causa padronizada + horas perdidas).
+// Quem continua no mesmo serviço não precisa de nada. Respeita as mesmas
+// regras do resto do arquivo: 1 registro por (local, serviço) — ver
+// servicoJaExisteNaUnidade — e registrarEdicao() pra cada ação.
+// As horas e a RUP são calculadas no banco (views vw_rup_*).
+// ============================================================
+const AND_CAUSAS = [
+  ['falta_material', '📦', 'Falta de material'],
+  ['frente_bloqueada', '🚧', 'Frente bloqueada'],
+  ['chuva', '🌧️', 'Chuva'],
+  ['retrabalho', '🔁', 'Retrabalho'],
+  ['espera_equipamento', '🏗️', 'Esperando equipamento'],
+  ['outro', '❓', 'Outro motivo'],
+];
+const AND_DIAS_ALERTA = 7; // aberto há mais que isso: provavelmente já terminou e ninguém fechou
+let andRegistros = [];  // abertos + terminados hoje (ou terminados nesta sessão)
+let andOcorrHoje = [];  // rdo_ocorrencias de hoje
+let andFiltroEnc = safeGet('and_filtro_enc') || '';
+let andJornada = [9, 9, 9, 9, 8, 0, 0]; // seg..dom — sobrescrito por prod_config.jornada_horas
+let andUndoFn = null, andUndoTimer = null;
+let andDest = null;     // estado da folha "para onde vai agora"
+let andParada = null;   // estado da folha "por que parou"
+
+function andCap(s) { return (s || '').toLowerCase().replace(/(^|\s)\S/g, m => m.toUpperCase()); }
+function andNomeCurto(nome) {
+  const w = (nome || '').split(/\s+/).filter(x => x && !['DE', 'DA', 'DO', 'DOS', 'DAS'].includes(x.toUpperCase()));
+  return andCap(w.slice(0, 2).join(' '));
+}
+function andPrimeiroNome(pid) { const f = funcionariosPorId[pid]; return f ? andCap(f.nome.split(/\s+/)[0]) : 'Ele'; }
+function andDiasAberto(r) {
+  return Math.round((new Date(hojeStr() + 'T00:00:00') - new Date(r.data_inicio + 'T00:00:00')) / 864e5);
+}
+function andHorasDia(dataStr) {
+  const i = (new Date(dataStr + 'T00:00:00').getDay() + 6) % 7; // 0 = segunda
+  return Number(andJornada[i]) || 8;
+}
+function andServNome(r) { const s = tiposServicoPorId[r.tipo_servico_id]; return s ? s.nome : '(serviço)'; }
+function andOntemStr() {
+  const d = new Date(); d.setDate(d.getDate() - 1);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+// ---------- desfazer (aparece alguns segundos depois de cada ação) ----------
+function andMostrarUndo(msg, fn) {
+  andUndoFn = fn;
+  document.getElementById('andUndoMsg').textContent = msg;
+  document.getElementById('andUndo').classList.add('show');
+  clearTimeout(andUndoTimer);
+  andUndoTimer = setTimeout(andEsconderUndo, 8000);
+}
+function andEsconderUndo() { document.getElementById('andUndo').classList.remove('show'); andUndoFn = null; }
+async function andDesfazer() { const fn = andUndoFn; andEsconderUndo(); if (fn) await fn(); }
+
+function abrirSheetAnd(html) {
+  document.getElementById('andSheetBox').innerHTML = html;
+  document.getElementById('andSheet').classList.add('show');
+}
+function fecharSheetAnd() {
+  document.getElementById('andSheet').classList.remove('show');
+  document.getElementById('andSheetBox').innerHTML = '';
+  andDest = null; andParada = null;
+}
+
+// ---------- carregar ----------
+async function carregarAndamento() {
+  if (!sb) return;
+  const hoje = hojeStr();
+  const [reg, oc, cfg] = await Promise.all([
+    sb.from('rdo_registros').select('*').or(`data_fim.is.null,data_fim.eq.${hoje}`).order('data_inicio', { ascending: true }),
+    sb.from('rdo_ocorrencias').select('*').eq('data', hoje),
+    sb.from('prod_config').select('jornada_horas').maybeSingle(),
+  ]);
+  if (reg.error) { showToast('⚠️ Erro ao carregar serviços em andamento: ' + reg.error.message); return; }
+  andRegistros = reg.data || [];
+  indexarRegistros(andRegistros);
+  andOcorrHoje = oc.error ? [] : (oc.data || []);
+  if (!cfg.error && cfg.data && Array.isArray(cfg.data.jornada_horas)) andJornada = cfg.data.jornada_horas.map(Number);
+  renderAndamento();
+}
+
+function andEncDe(pid) { const f = funcionariosPorId[pid]; return f && f.encarregado ? f.encarregado.trim() : ''; }
+
+function andFiltrarEnc(v) { andFiltroEnc = v; safeSet('and_filtro_enc', v); renderAndamento(); }
+
+function renderAndamento() {
+  const chipsEl = document.getElementById('andChips');
+  const cont = document.getElementById('andLista');
+  if (!chipsEl || !cont) return;
+
+  const encs = [...new Set(funcionarios.map(f => (f.encarregado || '').trim()).filter(Boolean))].sort();
+  const opcoes = [['', 'Todos'], ...encs.map(e => [e, andCap(e)]), ['__sem', 'Sem encarregado']];
+  if (!opcoes.some(o => o[0] === andFiltroEnc)) andFiltroEnc = '';
+  chipsEl.innerHTML = opcoes.map(([v, l]) =>
+    `<button type="button" class="and-chip${v === andFiltroEnc ? ' ativo' : ''}" onclick='andFiltrarEnc(${JSON.stringify(v)})'>${escapeHtml(l)}</button>`).join('');
+
+  // cada registro aparece no cartão de cada pessoa dele (dupla aparece nos dois)
+  const porPessoa = new Map();
+  andRegistros.forEach(r => {
+    [r.funcionario_id_1, r.funcionario_id_2].filter(Boolean).forEach(pid => {
+      if (!porPessoa.has(pid)) porPessoa.set(pid, []);
+      porPessoa.get(pid).push(r);
+    });
+  });
+  let pessoas = [...porPessoa.keys()].filter(pid => {
+    if (!andFiltroEnc) return true;
+    const enc = andEncDe(pid);
+    return andFiltroEnc === '__sem' ? !enc : enc === andFiltroEnc;
+  });
+  pessoas.sort((a, b) => ((funcionariosPorId[a] || {}).nome || 'ZZZ').localeCompare((funcionariosPorId[b] || {}).nome || 'ZZZ'));
+
+  if (!pessoas.length) {
+    cont.innerHTML = '<div class="empty">Nenhum serviço em andamento para essa equipe.<br>Para começar um serviço novo, use a aba "Novo registro".</div>';
+    return;
+  }
+
+  const velhos = new Set();
+  pessoas.forEach(pid => porPessoa.get(pid).forEach(r => { if (!r.data_fim && andDiasAberto(r) > AND_DIAS_ALERTA) velhos.add(r.id); }));
+  const alerta = velhos.size
+    ? `<div class="and-alerta">⚠ ${velhos.size} ${velhos.size === 1 ? 'serviço aberto' : 'serviços abertos'} há mais de ${AND_DIAS_ALERTA} dias. Se já terminou, toque em "Terminou" e escolha o dia certo.</div>`
+    : '';
+
+  cont.innerHTML = alerta + pessoas.map(pid => {
+    const f = funcionariosPorId[pid];
+    const lista = porPessoa.get(pid).slice().sort((a, b) => (a.data_fim ? 1 : 0) - (b.data_fim ? 1 : 0) || a.data_inicio.localeCompare(b.data_inicio));
+    return `<div class="and-pessoa"><div class="and-nome">${escapeHtml(f ? andNomeCurto(f.nome) : '(pessoa sem cadastro ativo)')}</div>${lista.map(r => andHtmlServico(r, pid)).join('')}</div>`;
+  }).join('');
+}
+
+function andHtmlServico(r, pid) {
+  const hoje = hojeStr();
+  const dias = andDiasAberto(r);
+  const badge = r.tipo_apto ? `<span class="badge-tipo badge-${r.tipo_apto}">${r.tipo_apto}</span>` : '';
+  const idade = r.data_fim ? '' : (dias <= 0 ? 'começou hoje' : `há ${dias} ${dias === 1 ? 'dia' : 'dias'}`);
+  const outros = [r.funcionario_id_1, r.funcionario_id_2].filter(x => x && x !== pid)
+    .map(x => andNomeCurto((funcionariosPorId[x] || {}).nome || ''))
+    .concat((r.nomes_extras || '').split(',').map(s => andCap(s.trim())).filter(Boolean));
+  let acao;
+  const oc = andOcorrHoje.filter(o => o.rdo_registro_id === r.id);
+  if (r.data_fim) {
+    acao = `<div class="and-estado ok"><span>✓ Terminou ${r.data_fim === hoje ? 'hoje' : 'em ' + fmtData(r.data_fim)}</span><button type="button" onclick="andReabrir(${r.id})">Desfazer</button></div>`;
+  } else if (oc.length) {
+    const c = AND_CAUSAS.find(x => x[0] === oc[0].causa) || AND_CAUSAS[5];
+    const meio = Number(oc[0].horas_perdidas) < andHorasDia(hoje);
+    acao = `<div class="and-estado parou"><span>${c[1]} Parou hoje · ${c[2]} · ${meio ? 'meio dia' : 'dia todo'}</span><button type="button" onclick="andDesfazerParada(${r.id})">Desfazer</button></div>`;
+  } else {
+    acao = `<div class="and-btns"><button type="button" class="and-btn ok" onclick="andTerminar(${r.id}, '${pid}')">✓ Terminou</button><button type="button" class="and-btn parou" onclick="andParou(${r.id})">Parou</button></div>`;
+  }
+  return `<div class="and-serv">
+    <div class="and-linha"><span class="and-servnome">${escapeHtml(andServNome(r))}</span><span class="and-idade${!r.data_fim && dias > AND_DIAS_ALERTA ? ' velho' : ''}">${idade}</span></div>
+    <div class="and-local">${escapeHtml(labelLocalRegistro(r))}${badge}</div>
+    ${outros.length ? `<div class="and-junto">junto com ${escapeHtml(outros.join(', '))}</div>` : ''}
+    ${acao}
+  </div>`;
+}
+
+// ---------- TERMINOU ----------
+function andTerminar(id, pid) {
+  const r = registrosPorId[id];
+  if (!r) return;
+  if (andDiasAberto(r) <= AND_DIAS_ALERTA) { andConcluir(id, pid, hojeStr()); return; }
+  // aberto há muito tempo: pergunta o dia, pra RUP não contar dias que já não eram desse serviço
+  const ontem = andOntemStr();
+  abrirSheetAnd(`
+    <h2>Quando terminou?</h2>
+    <div class="sub">${escapeHtml(andServNome(r))} · ${escapeHtml(labelLocalRegistro(r))} — aberto desde ${fmtData(r.data_inicio)}</div>
+    <div class="and-datas">
+      <button type="button" onclick="andConcluir(${id}, '${pid}', '${hojeStr()}')">Hoje</button>
+      <button type="button" onclick="andConcluir(${id}, '${pid}', '${ontem}')">Ontem</button>
+    </div>
+    <div class="form-group"><label for="andDataFim">Ou escolha o dia</label><input type="date" id="andDataFim" min="${r.data_inicio}" max="${hojeStr()}"></div>
+    <div class="and-acoes">
+      <button type="button" onclick="fecharSheetAnd()">Cancelar</button>
+      <button type="button" onclick="const v = document.getElementById('andDataFim').value; if (!v) { showToast('⚠️ Escolha o dia.'); return; } andConcluir(${id}, '${pid}', v)">Confirmar dia</button>
+    </div>`);
+}
+
+async function andConcluir(id, pid, data) {
+  const r = registrosPorId[id];
+  if (!r) return;
+  if (data < r.data_inicio) { showToast('⚠️ O fim não pode ser antes do início (' + fmtData(r.data_inicio) + ').'); return; }
+  fecharSheetAnd();
+  const { error } = await sb.from('rdo_registros').update({ data_fim: data }).eq('id', id);
+  if (error) { showToast('⚠️ Erro ao salvar: ' + error.message); return; }
+  const ehMesmoObjeto = andRegistros.find(x => x.id === id);
+  if (ehMesmoObjeto) ehMesmoObjeto.data_fim = data;
+  atualizarRegistroEmListas(id, { data_fim: data });
+  renderAndamento();
+  const desc = `${labelLocalRegistro(r)} — ${andServNome(r)}`;
+  registrarEdicao('editar', `Marcou como terminado em ${fmtData(data)}: ${desc}`);
+  andMostrarUndo(`${andServNome(r)} concluído`, () => andReabrir(id));
+  andAbrirDestino(pid, r);
+}
+
+async function andReabrir(id) {
+  const r = registrosPorId[id];
+  const { error } = await sb.from('rdo_registros').update({ data_fim: null }).eq('id', id);
+  if (error) { showToast('⚠️ Erro ao desfazer: ' + error.message); return; }
+  const item = andRegistros.find(x => x.id === id);
+  if (item) item.data_fim = null; else if (r) andRegistros.push(Object.assign(r, { data_fim: null }));
+  atualizarRegistroEmListas(id, { data_fim: null });
+  renderAndamento();
+  if (r) registrarEdicao('editar', `Desfez o "terminou": ${labelLocalRegistro(r)} — ${andServNome(r)}`);
+  showToast('Conclusão desfeita.');
+}
+
+// ---------- PARA ONDE VAI AGORA ----------
+async function andAbrirDestino(pid, rBase) {
+  andDest = {
+    pid,
+    svc: rBase ? rBase.tipo_servico_id : null,
+    tl: rBase && ['apartamento', 'andar_completo', 'corredor'].includes(rBase.tipo_local || 'apartamento') ? (rBase.tipo_local || 'apartamento') : 'apartamento',
+    andar: rBase && rBase.andar ? rBase.andar : ANDAR_MIN,
+    escolhendoServico: !rBase,
+    mapa: {},
+  };
+  if (andDest.svc) await andCarregarMapaDest();
+  andDesenharDestino();
+}
+
+async function andCarregarMapaDest() {
+  if (!andDest || !andDest.svc) return;
+  const { data, error } = await sb.from('rdo_registros')
+    .select('id, unidade, data_fim, funcionario_id_1, funcionario_id_2')
+    .eq('tipo_servico_id', andDest.svc);
+  andDest.mapa = {};
+  if (!error) (data || []).forEach(x => { andDest.mapa[x.unidade] = x; });
+}
+
+function andCelula(codigo, rotulo, sub) {
+  const x = andDest.mapa[codigo];
+  if (x && x.data_fim) return `<button type="button" class="and-cel feito" disabled>${rotulo}<small>pronto</small></button>`;
+  if (x) {
+    const pode = !x.funcionario_id_2 && x.funcionario_id_1 !== andDest.pid;
+    const quem = [x.funcionario_id_1, x.funcionario_id_2].filter(Boolean).map(i => andPrimeiroNome(i)).join('+');
+    return `<button type="button" class="and-cel andando" ${pode ? `onclick="andEscolherLocal('${codigo}')"` : 'disabled'}>${rotulo}<small>${pode ? 'entrar junto' : escapeHtml(quem)}</small></button>`;
+  }
+  return `<button type="button" class="and-cel" onclick="andEscolherLocal('${codigo}')">${rotulo}<small>${sub || ''}</small></button>`;
+}
+
+function andDesenharDestino() {
+  if (!andDest) return;
+  const nome = andPrimeiroNome(andDest.pid);
+  let html;
+  if (andDest.escolhendoServico) {
+    html = `<h2>Qual serviço ${escapeHtml(nome)} vai fazer?</h2><div class="sub">Toque no serviço</div>
+      <div class="and-servicos">${tiposServico.map(t => `<button type="button" onclick="andEscolherServico(${t.id})">${escapeHtml(t.nome)}</button>`).join('')}</div>
+      <div class="and-acoes-1"><button type="button" onclick="fecharSheetAnd()">Ainda não sei</button></div>`;
+  } else {
+    const servNome = (tiposServicoPorId[andDest.svc] || {}).nome || '(serviço)';
+    const tipos = [['apartamento', 'Apartamento'], ['andar_completo', 'Andar completo'], ['corredor', 'Corredor']];
+    let grade = '';
+    if (andDest.tl === 'apartamento') {
+      const a = andDest.andar;
+      grade = `<div class="and-andar"><button type="button" aria-label="Andar abaixo" onclick="andMudaAndar(-1)">−</button><span class="lbl">${a}º andar</span><button type="button" aria-label="Andar acima" onclick="andMudaAndar(1)">+</button></div><div class="and-grade">`;
+      for (let ap = APTO_MIN; ap <= APTO_MAX; ap++) {
+        const codigo = `${a}${String(ap).padStart(2, '0')}`;
+        grade += andCelula(codigo, codigo, APTOS_GRANDES.has(ap) ? 'G' : 'P');
+      }
+      grade += '</div>';
+    } else {
+      const pref = andDest.tl === 'corredor' ? 'COR' : 'AND';
+      grade = '<div class="and-grade">';
+      for (let a = ANDAR_MIN; a <= ANDAR_MAX; a++) grade += andCelula(`${pref}${String(a).padStart(2, '0')}`, `${a}º`, '');
+      grade += '</div>';
+    }
+    html = `<h2>Para onde ${escapeHtml(nome)} vai agora?</h2><div class="sub">${escapeHtml(servNome)} · toque no local</div>
+      <div class="and-chips">${tipos.map(([v, l]) => `<button type="button" class="and-chip${v === andDest.tl ? ' ativo' : ''}" onclick="andMudaTipoLocal('${v}')">${l}</button>`).join('')}</div>
+      ${grade}
+      <div class="mapa-legenda"><span class="item"><span class="quad livre"></span>Livre</span><span class="item"><span class="quad andando"></span>Em andamento</span><span class="item"><span class="quad feito"></span>Pronto</span></div>
+      <div class="and-acoes"><button type="button" onclick="andOutroServico()">Outro serviço</button><button type="button" onclick="fecharSheetAnd()">Ainda não sei</button></div>`;
+  }
+  abrirSheetAnd(html);
+}
+
+function andMudaAndar(delta) {
+  if (!andDest) return;
+  andDest.andar = Math.min(ANDAR_MAX, Math.max(ANDAR_MIN, andDest.andar + delta));
+  andDesenharDestino();
+}
+function andMudaTipoLocal(tl) { if (!andDest) return; andDest.tl = tl; andDesenharDestino(); }
+function andOutroServico() { if (!andDest) return; andDest.escolhendoServico = true; andDesenharDestino(); }
+async function andEscolherServico(id) {
+  if (!andDest) return;
+  andDest.svc = id; andDest.escolhendoServico = false;
+  await andCarregarMapaDest();
+  andDesenharDestino();
+}
+
+async function andEscolherLocal(codigo) {
+  if (!andDest) return;
+  const { pid, svc, tl } = andDest;
+  const existente = andDest.mapa[codigo];
+  const servNome = (tiposServicoPorId[svc] || {}).nome || '(serviço)';
+
+  // já tem alguém sozinho nesse serviço/local: entra como segundo funcionário
+  if (existente) {
+    if (existente.data_fim || existente.funcionario_id_2 || existente.funcionario_id_1 === pid) return;
+    const { error } = await sb.from('rdo_registros').update({ funcionario_id_2: pid }).eq('id', existente.id);
+    if (error) { showToast('⚠️ Erro ao salvar: ' + error.message); return; }
+    fecharSheetAnd();
+    await carregarAndamento();
+    atualizarRegistroEmListas(existente.id, { funcionario_id_2: pid });
+    registrarEdicao('editar', `${andNomeCurto((funcionariosPorId[pid] || {}).nome)} entrou junto em ${servNome} (${codigo})`);
+    andMostrarUndo(`${andPrimeiroNome(pid)} entrou junto · ${servNome}`, async () => {
+      const { error: e2 } = await sb.from('rdo_registros').update({ funcionario_id_2: null }).eq('id', existente.id);
+      if (e2) { showToast('⚠️ Erro ao desfazer: ' + e2.message); return; }
+      atualizarRegistroEmListas(existente.id, { funcionario_id_2: null });
+      await carregarAndamento();
+    });
+    return;
+  }
+
+  // local livre: cria o registro (mesmas regras do formulário "Novo registro")
+  if (await servicoJaExisteNaUnidade(codigo, svc, null)) {
+    showToast('⚠️ Esse serviço já foi registrado nesse local.');
+    await andCarregarMapaDest(); andDesenharDestino();
+    return;
+  }
+  let andar, apartamento = null, tipoApto = null;
+  if (tl === 'apartamento') {
+    apartamento = parseInt(codigo.slice(-2), 10);
+    andar = parseInt(codigo.slice(0, -2), 10);
+    tipoApto = APTOS_GRANDES.has(apartamento) ? 'G' : 'P';
+  } else {
+    andar = parseInt(codigo.slice(3), 10);
+  }
+  const payload = {
+    unidade: codigo, tipo_local: tl, andar, apartamento, tipo_apto: tipoApto, numero_balancinho: null,
+    tipo_servico_id: svc, funcionario_id_1: pid, funcionario_id_2: null, nomes_extras: null,
+    data_inicio: hojeStr(), data_fim: null, observacao: null, retrabalho: null, foto_path: null,
+    criado_por: usuarioAtual ? usuarioAtual.nome : null,
+  };
+  const { data, error } = await sb.from('rdo_registros').insert(payload).select().single();
+  if (error) { showToast('⚠️ Erro ao salvar: ' + error.message); return; }
+  fecharSheetAnd();
+  registrosRecentes.unshift(data);
+  indexarRegistros([data]);
+  renderFeedRecente();
+  await carregarAndamento();
+  const desc = `${labelLocalRegistro(data)} — ${servNome}`;
+  registrarEdicao('criar', `Registrou serviço (Em andamento): ${desc}`);
+  andMostrarUndo(`${andPrimeiroNome(pid)} → ${servNome} · ${labelLocalRegistro(data)}`, async () => {
+    const { error: e2 } = await sb.from('rdo_registros').delete().eq('id', data.id);
+    if (e2) { showToast('⚠️ Erro ao desfazer: ' + e2.message); return; }
+    delete registrosPorId[data.id];
+    registrosRecentes = registrosRecentes.filter(x => x.id !== data.id);
+    renderFeedRecente();
+    await carregarAndamento();
+    registrarEdicao('excluir', `Desfez o registro: ${desc}`);
+  });
+}
+
+// ---------- PAROU ----------
+function andParou(id) { andParada = { id, causa: null }; andDesenharParada(); }
+function andEscolherCausa(c) { if (!andParada) return; andParada.causa = c; andDesenharParada(); }
+
+function andDesenharParada() {
+  const r = registrosPorId[andParada.id];
+  if (!r) return;
+  abrirSheetAnd(`
+    <h2>Por que parou?</h2>
+    <div class="sub">${escapeHtml(andServNome(r))} · ${escapeHtml(labelLocalRegistro(r))}</div>
+    <div class="and-causas">${AND_CAUSAS.map(([k, ic, l]) =>
+      `<button type="button" class="and-causa${andParada.causa === k ? ' ativo' : ''}" onclick="andEscolherCausa('${k}')"><span class="ic">${ic}</span>${l}</button>`).join('')}</div>
+    ${andParada.causa ? `<h3>Por quanto tempo hoje?</h3>
+    <div class="and-btns" style="margin-bottom:10px;"><button type="button" class="and-btn parou" onclick="andSalvarParada(true)">Meio dia</button><button type="button" class="and-btn parou" onclick="andSalvarParada(false)">Dia todo</button></div>` : ''}
+    <div class="and-acoes-1"><button type="button" onclick="fecharSheetAnd()">Cancelar</button></div>`);
+}
+
+async function andSalvarParada(meio) {
+  if (!andParada || !andParada.causa) return;
+  const { id, causa } = andParada;
+  const r = registrosPorId[id];
+  const hoje = hojeStr();
+  const horas = andHorasDia(hoje) * (meio ? 0.5 : 1);
+  const pessoas = [r.funcionario_id_1, r.funcionario_id_2].filter(Boolean);
+  // uma linha por pessoa do registro: horas perdidas são por pessoa (Hh)
+  const linhas = (pessoas.length ? pessoas : [null]).map(fid => ({
+    data: hoje, rdo_registro_id: id, funcionario_id: fid, causa, horas_perdidas: horas,
+    criado_por: usuarioAtual ? usuarioAtual.nome : null,
+  }));
+  const { data, error } = await sb.from('rdo_ocorrencias').insert(linhas).select();
+  if (error) { showToast('⚠️ Erro ao salvar: ' + error.message); return; }
+  fecharSheetAnd();
+  andOcorrHoje.push(...(data || []));
+  renderAndamento();
+  const c = AND_CAUSAS.find(x => x[0] === causa);
+  registrarEdicao('criar', `Parada (${c[2]}, ${meio ? 'meio dia' : 'dia todo'}): ${labelLocalRegistro(r)} — ${andServNome(r)}`);
+  andMostrarUndo(`Parada registrada · ${c[2]}`, () => andDesfazerParada(id));
+}
+
+async function andDesfazerParada(id) {
+  const ids = andOcorrHoje.filter(o => o.rdo_registro_id === id).map(o => o.id);
+  if (!ids.length) return;
+  const { error } = await sb.from('rdo_ocorrencias').delete().in('id', ids);
+  if (error) { showToast('⚠️ Erro ao desfazer: ' + error.message); return; }
+  andOcorrHoje = andOcorrHoje.filter(o => !ids.includes(o.id));
+  renderAndamento();
+  const r = registrosPorId[id];
+  if (r) registrarEdicao('excluir', `Desfez a parada: ${labelLocalRegistro(r)} — ${andServNome(r)}`);
+  showToast('Parada desfeita.');
+}
+
+// ============================================================
 // ABAS
 // ============================================================
 function mostrarAba(nome) {
@@ -3226,7 +3683,7 @@ async function recarregarTudo() {
   // buscas dos dicionários são aguardadas primeiro, e só depois o feed de
   // registros/tarefas é buscado — sem essa corrida.
   await Promise.all([carregarFuncionarios(), carregarTiposServico()]);
-  await Promise.all([carregarFeedRecente(), carregarTarefasRecentes(), carregarNomesExtrasConhecidos()]);
+  await Promise.all([carregarFeedRecente(), carregarTarefasRecentes(), carregarNomesExtrasConhecidos(), carregarAndamento()]);
 }
 
 checkExistingSession();
