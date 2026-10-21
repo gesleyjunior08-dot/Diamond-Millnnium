@@ -297,16 +297,32 @@
     box-shadow: var(--shadow-btn);
   }
   .cabecalhoAba-icone svg { width: 21px; height: 21px; }
-  .cabecalhoAba-textos { min-width: 0; }
+  .cabecalhoAba-textos { min-width: 0; flex: 1 1 auto; }
   #cabecalhoAbaTitulo { margin: 0; font-size: 18.5px; font-weight: 800; color: var(--charcoal-escuro); line-height: 1.2; }
   #cabecalhoAbaDescricao {
     margin: 2px 0 0; font-size: 12.5px; color: #6b7280; line-height: 1.35;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
+  #btnRecarregarAba {
+    flex-shrink: 0;
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--concrete, #F3F4F6);
+    border: none; border-radius: var(--radius-btn);
+    color: var(--azul-escuro);
+    cursor: pointer;
+    transition: background .15s ease, transform .4s ease;
+  }
+  #btnRecarregarAba:hover { background: #E4E9F5; }
+  #btnRecarregarAba svg { width: 18px; height: 18px; }
+  #btnRecarregarAba.girando svg { animation: girarRecarregar .6s linear; }
+  @keyframes girarRecarregar { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   @media (max-width: 879.98px) {
     #cabecalhoAba { padding: 11px 14px; gap: 10px; }
     .cabecalhoAba-icone { width: 33px; height: 33px; }
     .cabecalhoAba-icone svg { width: 18px; height: 18px; }
+    #btnRecarregarAba { width: 32px; height: 32px; }
+    #btnRecarregarAba svg { width: 16px; height: 16px; }
     #cabecalhoAbaTitulo { font-size: 15.5px; }
     #cabecalhoAbaDescricao { font-size: 11.5px; white-space: normal; }
   }
@@ -473,6 +489,9 @@
           <h1 id="cabecalhoAbaTitulo">Presença</h1>
           <p id="cabecalhoAbaDescricao">Marcação diária de presença, visitantes e saída antecipada.</p>
         </div>
+        <button type="button" id="btnRecarregarAba" onclick="recarregarAbaAtual()" title="Recarregar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+        </button>
       </div>
 
       <div id="conteudo">
@@ -781,13 +800,23 @@
     .head button[onclick="doLogout()"] { display: none !important; }
   `;
 
+  // Algumas ferramentas, depois de tirar a marca repetida e o "Sair" (CSS
+  // acima), não sobram com NENHUM botão de ação próprio — nesses casos o
+  // cabeçalho inteiro pode sumir (em vez de ficar uma tarjinha branca vazia
+  // à toa). Hoje só o Diário de Obra está nessa situação: o botão de
+  // recarregar virou o botão único do cabeçalho do app (ver
+  // recarregarAbaAtual), e o de "Usuários do Diário de Obra" mudou pra
+  // dentro da própria barra de sub-abas dele.
+  const CSS_CABECALHO_VAZIO = `@media screen { .head { display: none !important; } }`;
+  const FERRAMENTAS_SEM_CABECALHO_PROPRIO = ['diario'];
+
   function ligarUnificacao(frame, chave) {
     frame.addEventListener('load', () => {
       try {
         const doc = frame.contentDocument;
         if (!doc) return;
         const style = doc.createElement('style');
-        style.textContent = CSS_UNIFICACAO;
+        style.textContent = CSS_UNIFICACAO + (FERRAMENTAS_SEM_CABECALHO_PROPRIO.includes(chave) ? CSS_CABECALHO_VAZIO : '');
         doc.head.appendChild(style);
         // Se a pessoa clicar em "Sair" de dentro de alguma aba (caso o
         // botão não tenha sido pego pelo CSS acima), faz o logout valer
@@ -810,8 +839,15 @@
           const cabecalhoFerramenta = doc.querySelector('.head');
           const segundaBarra = doc.querySelector('.tabs');
           if (!cabecalhoFerramenta || !segundaBarra) return;
-          const altura = cabecalhoFerramenta.getBoundingClientRect().height;
-          if (altura > 0) segundaBarra.style.setProperty('top', altura + 'px', 'important');
+          // getComputedStyle (não getBoundingClientRect) porque, com o
+          // cabeçalho em "display:none" (ferramentas sem nenhum botão de
+          // ação próprio — ver CSS_CABECALHO_VAZIO acima), a altura "real"
+          // dá 0 de qualquer jeito, então o "if (altura > 0)" de antes nunca
+          // disparava nesse caso e a 2ª barra ficava grudada no valor antigo
+          // (56px) do CSS original da ferramenta, com um vão vazio em cima.
+          const escondido = doc.defaultView.getComputedStyle(cabecalhoFerramenta).display === 'none';
+          const altura = escondido ? 0 : cabecalhoFerramenta.getBoundingClientRect().height;
+          segundaBarra.style.setProperty('top', altura + 'px', 'important');
         };
         requestAnimationFrame(() => requestAnimationFrame(ajustarSegundaBarra));
       } catch (e) {
@@ -968,8 +1004,10 @@
     document.getElementById('sidebarBackdrop').classList.remove('mostrar');
   }
 
+  let abaAtual = null;
   function abrirAba(nome) {
     closeSidebar();
+    abaAtual = nome;
     atualizarCabecalhoAba(nome);
     botoes.forEach((b) => b.classList.toggle('selecionada', b.dataset.aba === nome));
     Object.entries(mapaFrame).forEach(([chave, frame]) => {
@@ -984,6 +1022,29 @@
     });
     placeholder.classList.add('escondido');
     try { localStorage.setItem('diamond_app_ultima_aba', nome); } catch (e) {}
+  }
+
+  // Recarrega de verdade a ferramenta da aba aberta agora (botão 🔄 do
+  // cabeçalho) — substitui os botões de "recarregar" que cada ferramenta
+  // tinha dentro do próprio cabeçalho (ex.: Diário de Obra), que ficavam
+  // meio perdidos numa barrinha solta depois do cabeçalho novo. Em vez de
+  // confiar na função de recarregamento "por dentro" de cada ferramenta
+  // (que só atualiza os dados, sem reiniciar a tela — difícil de perceber
+  // que funcionou), troca o "src" do iframe de verdade, que recarrega a
+  // página inteira daquela ferramenta, igual um F5.
+  function recarregarAbaAtual() {
+    if (!abaAtual) return;
+    const frame = mapaFrame[abaAtual];
+    const btn = document.getElementById('btnRecarregarAba');
+    if (!frame) return;
+    if (btn) {
+      btn.classList.remove('girando');
+      void btn.offsetWidth; // reinicia a animação mesmo clicando 2x seguidas
+      btn.classList.add('girando');
+    }
+    const src = frame.getAttribute('src') || frame.dataset.src;
+    frame.removeAttribute('src');
+    requestAnimationFrame(() => frame.setAttribute('src', src));
   }
 
   botoes.forEach((b) => b.addEventListener('click', () => abrirAba(b.dataset.aba)));
