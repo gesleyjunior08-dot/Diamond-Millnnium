@@ -2749,64 +2749,58 @@ function mostrarRelatorioConsolidadoMedicao(lotes, registros, periodo) {
   const porLote = {};
   registros.forEach(r => { (porLote[r.medicao_id] = porLote[r.medicao_id] || []).push(r); });
 
-  // agrupa os lotes por pessoa (um lote só pertence a 1 pessoa, mas o
-  // período pode ter vários lotes da mesma pessoa, em datas diferentes).
-  // A ordem das pessoas no relatório (2026-10-14, pedido do usuário: "no
-  // agromerado de medições seja por ordem de colocadas e não por ordem
-  // alfabetica") segue a ordem de `lotes` — que já chega aqui ordenada por
-  // `criado_em` (mesma ordem da lista "Todas as medições" logo acima do
-  // botão) — e NÃO é reordenada por nome. Um Map em JS preserva a ordem de
-  // inserção das chaves, então a 1ª pessoa do relatório é a dona do lote
-  // mais recente do período (e assim por diante).
-  const porPessoa = new Map(); // funcionario_id -> { f, lotes: [...] }
-  lotes.forEach(lote => {
-    const fid = lote.funcionario_id;
-    if (!porPessoa.has(fid)) porPessoa.set(fid, { f: funcionariosPorId[fid], lotes: [] });
-    porPessoa.get(fid).lotes.push(lote);
-  });
-  const porPessoaOrdenado = [...porPessoa.entries()];
+  // (2026-10-27) Pedido do usuário: "no relatório geral ela não pode
+  // acumular dois relatorios de mesmo nome, exemplo fiz do Evaldo hoje e
+  // vou fazer outro semana que vem, precisa aparecer dois relatorios".
+  // Antes, quando a mesma pessoa tinha mais de um LOTE no período (duas
+  // medições em datas diferentes), eles eram somados num bloco só — um
+  // "relatório" por pessoa, misturando as datas numa tabela só. Agora cada
+  // LOTE sempre gera o seu próprio bloco aqui no relatório consolidado,
+  // mesmo que seja da mesma pessoa — então o Evaldo medido hoje e medido
+  // de novo semana que vem aparecem como DOIS blocos distintos, cada um
+  // com a sua própria data, seus próprios serviços e seu próprio status de
+  // pagamento (nada é somado/misturado entre lotes diferentes).
+  //
+  // A ordem dos blocos (2026-10-14, pedido do usuário: "no agromerado de
+  // medições seja por ordem de colocadas e não por ordem alfabetica")
+  // segue a ordem de `lotes`, que já chega aqui ordenada por `criado_em`
+  // (mesma ordem da lista "Todas as medições" logo acima do botão) — e NÃO
+  // é reordenada por nome.
+  const pessoasUnicas = new Set(lotes.map(l => l.funcionario_id));
 
   let totalGeral = 0;
-  const blocosPessoas = porPessoaOrdenado.map(([, grupo]) => {
-    const f = grupo.f;
-    let totalPessoa = 0;
-    const linhas = grupo.lotes
-      .slice()
-      .sort((a, b) => (a.criado_em || '').localeCompare(b.criado_em || ''))
-      .map(lote => {
-        const regs = (porLote[lote.id] || []).slice().sort((a, b) => (a.data_inicio || '').localeCompare(b.data_inicio || ''));
-        totalPessoa += regs.length;
-        return regs.map(r => {
-          const servico = tiposServicoPorId[r.tipo_servico_id];
-          const periodoServico = r.data_fim ? `${fmtData(r.data_inicio)} – ${fmtData(r.data_fim)}` : fmtData(r.data_inicio);
-          return `<tr>
-            <td>${fmtData((lote.criado_em || '').slice(0, 10))}</td>
-            <td>${escapeHtml(labelLocalRegistro(r))}</td>
-            <td>${escapeHtml(servico ? servico.nome : '—')}</td>
-            <td>${periodoServico}</td>
-            <td>${escapeHtml(r.retrabalho || '—')}</td>
-            <td>${escapeHtml(r.observacao || '—')}</td>
-          </tr>`;
-        }).join('');
-      }).join('');
-    totalGeral += totalPessoa;
-    // status de pagamento do bloco (2026-10-14) — o pagamento é por LOTE, e
-    // uma pessoa pode ter mais de um lote no mesmo período, então resume:
-    // se é só 1 lote, mostra o status dele direto; se são vários, conta
-    // quantos já estão pagos.
-    const lotesPagos = grupo.lotes.filter(l => l.pago).length;
-    const totalLotesPessoa = grupo.lotes.length;
-    const statusPagamento = totalLotesPessoa === 1
-      ? (grupo.lotes[0].pago ? `✅ Pago${grupo.lotes[0].pago_em ? ' em ' + fmtData((grupo.lotes[0].pago_em || '').slice(0, 10)) : ''}` : '⏳ Ainda não pago')
-      : (lotesPagos === totalLotesPessoa ? '✅ Todos os lotes pagos' : lotesPagos === 0 ? '⏳ Nenhum lote pago ainda' : `⚠️ ${lotesPagos} de ${totalLotesPessoa} lote(s) pago(s)`);
+  const blocosPessoas = lotes.map(lote => {
+    const f = funcionariosPorId[lote.funcionario_id];
+    const regs = (porLote[lote.id] || []).slice().sort((a, b) => (a.data_inicio || '').localeCompare(b.data_inicio || ''));
+    const totalLote = regs.length;
+    totalGeral += totalLote;
+    const linhas = regs.map(r => {
+      const servico = tiposServicoPorId[r.tipo_servico_id];
+      const periodoServico = r.data_fim ? `${fmtData(r.data_inicio)} – ${fmtData(r.data_fim)}` : fmtData(r.data_inicio);
+      return `<tr>
+        <td>${fmtData((lote.criado_em || '').slice(0, 10))}</td>
+        <td>${escapeHtml(labelLocalRegistro(r))}</td>
+        <td>${escapeHtml(servico ? servico.nome : '—')}</td>
+        <td>${periodoServico}</td>
+        <td>${escapeHtml(r.retrabalho || '—')}</td>
+        <td>${escapeHtml(r.observacao || '—')}</td>
+      </tr>`;
+    }).join('');
+    // status de pagamento do bloco — agora é sempre de 1 lote só, então é
+    // direto (antes precisava resumir "X de Y lotes pagos" quando vários
+    // lotes da mesma pessoa viravam um bloco só; isso não existe mais).
+    const statusPagamento = lote.pago
+      ? `✅ Pago${lote.pago_em ? ' em ' + fmtData((lote.pago_em || '').slice(0, 10)) : ''}`
+      : '⏳ Ainda não pago';
     return `
       <div class="relatorio-consolidado-pessoa">
         <h3>${escapeHtml(f ? f.nome : '(pessoa não encontrada)')}${f && f.empresa ? ' — ' + escapeHtml(f.empresa) : ''}</h3>
+        <div class="relatorio-sub" style="margin:-6px 0 10px;">Medido em ${fmtData((lote.criado_em || '').slice(0, 10))}</div>
         <table class="relatorio-tabela">
           <thead><tr><th>Medido em</th><th>Local</th><th>Serviço</th><th>Período</th><th>Retrabalho</th><th>Descrição</th></tr></thead>
           <tbody>${linhas || '<tr><td colspan="6">Nenhum serviço.</td></tr>'}</tbody>
         </table>
-        <div class="relatorio-subtotal">Subtotal de ${escapeHtml(f ? f.nome : '(pessoa)')}: ${totalPessoa} serviço(s) · Pagamento: ${statusPagamento}</div>
+        <div class="relatorio-subtotal">Subtotal de ${escapeHtml(f ? f.nome : '(pessoa)')} (medição de ${fmtData((lote.criado_em || '').slice(0, 10))}): ${totalLote} serviço(s) · Pagamento: ${statusPagamento}</div>
       </div>
     `;
   }).join('');
@@ -2820,11 +2814,11 @@ function mostrarRelatorioConsolidadoMedicao(lotes, registros, periodo) {
     <div class="relatorio-sub">Diamond Millennium</div>
     <div class="relatorio-info">
       <div class="campo"><b>Período</b>${periodoLabel}</div>
-      <div class="campo"><b>Pessoas</b>${porPessoa.size}</div>
+      <div class="campo"><b>Pessoas</b>${pessoasUnicas.size}</div>
       <div class="campo"><b>Lotes de medição</b>${lotes.length}</div>
     </div>
     ${blocosPessoas}
-    <div class="relatorio-total">Total geral do período: ${totalGeral} serviço(s), ${porPessoa.size} pessoa(s), ${lotes.length} lote(s)</div>
+    <div class="relatorio-total">Total geral do período: ${totalGeral} serviço(s), ${pessoasUnicas.size} pessoa(s), ${lotes.length} lote(s)</div>
     <div class="relatorio-assinatura">
       <div class="linha"><div class="traco"></div>Gerado por: Junior</div>
     </div>
