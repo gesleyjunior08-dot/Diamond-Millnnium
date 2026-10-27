@@ -186,6 +186,20 @@
   .mapa-cel.feito{background:var(--green);}
   .mapa-cel.corredor{width:72px;}
 
+  /* ---------- resumo visual do andar (2026-10-27) — planta simplificada
+     do pavimento, com o nome de quem está em cada apartamento escrito em
+     cima da unidade, pro encarregado imprimir/mandar no grupo. ---------- */
+  .resumo-andar-doc{max-width:1160px;margin:0 auto;padding:20px 14px 60px;}
+  .resumo-andar-doc h1{font-size:22px;color:var(--charcoal);text-align:center;margin-bottom:2px;}
+  .resumo-andar-doc .sub{text-align:center;font-size:13.5px;color:var(--brand-graymid);margin-bottom:18px;}
+  .resumo-andar-svg-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .resumo-andar-svg-wrap svg{display:block;margin:0 auto;min-width:720px;}
+  .resumo-andar-legenda{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin-top:16px;font-size:12.5px;color:var(--brand-graymid);}
+  .resumo-andar-legenda .item{display:flex;align-items:center;gap:5px;}
+  .resumo-andar-legenda .quad{width:14px;height:14px;border-radius:3px;display:inline-block;border:1.5px solid #ccc;}
+  .resumo-andar-legenda .quad.feito{background:#FBD9E3;border-color:#E8799B;}
+  .resumo-andar-legenda .quad.livre{background:#fff;border-color:#ccc;}
+
   .loading, .empty{text-align:center;padding:26px 12px;opacity:0.6;font-size:13px;}
 
   /* ---------- aba Medição (2026-10-13) — só o Junior acessa ---------- */
@@ -599,6 +613,12 @@ window.addEventListener('unhandledrejection', function(e) {
         <span class="item"><span class="quad livre"></span> Ainda não</span>
         <span class="item">Toque numa célula: feita abre pra ver/editar, vazia já prepara um registro novo nesse local</span>
       </div>
+
+      <div class="busca-box" id="boxResumoVisualAndar" style="display:none;">
+        <select id="selMapaAndarResumo"></select>
+        <button type="button" class="btn-secondary" onclick="gerarResumoVisualAndar()" style="flex:0 0 auto;">📐 Resumo visual do andar</button>
+      </div>
+
       <div id="mapaServicosWrap"><div class="empty">Escolha um serviço acima pra ver o mapa do prédio (5º ao 28º andar).</div></div>
     </div>
 
@@ -703,6 +723,15 @@ window.addEventListener('unhandledrejection', function(e) {
     <button type="button" class="btn-imprimir" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
   </div>
   <div class="relatorio-doc" id="relatorioMedicaoDoc"></div>
+</div>
+
+<!-- ================= RESUMO VISUAL DO ANDAR (planta com nomes, tela cheia, imprimível) ================= -->
+<div class="relatorio-overlay" id="resumoAndarOverlay">
+  <div class="relatorio-acoes">
+    <button type="button" class="btn-fechar" onclick="fecharResumoAndar()">✕ Fechar</button>
+    <button type="button" class="btn-imprimir" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+  </div>
+  <div class="resumo-andar-doc" id="resumoAndarDoc"></div>
 </div>
 
 <div class="photo-lightbox" id="photoLightboxRdo" onclick="closeLightboxRdo(event)">
@@ -1706,6 +1735,7 @@ document.addEventListener('DOMContentLoaded', () => {
   preencherSelectAndares('selAndarCorredor');
   preencherSelectAndares('selBuscaAndarCompleto');
   preencherSelectAndares('selBuscaAndarCorredor');
+  preencherSelectAndares('selMapaAndarResumo');
   ['inpUnidade', 'inpNumeroBalancinho'].forEach((id) => {
     document.getElementById(id).addEventListener('input', () => {
       atualizarFeedbackLocal();
@@ -3166,6 +3196,8 @@ async function renderMapaServicos() {
   const wrap = document.getElementById('mapaServicosWrap');
   if (!wrap) return;
   const servicoId = document.getElementById('selMapaServico').value;
+  const boxResumo = document.getElementById('boxResumoVisualAndar');
+  if (boxResumo) boxResumo.style.display = servicoId ? 'flex' : 'none';
   if (!servicoId) {
     wrap.innerHTML = '<div class="empty">Escolha um serviço acima pra ver o mapa do prédio (5º ao 28º andar).</div>';
     return;
@@ -3209,6 +3241,130 @@ async function renderMapaServicos() {
   }
   html += '</tbody></table></div>';
   wrap.innerHTML = html;
+}
+
+// ============================================================
+// RESUMO VISUAL DO ANDAR (2026-10-27) — pedido do usuário: um resumo tipo
+// planta do pavimento, com o nome de quem está em cada apartamento escrito
+// em cima da unidade, e o título sendo "nome do serviço" + "andar". Usa o
+// mesmo serviço já escolhido no mapa (`selMapaServico`) + o andar escolhido
+// ao lado, busca só os registros desse serviço+andar e desenha por cima de
+// uma planta fixa (mesma forma em todo andar, do 5º ao 28º — confirmado
+// com o usuário). Unidade rosa = serviço já concluído nela (tem
+// `data_fim`); sem preenchimento = ainda em andamento (sem `data_fim`).
+// Quando o registro tem 2 responsáveis (funcionario_id_1 e _2), escreve os
+// 2 nomes empilhados em cima da unidade.
+//
+// Posições abaixo foram estimadas a partir da planta de exemplo que o
+// usuário mandou (formato em "U": bloco 01/02/03 na ponta esquerda, duas
+// fileiras de apartamentos — uma de cima 16-15-14-13-12-11 e uma de baixo
+// 04-05-06-07-08-09-10, com a fileira de cima deslocada uma coluna pra
+// direita em relação à de baixo, igual no exemplo). Se um dia a planta
+// real mudar, é só ajustar os x/y/w/h aqui — o resto do desenho (número,
+// nome, cor de concluído) se adapta sozinho.
+const RESUMO_ANDAR_LAYOUT = {
+  1:  { x: 20,  y: 255, w: 110, h: 100 },
+  2:  { x: 163, y: 240, w: 110, h: 90 },
+  3:  { x: 163, y: 347, w: 110, h: 90 },
+  16: { x: 268, y: 422, w: 110, h: 90 },
+  15: { x: 388, y: 422, w: 110, h: 90 },
+  14: { x: 520, y: 422, w: 110, h: 90 },
+  13: { x: 667, y: 422, w: 110, h: 90 },
+  12: { x: 778, y: 422, w: 110, h: 90 },
+  11: { x: 925, y: 422, w: 110, h: 90 },
+  4:  { x: 132, y: 546, w: 110, h: 90 },
+  5:  { x: 275, y: 546, w: 110, h: 90 },
+  6:  { x: 393, y: 546, w: 110, h: 90 },
+  7:  { x: 521, y: 546, w: 110, h: 90 },
+  8:  { x: 671, y: 546, w: 110, h: 90 },
+  9:  { x: 781, y: 546, w: 110, h: 90 },
+  10: { x: 926, y: 546, w: 110, h: 90 },
+};
+const RESUMO_ANDAR_VIEWBOX = { w: 1076, h: 660 };
+
+async function gerarResumoVisualAndar() {
+  const servicoId = document.getElementById('selMapaServico').value;
+  const servico = tiposServicoPorId[servicoId];
+  const andarRaw = document.getElementById('selMapaAndarResumo').value;
+  if (!servicoId) { showToast('⚠️ Escolha o serviço primeiro.'); return; }
+  if (!andarRaw) { showToast('⚠️ Escolha o andar.'); return; }
+  if (!sb) { showToast('⚠️ Sem conexão com o banco.'); return; }
+  const andar = parseInt(andarRaw, 10);
+
+  const { data, error } = await sb.from('rdo_registros')
+    .select('apartamento, funcionario_id_1, funcionario_id_2, data_fim')
+    .eq('tipo_servico_id', servicoId)
+    .eq('andar', andar)
+    .eq('tipo_local', 'apartamento');
+  if (error) { showToast('⚠️ Erro ao carregar o resumo: ' + error.message); return; }
+
+  // por convenção só existe 1 registro por (unidade, serviço) — mesmo
+  // bloqueio de duplicidade usado no resto do arquivo (servicoJaExisteNaUnidade)
+  const porApto = {};
+  (data || []).forEach(r => { porApto[r.apartamento] = r; });
+
+  mostrarResumoVisualAndar(andar, servico ? servico.nome : '(serviço)', porApto);
+}
+
+function mostrarResumoVisualAndar(andar, nomeServico, porApto) {
+  let svgUnidades = '';
+  for (let apto = APTO_MIN; apto <= APTO_MAX; apto++) {
+    const box = RESUMO_ANDAR_LAYOUT[apto];
+    if (!box) continue;
+    const r = porApto[apto];
+    const concluido = !!(r && r.data_fim);
+    const fill = concluido ? '#FBD9E3' : '#ffffff';
+    const stroke = concluido ? '#E8799B' : '#9AA3B2';
+    const cx = box.x + box.w / 2;
+    const cy = box.y + box.h / 2;
+
+    // nome(s) de quem está na unidade — 1 ou 2 linhas, acima da caixa
+    let nomes = [];
+    if (r) {
+      const f1 = funcionariosPorId[r.funcionario_id_1];
+      const f2 = r.funcionario_id_2 ? funcionariosPorId[r.funcionario_id_2] : null;
+      if (f1) nomes.push(f1.nome);
+      if (f2) nomes.push(f2.nome);
+    }
+    let labelSvg = '';
+    if (nomes.length) {
+      const linhas = nomes.map((n, i) => {
+        const y = box.y - 14 - (nomes.length - 1 - i) * 18;
+        return `<text x="${cx}" y="${y}" text-anchor="middle" font-size="15" font-weight="600" fill="#2B2B2E">${escapeHtml(n)}</text>`;
+      }).join('');
+      labelSvg = linhas;
+    }
+
+    svgUnidades += `
+      <g>
+        <rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" rx="6" fill="${fill}" stroke="${stroke}" stroke-width="2"></rect>
+        <circle cx="${cx}" cy="${cy}" r="22" fill="#2B2B2E"></circle>
+        <text x="${cx}" y="${cy + 6}" text-anchor="middle" font-size="16" font-weight="700" fill="#fff">${String(apto).padStart(2, '0')}</text>
+        ${labelSvg}
+      </g>`;
+  }
+
+  const svg = `
+    <div class="resumo-andar-svg-wrap">
+      <svg viewBox="0 0 ${RESUMO_ANDAR_VIEWBOX.w} ${RESUMO_ANDAR_VIEWBOX.h}" xmlns="http://www.w3.org/2000/svg">
+        ${svgUnidades}
+      </svg>
+    </div>`;
+
+  document.getElementById('resumoAndarDoc').innerHTML = `
+    <h1>${escapeHtml(nomeServico)}</h1>
+    <div class="sub">${andar}º pavimento</div>
+    ${svg}
+    <div class="resumo-andar-legenda">
+      <span class="item"><span class="quad feito"></span> Já concluído</span>
+      <span class="item"><span class="quad livre"></span> Ainda não / em andamento</span>
+    </div>
+  `;
+  document.getElementById('resumoAndarOverlay').classList.add('show');
+}
+
+function fecharResumoAndar() {
+  document.getElementById('resumoAndarOverlay').classList.remove('show');
 }
 
 function onClickCelulaMapa(tipoLocal, andar, apartamento, registroId) {
