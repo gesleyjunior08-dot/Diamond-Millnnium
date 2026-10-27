@@ -199,8 +199,8 @@
   .resumo-andar-legenda{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin-top:16px;font-size:12.5px;color:var(--brand-graymid);}
   .resumo-andar-legenda .item{display:flex;align-items:center;gap:5px;}
   .resumo-andar-legenda .quad{width:14px;height:14px;border-radius:3px;display:inline-block;border:1.5px solid #ccc;}
-  .resumo-andar-legenda .quad.feito{background:#FFC4D6;border-color:#FF2D6B;}
-  .resumo-andar-legenda .quad.livre{background:#fff;border-color:#ccc;}
+  .resumo-andar-legenda .quad.retrabalho{background:#FFC4D6;border-color:#FF2D6B;}
+  .resumo-andar-legenda .selo-concluido{width:18px;height:18px;border-radius:50%;background:#1E7A34;color:#fff;font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;}
 
   .loading, .empty{text-align:center;padding:26px 12px;opacity:0.6;font-size:13px;}
 
@@ -3351,11 +3351,12 @@ function construirSvgCompartilhavelResumoAndar(andar, nomeServico, svgUnidades) 
       <image href="data:image/png;base64,${RESUMO_ANDAR_PLANTA_B64}" x="0" y="0" width="${RESUMO_ANDAR_VIEWBOX.w}" height="${RESUMO_ANDAR_VIEWBOX.h}"></image>
       ${svgUnidades}
     </g>
-    <g transform="translate(${W / 2 - 230}, ${TOPO + RESUMO_ANDAR_VIEWBOX.h + 36})" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#585759">
+    <g transform="translate(${W / 2 - 160}, ${TOPO + RESUMO_ANDAR_VIEWBOX.h + 36})" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#585759">
       <rect x="0" y="-13" width="15" height="15" rx="3" fill="#FFC4D6" stroke="#FF2D6B" stroke-width="1.5"></rect>
-      <text x="21" y="-1">Já concluído</text>
-      <rect x="160" y="-13" width="15" height="15" rx="3" fill="#ffffff" stroke="#ccc" stroke-width="1.5"></rect>
-      <text x="181" y="-1">Ainda não / em andamento</text>
+      <text x="21" y="-1">Retrabalho</text>
+      <circle cx="148" cy="-6" r="10" fill="#1E7A34" stroke="#fff" stroke-width="1.5"></circle>
+      <text x="148" y="-2" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">✓</text>
+      <text x="165" y="-1">Concluído</text>
     </g>
   </svg>`;
   return { svg, largura: W, altura: H };
@@ -3367,6 +3368,13 @@ function mostrarResumoVisualAndar(andar, nomeServico, porApto) {
     const box = RESUMO_ANDAR_LAYOUT[apto];
     if (!box) continue;
     const r = porApto[apto];
+    // (2026-10-27) corrigido a pedido do usuário: o tom vermelho/rosa é
+    // RETRABALHO (tem algo preenchido no campo "retrabalho" do registro),
+    // não "já concluído" como na 1ª versão. "Concluído" (tem `data_fim`)
+    // agora vira um ✓ verde no cantinho da unidade — e os dois podem
+    // aparecer juntos (um retrabalho que já foi refeito e terminado, por
+    // exemplo), porque são duas informações independentes no registro.
+    const emRetrabalho = !!(r && r.retrabalho);
     const concluido = !!(r && r.data_fim);
 
     // nome(s) de quem está na unidade — só o primeiro nome, pra caber
@@ -3387,11 +3395,14 @@ function mostrarResumoVisualAndar(andar, nomeServico, porApto) {
       }).join('');
     }
 
-    const destaque = concluido
+    const destaque = emRetrabalho
       ? `<rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" fill="#FF2D6B" fill-opacity="0.28"></rect>`
       : '';
+    const selo = concluido
+      ? `<circle cx="${box.x + box.w - 16}" cy="${box.y + 16}" r="13" fill="#1E7A34" stroke="#fff" stroke-width="2"></circle><text x="${box.x + box.w - 16}" y="${box.y + 21}" text-anchor="middle" font-size="15" font-weight="700" fill="#fff">✓</text>`
+      : '';
 
-    svgUnidades += `<g>${destaque}${labelSvg}</g>`;
+    svgUnidades += `<g>${destaque}${labelSvg}${selo}</g>`;
   }
 
   const svg = `
@@ -3407,8 +3418,8 @@ function mostrarResumoVisualAndar(andar, nomeServico, porApto) {
     <div class="sub">${andar}º pavimento</div>
     ${svg}
     <div class="resumo-andar-legenda">
-      <span class="item"><span class="quad feito"></span> Já concluído</span>
-      <span class="item"><span class="quad livre"></span> Ainda não / em andamento</span>
+      <span class="item"><span class="quad retrabalho"></span> Retrabalho</span>
+      <span class="item"><span class="selo-concluido">✓</span> Concluído</span>
     </div>
   `;
   document.getElementById('resumoAndarOverlay').classList.add('show');
