@@ -241,10 +241,12 @@
   /* ---------- relatório de medição (tela cheia, imprimível) ---------- */
   .relatorio-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#fff;z-index:250;overflow-y:auto;}
   .relatorio-overlay.show{display:block;}
-  .relatorio-acoes{position:sticky;top:0;background:var(--charcoal);padding:10px calc(14px + var(--safe-r)) 10px calc(14px + var(--safe-l));display:flex;justify-content:space-between;gap:10px;z-index:2;}
+  .relatorio-acoes{position:sticky;top:0;background:var(--charcoal);padding:10px calc(14px + var(--safe-r)) 10px calc(14px + var(--safe-l));display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;z-index:2;}
   .relatorio-acoes button{padding:10px 16px;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px;}
   .relatorio-acoes .btn-fechar{background:#fff;color:var(--charcoal);}
   .relatorio-acoes .btn-imprimir{background:var(--yellow);color:#fff;}
+  .relatorio-acoes .btn-whatsapp{background:#25D366;color:#fff;}
+  .relatorio-acoes .btn-whatsapp:disabled{background:var(--brand-graylight);cursor:not-allowed;}
   .relatorio-doc{max-width:720px;margin:0 auto;padding:24px 18px 60px;}
   .relatorio-doc h1{font-size:20px;color:var(--charcoal);text-align:center;margin-bottom:4px;}
   .relatorio-doc .relatorio-sub{text-align:center;font-size:12.5px;color:var(--brand-graymid);margin-bottom:20px;}
@@ -731,6 +733,7 @@ window.addEventListener('unhandledrejection', function(e) {
 <div class="relatorio-overlay" id="resumoAndarOverlay">
   <div class="relatorio-acoes">
     <button type="button" class="btn-fechar" onclick="fecharResumoAndar()">✕ Fechar</button>
+    <button type="button" class="btn-whatsapp" id="btnCompartilharResumoAndar" onclick="compartilharResumoAndarWhatsApp()">📲 Enviar no WhatsApp</button>
     <button type="button" class="btn-imprimir" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
   </div>
   <div class="resumo-andar-doc" id="resumoAndarDoc"></div>
@@ -3326,6 +3329,38 @@ async function gerarResumoVisualAndar() {
   mostrarResumoVisualAndar(andar, servico ? servico.nome : '(serviço)', porApto);
 }
 
+// guarda o último resumo gerado (SVG pronto pra virar imagem), pro botão
+// "Enviar no WhatsApp" não precisar buscar tudo de novo — ver
+// compartilharResumoAndarWhatsApp() logo abaixo de fecharResumoAndar()
+let resumoAndarEstadoAtual = null;
+
+// monta uma versão do resumo com TÍTULO + PLANTA + LEGENDA tudo dentro de
+// um SVG só (a tela normal mostra título/legenda como HTML por fora do
+// SVG — pra virar uma imagem única pro WhatsApp, precisa estar tudo dentro
+// do mesmo desenho)
+function construirSvgCompartilhavelResumoAndar(andar, nomeServico, svgUnidades) {
+  const W = RESUMO_ANDAR_VIEWBOX.w;
+  const TOPO = 100;
+  const RODAPE = 60;
+  const H = TOPO + RESUMO_ANDAR_VIEWBOX.h + RODAPE;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+    <rect x="0" y="0" width="${W}" height="${H}" fill="#ffffff"></rect>
+    <text x="${W / 2}" y="42" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="32" font-weight="700" fill="#063593">${escapeHtml(nomeServico)}</text>
+    <text x="${W / 2}" y="74" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="19" fill="#585759">${andar}º pavimento</text>
+    <g transform="translate(0, ${TOPO})">
+      <image href="data:image/png;base64,${RESUMO_ANDAR_PLANTA_B64}" x="0" y="0" width="${RESUMO_ANDAR_VIEWBOX.w}" height="${RESUMO_ANDAR_VIEWBOX.h}"></image>
+      ${svgUnidades}
+    </g>
+    <g transform="translate(${W / 2 - 230}, ${TOPO + RESUMO_ANDAR_VIEWBOX.h + 36})" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#585759">
+      <rect x="0" y="-13" width="15" height="15" rx="3" fill="#FFC4D6" stroke="#FF2D6B" stroke-width="1.5"></rect>
+      <text x="21" y="-1">Já concluído</text>
+      <rect x="160" y="-13" width="15" height="15" rx="3" fill="#ffffff" stroke="#ccc" stroke-width="1.5"></rect>
+      <text x="181" y="-1">Ainda não / em andamento</text>
+    </g>
+  </svg>`;
+  return { svg, largura: W, altura: H };
+}
+
 function mostrarResumoVisualAndar(andar, nomeServico, porApto) {
   let svgUnidades = '';
   for (let apto = APTO_MIN; apto <= APTO_MAX; apto++) {
@@ -3377,10 +3412,81 @@ function mostrarResumoVisualAndar(andar, nomeServico, porApto) {
     </div>
   `;
   document.getElementById('resumoAndarOverlay').classList.add('show');
+
+  const compartilhavel = construirSvgCompartilhavelResumoAndar(andar, nomeServico, svgUnidades);
+  resumoAndarEstadoAtual = { andar, nomeServico, svgCompartilhar: compartilhavel.svg, largura: compartilhavel.largura, altura: compartilhavel.altura };
 }
 
 function fecharResumoAndar() {
   document.getElementById('resumoAndarOverlay').classList.remove('show');
+}
+
+// -------- "Enviar no WhatsApp" (2026-10-27) — transforma o resumo visual
+// (o mesmo que acabou de aparecer na tela) numa imagem PNG e abre o menu
+// de compartilhar do celular, já com o WhatsApp como uma das opções —
+// mesma ideia de "imprimir", só que em vez de impressora, vai o app de
+// mensagem. Em celular com suporte (Android/iOS, dentro do app instalado
+// como PWA ou no navegador), usa o compartilhamento nativo do aparelho
+// (Web Share API) direto com a imagem anexada. No computador (sem esse
+// suporte), baixa a imagem e abre o WhatsApp Web — a pessoa só precisa
+// anexar o arquivo que acabou de baixar.
+async function compartilharResumoAndarWhatsApp() {
+  if (!resumoAndarEstadoAtual) { showToast('⚠️ Gere o resumo primeiro.'); return; }
+  const btn = document.getElementById('btnCompartilharResumoAndar');
+  const textoOriginal = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Gerando imagem...'; }
+  try {
+    const { svgCompartilhar, largura, altura, nomeServico, andar } = resumoAndarEstadoAtual;
+    const svgBlob = new Blob([svgCompartilhar], { type: 'image/svg+xml;charset=utf-8' });
+    const svgUrl = URL.createObjectURL(svgBlob);
+    const img = new Image();
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = () => reject(new Error('Não consegui montar o desenho do resumo.'));
+      img.src = svgUrl;
+    });
+
+    const escala = 2; // mais nítido no celular
+    const canvas = document.createElement('canvas');
+    canvas.width = largura * escala;
+    canvas.height = altura * escala;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    URL.revokeObjectURL(svgUrl);
+
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) throw new Error('Não consegui gerar a imagem.');
+
+    const nomeArquivo = `resumo_${nomeServico}_${andar}andar`
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') + '.png';
+    const legenda = `${nomeServico} — ${andar}º pavimento`;
+    const arquivo = new File([blob], nomeArquivo, { type: 'image/png' });
+
+    if (navigator.canShare && navigator.canShare({ files: [arquivo] })) {
+      await navigator.share({ files: [arquivo], title: legenda, text: legenda });
+    } else {
+      // computador / navegador sem compartilhamento nativo de arquivo:
+      // baixa a imagem e abre o WhatsApp Web já com o texto pronto —
+      // só falta anexar a imagem que acabou de baixar.
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = nomeArquivo;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.open(`https://wa.me/?text=${encodeURIComponent(legenda + ' (abre o arquivo que acabou de baixar e anexa aqui)')}`, '_blank');
+      showToast('📥 Imagem baixada — é só anexar ela na conversa do WhatsApp que abriu.');
+    }
+  } catch (e) {
+    if (!e || e.name !== 'AbortError') { // AbortError = usuário cancelou o compartilhamento, não é erro de verdade
+      showToast('⚠️ Erro ao preparar a imagem: ' + (e.message || e));
+    }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = textoOriginal || '📲 Enviar no WhatsApp'; }
+  }
 }
 
 function onClickCelulaMapa(tipoLocal, andar, apartamento, registroId) {
