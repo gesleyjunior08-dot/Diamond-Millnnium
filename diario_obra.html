@@ -225,6 +225,7 @@
   .medicao-check-row input{width:auto;margin:0;transform:scale(1.2);}
   .medicao-desmarcar-btn{width:100%;margin-top:8px;padding:9px;border:1px solid #F3C6C6;border-radius:8px;background:#FFF5F5;color:#C0392B;font-size:12px;font-weight:700;cursor:pointer;}
   .medicao-corrigir-btn{width:100%;margin-top:6px;padding:9px;border:1px solid #CFE0F3;border-radius:8px;background:#F2F8FF;color:#1C5FA8;font-size:12px;font-weight:700;cursor:pointer;}
+  .medicao-corrigir-local-btn{width:100%;margin-top:6px;padding:9px;border:1px solid #F0D9A0;border-radius:8px;background:#FFF8E6;color:#8A6D1E;font-size:12px;font-weight:700;cursor:pointer;}
   .medicao-finalizar{width:100%;padding:14px;border:none;border-radius:10px;background:var(--green);color:#fff;font-size:15px;font-weight:700;cursor:pointer;min-height:48px;margin-top:4px;}
   .medicao-finalizar:disabled{background:var(--brand-graylight);cursor:not-allowed;}
   .medicao-historico{margin-top:26px;}
@@ -778,6 +779,23 @@ window.addEventListener('unhandledrejection', function(e) {
     </div>
     <select id="selCorrigirPessoa" style="display:none;"></select>
     <button type="button" class="btn-secondary" style="width:100%;margin-top:14px;" onclick="confirmarCorrecaoPessoaMedicao()">Confirmar correção</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="corrigirLocalOverlay">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2>📍 Corrigir apartamento desta medição</h2>
+      <button type="button" class="btn-icon" title="Fechar" onclick="fecharCorrecaoLocalMedicao()">✖️</button>
+    </div>
+    <div class="sub" style="margin-bottom:10px;">Esse serviço foi registrado no apartamento errado. Digite o andar+apartamento certo — isso corrige só o registro do diário (a medição não guarda apartamento, então não precisa tocar nela).</div>
+    <div id="corrigirLocalDescricao" style="font-size:13px;color:var(--brand-graymid);margin-bottom:10px;"></div>
+    <div class="form-group" style="margin-bottom:0;">
+      <label>Unidade certa (andar + apartamento)</label>
+      <input type="text" id="inpCorrigirLocalTexto" placeholder="Ex.: 1401" inputmode="numeric">
+      <div class="unidade-hint">Prédio: 5º ao 28º andar, apartamentos 01 a 16. Digite andar+apartamento juntos, ex.: 501 ou 1401.</div>
+    </div>
+    <button type="button" class="btn-secondary" style="width:100%;margin-top:14px;" onclick="confirmarCorrecaoLocalMedicao()">Confirmar correção</button>
   </div>
 </div>
 
@@ -2357,6 +2375,7 @@ function renderCardMedicao(r) {
         <span>${marcado ? '✅ Incluída nesta medição' : (r.medido ? 'Já medida antes — incluir de novo' : 'Incluir nesta medição')}</span>
       </label>
       ${r.medido ? `<button type="button" class="medicao-corrigir-btn" onclick="abrirCorrecaoPessoaMedicao(${r.id})">🔄 Corrigir pessoa desta medição</button>` : ''}
+      ${(r.medido && (r.tipo_local || 'apartamento') === 'apartamento') ? `<button type="button" class="medicao-corrigir-local-btn" onclick="abrirCorrecaoLocalMedicao(${r.id})">📍 Corrigir apartamento desta medição</button>` : ''}
       ${r.medido ? `<button type="button" class="medicao-desmarcar-btn" onclick="desmarcarServicoMedicao(${r.id})">↩️ Desmarcar essa medição (corrigir engano)</button>` : ''}
     </div>
   `;
@@ -2486,6 +2505,56 @@ async function confirmarCorrecaoPessoaMedicao() {
     showToast(`✅ Corrigido para ${novoFunc.nome} — esse serviço saiu da medição antiga e volta como "não medido" (pode medir de novo).`);
     registrarEdicao('editar', `Corrigiu a pessoa do registro de ${descricao}: de ${velhoFunc ? velhoFunc.nome : '?'} para ${novoFunc.nome} (tirou do lote de medição ${r.medicao_id} por ter outros serviços junto)`);
   }
+}
+
+// -------- corrigir o APARTAMENTO de um serviço já medido --------
+// Pedido do Junior em 2026-10-28: "preciso editar apartamentos que foram
+// medidos, pois coloquei um errado e ele bloqueia pra medir". Diferente da
+// correção de pessoa, aqui NÃO precisa tocar na tabela "medicoes" — ela só
+// guarda o id da pessoa e o total do lote, nunca andar/apartamento (isso
+// mora só em rdo_registros). Então corrigir é sempre um único update em
+// rdo_registros, sem precisar checar o lote nem desmarcar nada.
+let corrigirLocalRegistroId = null;
+
+function abrirCorrecaoLocalMedicao(id) {
+  const r = registrosPorId[id];
+  if (!r) return;
+  corrigirLocalRegistroId = id;
+  const servico = tiposServicoPorId[r.tipo_servico_id];
+  document.getElementById('corrigirLocalDescricao').innerHTML =
+    `<b>${escapeHtml(servico ? servico.nome : '(serviço)')}</b><br>Hoje está em: <b>${escapeHtml(labelLocalRegistro(r))}</b>`;
+  document.getElementById('inpCorrigirLocalTexto').value = `${r.andar}${String(r.apartamento).padStart(2, '0')}`;
+  document.getElementById('corrigirLocalOverlay').classList.add('show');
+}
+
+function fecharCorrecaoLocalMedicao() {
+  document.getElementById('corrigirLocalOverlay').classList.remove('show');
+  corrigirLocalRegistroId = null;
+}
+
+async function confirmarCorrecaoLocalMedicao() {
+  const id = corrigirLocalRegistroId;
+  const r = registrosPorId[id];
+  if (!r) return;
+  const p = parseUnidade(document.getElementById('inpCorrigirLocalTexto').value);
+  if (!p.ok) { showToast('⚠️ ' + p.motivo); return; }
+  if (p.andar === r.andar && p.apartamento === r.apartamento) { showToast('⚠️ Essa já é a unidade marcada nesse registro.'); return; }
+  const servico = tiposServicoPorId[r.tipo_servico_id];
+  const descricaoAntiga = labelLocalRegistro(r);
+  if (!sb) { showToast('⚠️ Sem conexão com o banco.'); return; }
+  if (await servicoJaExisteNaUnidade(p.codigo, r.tipo_servico_id, id)) {
+    showToast(`⚠️ Já existe "${servico ? servico.nome : 'esse serviço'}" registrado em ${p.label} — não dá pra duplicar.`);
+    return;
+  }
+  if (!confirm(`Trocar de ${descricaoAntiga} para ${p.label}?\n\n${servico ? servico.nome : '(serviço)'}`)) return;
+  const { error } = await sb.from('rdo_registros')
+    .update({ unidade: p.codigo, tipo_local: 'apartamento', andar: p.andar, apartamento: p.apartamento, tipo_apto: p.tipo })
+    .eq('id', id);
+  if (error) { showToast('⚠️ Erro ao corrigir: ' + error.message); return; }
+  atualizarRegistroEmListas(id, { unidade: p.codigo, tipo_local: 'apartamento', andar: p.andar, apartamento: p.apartamento, tipo_apto: p.tipo });
+  fecharCorrecaoLocalMedicao();
+  showToast(`✅ Corrigido para ${p.label}.`);
+  registrarEdicao('editar', `Corrigiu a unidade do registro de "${servico ? servico.nome : '(serviço)'}": de ${descricaoAntiga} para ${p.label}`);
 }
 
 function toggleSelecaoMedicao(id, checked) {
@@ -3315,7 +3384,7 @@ async function gerarResumoVisualAndar() {
   const andar = parseInt(andarRaw, 10);
 
   const { data, error } = await sb.from('rdo_registros')
-    .select('apartamento, funcionario_id_1, funcionario_id_2, data_fim')
+    .select('apartamento, funcionario_id_1, funcionario_id_2, data_fim, retrabalho')
     .eq('tipo_servico_id', servicoId)
     .eq('andar', andar)
     .eq('tipo_local', 'apartamento');
