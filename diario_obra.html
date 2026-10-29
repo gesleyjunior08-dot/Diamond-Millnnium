@@ -264,20 +264,24 @@
   .relatorio-assinatura .linha{flex:1;text-align:center;font-size:11.5px;color:var(--brand-graymid);}
   .relatorio-assinatura .linha .traco{border-top:1px solid #999;margin-bottom:6px;padding-top:36px;}
   @media print{
-    body *{visibility:hidden;}
-    .relatorio-overlay, .relatorio-overlay *{visibility:visible;}
-    /* (2026-10-29) Bug "o relatório sai com as páginas em branco": com
-       bottom:0 fixo, a caixa do relatório ficava com a altura de 1 página
-       só — qualquer conteúdo além disso (ex.: relatório de tarefas com
-       vários dias) era cortado, e o navegador ainda calculava várias
-       páginas pelo tamanho do app por trás (visibility:hidden mantém o
-       espaço ocupado, só não desenha) — daí as páginas extras saírem em
-       branco. Corrigido: tira o bottom/overflow fixos (deixa a altura
-       crescer com o conteúdo, paginando direito) e esconde o app inteiro
-       (#app, não só visibility) pra ele não ocupar espaço nenhum na hora
-       de imprimir. */
+    /* (2026-10-29) Bug "o relatório sai com as páginas em branco" —
+       2ª rodada: a 1ª correção (tirar o bottom:0 fixo) ajudou mas não
+       resolveu de vez pra quem imprime numa impressora de verdade (não só
+       "Salvar como PDF") — relatório com linha de tabela bem alta (ex.:
+       tarefa com muita gente junto, nome de cada um quebrando linha)
+       ainda saía com página em branco no meio. Causa: a caixa do
+       relatório usava position:fixed/absolute — página impressa com
+       elemento posicionado (em vez de fluxo normal do documento) é o tipo
+       de coisa que navegador/driver de impressora lida pior, cada um de
+       um jeito. Troca de abordagem, bem mais simples e confiável: em vez
+       de "esconder tudo com visibility e só esse pedaço fica visível",
+       agora é só "esconde o app inteiro (display:none, some de vez) e
+       deixa a caixa do relatório no fluxo normal da página (position:
+       static)" — sem elemento posicionado nenhum, o navegador pagina do
+       jeito padrão (bem mais testado/estável pra imprimir document
+       comprido, em qualquer impressora). */
     #app, .login-screen{display:none !important;}
-    .relatorio-overlay{position:absolute;top:0;left:0;right:0;bottom:auto;height:auto;overflow:visible;}
+    .relatorio-overlay{position:static !important;background:#fff;}
     .relatorio-acoes{display:none;}
     .no-print{display:none;}
   }
