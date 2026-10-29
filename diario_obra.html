@@ -268,7 +268,11 @@
     .relatorio-overlay, .relatorio-overlay *{visibility:visible;}
     .relatorio-overlay{position:absolute;}
     .relatorio-acoes{display:none;}
+    .no-print{display:none;}
   }
+  .relatorio-tarefa-dia{margin-bottom:22px;}
+  .relatorio-tarefa-dia h3{font-size:14px;color:var(--charcoal);border-bottom:2px solid var(--charcoal);padding-bottom:4px;margin-bottom:10px;}
+  .badge-dia-medido{display:inline-block;margin-top:8px;padding:6px 12px;border-radius:999px;background:#E3F6E8;color:#1E7A34;font-size:12px;font-weight:700;}
 
   /* ---------- aba Em andamento (2026-10-19) — encarregado marca só quem terminou ou parou ---------- */
   .and-chips{display:flex;gap:6px;overflow-x:auto;margin-bottom:10px;padding-bottom:2px;}
@@ -604,6 +608,16 @@ window.addEventListener('unhandledrejection', function(e) {
         <button type="button" class="btn-secondary" onclick="limparFiltroDataTarefa()">Ver recentes</button>
       </div>
       <div id="listaTarefas"><div class="loading">Carregando...</div></div>
+
+      <h2 class="block-title">Relatório de tarefas por período</h2>
+      <div class="busca-box medicao-periodo-box">
+        <label class="medicao-periodo-label">Período</label>
+        <input type="date" id="inpRelatorioTarefaDe">
+        <span class="medicao-periodo-ate">até</span>
+        <input type="date" id="inpRelatorioTarefaAte">
+      </div>
+      <div class="medicao-periodo-sub">Gera um relatório imprimível com as tarefas do período, separadas dia a dia — e, pra cada dia, um botão pra "medir" (registra quem fez quantas tarefas naquele dia, pronto pra entrar na conta de pagamento).</div>
+      <button type="button" class="btn-secondary" style="width:100%;" onclick="gerarRelatorioTarefasPeriodo()">📋 Gerar relatório</button>
     </div>
 
     <!-- ================= ABA: MAPA DE SERVIÇOS POR ANDAR ================= -->
@@ -738,6 +752,15 @@ window.addEventListener('unhandledrejection', function(e) {
     <button type="button" class="btn-imprimir" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
   </div>
   <div class="resumo-andar-doc" id="resumoAndarDoc"></div>
+</div>
+
+<!-- ================= RELATÓRIO DE TAREFAS POR PERÍODO (dia a dia, com "medir o dia") ================= -->
+<div class="relatorio-overlay" id="tarefasRelatorioOverlay">
+  <div class="relatorio-acoes">
+    <button type="button" class="btn-fechar" onclick="fecharRelatorioTarefasPeriodo()">✕ Fechar</button>
+    <button type="button" class="btn-imprimir" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+  </div>
+  <div class="relatorio-doc" id="tarefasRelatorioDoc"></div>
 </div>
 
 <div class="photo-lightbox" id="photoLightboxRdo" onclick="closeLightboxRdo(event)">
@@ -3245,6 +3268,142 @@ async function salvarTarefa() {
   } finally {
     btn.disabled = false;
     btn.textContent = tarefaEditandoId ? 'Salvar edição' : 'Salvar tarefa';
+  }
+}
+
+// ============================================================
+// RELATÓRIO DE TAREFAS POR PERÍODO + "MEDIR O DIA" (2026-10-29) — pedido
+// do usuário: "emitir as tarefas, exemplo do dia 13 até dia 25, mostra
+// separado dia a dia, e uma forma de clicar para medir o dia". Reaproveita
+// a ideia de "medição" que já existe pros serviços de apartamento (fica
+// registrado quem fez quanto, pronto pra entrar na conta de pagamento),
+// mas numa tabela própria (medicoes_tarefas) — uma tarefa pode ter VÁRIAS
+// pessoas junto (funcionarios_ids), diferente do registro de apartamento
+// (no máximo 2), então não dá pra reaproveitar a tabela "medicoes" (ela só
+// liga 1 pessoa por lote). "Medir o dia" sempre gera 1 lote PRA CADA
+// pessoa que teve ao menos 1 tarefa ainda não medida naquele dia, com a
+// quantidade de tarefas dela nesse dia.
+// ============================================================
+let tarefasRelatorioPeriodo = []; // último resultado bruto da busca por período (todas as tarefas do intervalo)
+
+async function gerarRelatorioTarefasPeriodo() {
+  const de = document.getElementById('inpRelatorioTarefaDe').value;
+  const ate = document.getElementById('inpRelatorioTarefaAte').value;
+  if (!de || !ate) { showToast('⚠️ Escolha as duas datas (de / até).'); return; }
+  if (de > ate) { showToast('⚠️ A data "De" não pode ser depois da "Até".'); return; }
+  if (!sb) { showToast('⚠️ Sem conexão com o banco.'); return; }
+  const { data, error } = await sb.from('rdo_tarefas')
+    .select('*').gte('data', de).lte('data', ate).order('data', { ascending: true });
+  if (error) { showToast('⚠️ Erro ao buscar tarefas: ' + error.message); return; }
+  tarefasRelatorioPeriodo = data || [];
+  indexarTarefas(tarefasRelatorioPeriodo);
+  montarRelatorioTarefasPeriodo(de, ate);
+}
+
+function diasComTarefasRelatorio() {
+  const porDia = new Map();
+  tarefasRelatorioPeriodo.forEach(t => {
+    if (!porDia.has(t.data)) porDia.set(t.data, []);
+    porDia.get(t.data).push(t);
+  });
+  return Array.from(porDia.keys()).sort().map(data => ({ data, doDia: porDia.get(data) }));
+}
+
+function montarRelatorioTarefasPeriodo(de, ate) {
+  const dias = diasComTarefasRelatorio();
+  const blocos = dias.map(({ data, doDia }) => {
+    const linhas = doDia.map(t => {
+      const nomes = (t.funcionarios_ids || []).map(id => (funcionariosPorId[id] || {}).nome).filter(Boolean).join(', ');
+      return `<tr>
+        <td>${escapeHtml(t.descricao)}</td>
+        <td>${escapeHtml(nomes || '—')}</td>
+        <td>${escapeHtml(t.observacao || '—')}</td>
+        <td>${t.medido ? '✅ Medido' : '—'}</td>
+      </tr>`;
+    }).join('');
+    const pendentes = doDia.filter(t => !t.medido).length;
+    const acaoDia = pendentes
+      ? `<button type="button" class="btn-secondary no-print" style="width:auto;" onclick="abrirConfirmaMedirDia('${data}')">📏 Medir esse dia (${pendentes} tarefa${pendentes > 1 ? 's' : ''})</button>`
+      : `<div class="badge-dia-medido no-print">✅ Dia já medido</div>`;
+    return `
+      <div class="relatorio-tarefa-dia" id="relatorioTarefaDia-${data}">
+        <h3>${fmtData(data)}</h3>
+        <table class="relatorio-tabela">
+          <thead><tr><th>Tarefa</th><th>Quem fez</th><th>Observação</th><th>Status</th></tr></thead>
+          <tbody>${linhas || '<tr><td colspan="4">Nenhuma tarefa.</td></tr>'}</tbody>
+        </table>
+        ${acaoDia}
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('tarefasRelatorioDoc').innerHTML = `
+    <h1>Relatório de Tarefas</h1>
+    <div class="relatorio-sub">Diamond Millennium</div>
+    <div class="relatorio-info">
+      <div class="campo"><b>Período</b>${fmtData(de)} a ${fmtData(ate)}</div>
+      <div class="campo"><b>Dias com tarefa</b>${dias.length}</div>
+      <div class="campo"><b>Total de tarefas</b>${tarefasRelatorioPeriodo.length}</div>
+    </div>
+    ${blocos || '<div class="empty">Nenhuma tarefa registrada nesse período.</div>'}
+    <div class="relatorio-assinatura">
+      <div class="linha"><div class="traco"></div>Gerado por: Junior</div>
+    </div>
+  `;
+  document.getElementById('tarefasRelatorioOverlay').classList.add('show');
+}
+
+function fecharRelatorioTarefasPeriodo() {
+  document.getElementById('tarefasRelatorioOverlay').classList.remove('show');
+}
+
+// -------- "Medir esse dia" --------
+function abrirConfirmaMedirDia(data) {
+  const doDia = tarefasRelatorioPeriodo.filter(t => t.data === data && !t.medido);
+  if (!doDia.length) { showToast('⚠️ Esse dia não tem tarefa pendente de medição.'); return; }
+  const porPessoa = new Map();
+  doDia.forEach(t => (t.funcionarios_ids || []).forEach(fid => {
+    porPessoa.set(fid, (porPessoa.get(fid) || 0) + 1);
+  }));
+  if (!porPessoa.size) { showToast('⚠️ Nenhuma das tarefas desse dia tem alguém marcado.'); return; }
+  const resumoPessoas = Array.from(porPessoa.entries())
+    .map(([fid, qtd]) => `${(funcionariosPorId[fid] || {}).nome || '?'} (${qtd})`)
+    .join(', ');
+  if (!confirm(`Medir o dia ${fmtData(data)}?\n\n${doDia.length} tarefa(s), ${porPessoa.size} pessoa(s):\n${resumoPessoas}\n\nIsso cria uma medição pra cada pessoa (com a quantidade de tarefas dela nesse dia) e marca as tarefas como medidas.`)) return;
+  medirDia(data, doDia, porPessoa);
+}
+
+async function medirDia(data, doDia, porPessoa) {
+  if (!sb) { showToast('⚠️ Sem conexão com o banco.'); return; }
+  try {
+    const resultadosLotes = await Promise.all(Array.from(porPessoa.entries()).map(([fid, qtd]) =>
+      sb.from('medicoes_tarefas')
+        .insert({ funcionario_id: fid, data, quantidade_tarefas: qtd, medido_por: 'Junior' })
+        .select().single()
+    ));
+    const erroLote = resultadosLotes.find(r => r.error);
+    if (erroLote) throw erroLote.error;
+
+    const ids = doDia.map(t => t.id);
+    const { data: atualizados, error: errUpdate } = await sb.from('rdo_tarefas')
+      .update({ medido: true }).in('id', ids).select();
+    if (errUpdate) throw errUpdate;
+
+    atualizados.forEach(t => {
+      tarefasPorId[t.id] = t;
+      const idx = tarefasRelatorioPeriodo.findIndex(x => x.id === t.id);
+      if (idx >= 0) tarefasRelatorioPeriodo[idx] = t;
+      const idx2 = tarefas.findIndex(x => x.id === t.id);
+      if (idx2 >= 0) tarefas[idx2] = t;
+    });
+
+    const de = document.getElementById('inpRelatorioTarefaDe').value;
+    const ate = document.getElementById('inpRelatorioTarefaAte').value;
+    montarRelatorioTarefasPeriodo(de, ate); // reconstrói o relatório já com o dia marcado como medido
+    showToast(`✅ Dia ${fmtData(data)} medido — ${porPessoa.size} pessoa(s).`);
+    registrarEdicao('criar', `Mediu o dia ${fmtData(data)} de tarefas: ${doDia.length} tarefa(s), ${porPessoa.size} pessoa(s)`);
+  } catch (e) {
+    showToast('⚠️ Erro ao medir o dia: ' + (e.message || e));
   }
 }
 
