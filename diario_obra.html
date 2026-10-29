@@ -266,7 +266,18 @@
   @media print{
     body *{visibility:hidden;}
     .relatorio-overlay, .relatorio-overlay *{visibility:visible;}
-    .relatorio-overlay{position:absolute;}
+    /* (2026-10-29) Bug "o relatório sai com as páginas em branco": com
+       bottom:0 fixo, a caixa do relatório ficava com a altura de 1 página
+       só — qualquer conteúdo além disso (ex.: relatório de tarefas com
+       vários dias) era cortado, e o navegador ainda calculava várias
+       páginas pelo tamanho do app por trás (visibility:hidden mantém o
+       espaço ocupado, só não desenha) — daí as páginas extras saírem em
+       branco. Corrigido: tira o bottom/overflow fixos (deixa a altura
+       crescer com o conteúdo, paginando direito) e esconde o app inteiro
+       (#app, não só visibility) pra ele não ocupar espaço nenhum na hora
+       de imprimir. */
+    #app, .login-screen{display:none !important;}
+    .relatorio-overlay{position:absolute;top:0;left:0;right:0;bottom:auto;height:auto;overflow:visible;}
     .relatorio-acoes{display:none;}
     .no-print{display:none;}
   }
